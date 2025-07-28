@@ -11,8 +11,10 @@ provider "google-beta" {
 module "braintrust" {
   source = "../../"
 
-  deployment_name                    = "braintrust"
+  deployment_name                    = var.deployment_name
   region                             = var.region
   brainstore_license_key_secret_name = var.brainstore_license_key_secret_name
+  postgres_deletion_protection        = var.postgres_deletion_protection
+  gcs_force_destroy                   = var.gcs_force_destroy
 }
 
