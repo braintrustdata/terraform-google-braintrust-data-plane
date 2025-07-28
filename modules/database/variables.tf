@@ -103,14 +103,7 @@ variable "postgres_insights_config" {
   }
 }
 
-variable "postgres_kms_keyring_name" {
+variable "postgres_kms_cmek_id" {
   type        = string
-  description = "Name of Cloud KMS Key Ring that contains KMS key to use for Cloud SQL for PostgreSQL. Geographic location (region) of key ring must match the location of the braintrust Cloud SQL for PostgreSQL database instance. If this is not provided, the database will be encrypted with a Google-managed key."
-  default     = null
-}
-
-variable "postgres_kms_cmek_name" {
-  type        = string
-  description = "Name of Cloud KMS customer managed encryption key (CMEK) to use for Cloud SQL for PostgreSQL database instance. If this is not provided, the database will be encrypted with a Google-managed key."
-  default     = null
+  description = "ID of Cloud KMS customer managed encryption key (CMEK) to use for Cloud SQL for PostgreSQL database instance. If this is not provided, the database will be encrypted with a Google-managed key."
 }

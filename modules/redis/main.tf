@@ -24,29 +24,12 @@ resource "google_redis_instance" "braintrust" {
   transit_encryption_mode = "DISABLED"
   authorized_network      = var.redis_network
   connect_mode            = "PRIVATE_SERVICE_ACCESS"
-  customer_managed_key    = var.redis_kms_cmek_name != null ? data.google_kms_crypto_key.redis[0].id : null
+  customer_managed_key    = var.redis_kms_cmek_id
   labels                  = local.common_labels
 
   depends_on = [
     google_kms_crypto_key_iam_binding.redis_sa_cmek
   ]
-}
-
-#------------------------------------------------------------------------------
-# KMS Redis customer managed encryption key (CMEK)
-#------------------------------------------------------------------------------
-data "google_kms_key_ring" "redis" {
-  count = var.redis_kms_keyring_name != null ? 1 : 0
-
-  name     = var.redis_kms_keyring_name
-  location = data.google_client_config.current.region
-}
-
-data "google_kms_crypto_key" "redis" {
-  count = var.redis_kms_cmek_name != null ? 1 : 0
-
-  name     = var.redis_kms_cmek_name
-  key_ring = data.google_kms_key_ring.redis[0].id
 }
 
 #------------------------------------------------------------------------------
@@ -57,9 +40,8 @@ locals {
 }
 
 resource "google_kms_crypto_key_iam_binding" "redis_sa_cmek" {
-  count = var.redis_kms_cmek_name != null ? 1 : 0
 
-  crypto_key_id = data.google_kms_crypto_key.redis[0].id
+  crypto_key_id = var.redis_kms_cmek_id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
 
   members = [

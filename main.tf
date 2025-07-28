@@ -2,8 +2,14 @@ module "vpc" {
   source = "./modules/vpc"
 
   deployment_name   = var.deployment_name
-  vpc_name          = var.vpc_name 
-  subnet_cidr_range = var.subnet_cidr_range 
+  vpc_name          = var.vpc_name
+  subnet_cidr_range = var.subnet_cidr_range
+}
+
+module "kms" {
+  source = "./modules/kms"
+
+  deployment_name = var.deployment_name
 }
 
 module "database" {
@@ -11,22 +17,25 @@ module "database" {
 
   deployment_name              = var.deployment_name
   postgres_network             = module.vpc.network_self_link
-  postgres_deletion_protection = var.postgres_deletion_protection 
+  postgres_deletion_protection = var.postgres_deletion_protection
+  postgres_kms_cmek_id         = module.kms.kms_key_id
 }
 
 module "redis" {
   source = "./modules/redis"
 
-  deployment_name = var.deployment_name
-  redis_network   = module.vpc.network_self_link
+  deployment_name        = var.deployment_name
+  redis_network          = module.vpc.network_self_link
+  redis_kms_cmek_id      = module.kms.kms_key_id
 }
 
 module "storage" {
   source = "./modules/storage"
 
-  deployment_name   = var.deployment_name
-  gcs_location      = var.region
-  gcs_force_destroy = var.gcs_force_destroy 
+  deployment_name      = var.deployment_name
+  gcs_location         = var.region
+  gcs_force_destroy    = var.gcs_force_destroy
+  gcs_kms_cmek_id      = module.kms.kms_key_id
 }
 
 module "brainstore-vm" {
@@ -43,3 +52,5 @@ module "brainstore-vm" {
   database_secret_name               = module.database.postgres_password_secret_name
   brainstore_license_key_secret_name = var.brainstore_license_key_secret_name
 }
+
+

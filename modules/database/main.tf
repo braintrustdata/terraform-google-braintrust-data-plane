@@ -49,7 +49,7 @@ resource "random_id" "postgres_suffix" {
 resource "google_sql_database_instance" "braintrust" {
   name                = "${var.deployment_name}-${random_id.postgres_suffix.hex}"
   database_version    = var.database_version
-  encryption_key_name = var.postgres_kms_cmek_name == null ? null : data.google_kms_crypto_key.postgres[0].id
+  encryption_key_name = var.postgres_kms_cmek_id
   deletion_protection = var.postgres_deletion_protection
 
   settings {
@@ -63,7 +63,6 @@ resource "google_sql_database_instance" "braintrust" {
       ipv4_enabled    = false
       private_network = var.postgres_network
       ssl_mode        = var.postgres_ssl_mode
-      #enable_private_path_for_google_cloud_services = true
     }
 
     backup_configuration {
@@ -100,42 +99,23 @@ resource "google_sql_user" "braintrust" {
 }
 
 #------------------------------------------------------------------------------
-# KMS Cloud SQL for PostgreSQL customer managed encryption key (CMEK)
-#------------------------------------------------------------------------------
-data "google_kms_key_ring" "postgres" {
-  count = var.postgres_kms_keyring_name != null ? 1 : 0
-
-  name     = var.postgres_kms_keyring_name
-  location = data.google_client_config.current.region
-}
-
-data "google_kms_crypto_key" "postgres" {
-  count = var.postgres_kms_cmek_name != null ? 1 : 0
-
-  name     = var.postgres_kms_cmek_name
-  key_ring = data.google_kms_key_ring.postgres[0].id
-}
-
-#------------------------------------------------------------------------------
 # Cloud SQL for PostgreSQL KMS CMEK
 #------------------------------------------------------------------------------
 // There is no Google-managed service account (service agent) for Cloud SQL,
 // so one must be created to allow the Cloud SQL instance to use the CMEK.
 // https://cloud.google.com/sql/docs/postgres/configure-cmek
 resource "google_project_service_identity" "cloud_sql_sa" {
-  count    = var.postgres_kms_cmek_name != null ? 1 : 0
   provider = google-beta
 
   service = "sqladmin.googleapis.com"
 }
 
 resource "google_kms_crypto_key_iam_binding" "cloud_sql_sa_postgres_cmek" {
-  count = var.postgres_kms_cmek_name != null ? 1 : 0
 
-  crypto_key_id = data.google_kms_crypto_key.postgres[0].id
+  crypto_key_id = var.postgres_kms_cmek_id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
 
   members = [
-    "serviceAccount:${google_project_service_identity.cloud_sql_sa[0].email}",
+    "serviceAccount:${google_project_service_identity.cloud_sql_sa.email}",
   ]
 }

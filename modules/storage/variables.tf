@@ -50,15 +50,9 @@ variable "gcs_additional_allowed_origins" {
   default     = []
 }
 
-variable "gcs_kms_keyring_name" {
+variable "gcs_kms_cmek_id" {
   type        = string
-  description = "Name of Cloud KMS key ring that contains KMS customer managed encryption key (CMEK) to use for Braintrust GCS buckets encryption. Geographic location (region) of the key ring must match the location of the Braintrust GCS buckets."
-  default     = null
-}
-
-variable "gcs_kms_cmek_name" {
-  type        = string
-  description = "Name of Cloud KMS customer managed encryption key (CMEK) to use for Braintrust GCS buckets encryption."
+  description = "ID of Cloud KMS customer managed encryption key (CMEK) to use for Braintrust GCS buckets encryption."
   default     = null
 }
 

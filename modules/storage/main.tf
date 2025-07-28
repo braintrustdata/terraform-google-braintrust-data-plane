@@ -47,10 +47,10 @@ resource "google_storage_bucket" "brainstore" {
   }
 
   dynamic "encryption" {
-    for_each = var.gcs_kms_cmek_name != null ? ["encryption"] : []
+    for_each = var.gcs_kms_cmek_id != null ? ["encryption"] : []
 
     content {
-      default_kms_key_name = data.google_kms_crypto_key.braintrust_gcs_cmek[0].id
+      default_kms_key_name = var.gcs_kms_cmek_id
     }
   }
 
@@ -97,10 +97,10 @@ resource "google_storage_bucket" "api_code_bundle" {
   }
 
   dynamic "encryption" {
-    for_each = var.gcs_kms_cmek_name != null ? ["encryption"] : []
+    for_each = var.gcs_kms_cmek_id != null ? ["encryption"] : []
 
     content {
-      default_kms_key_name = data.google_kms_crypto_key.braintrust_gcs_cmek[0].id
+      default_kms_key_name = var.gcs_kms_cmek_id
     }
   }
 
@@ -147,10 +147,10 @@ resource "google_storage_bucket" "lambda_response" {
   }
 
   dynamic "encryption" {
-    for_each = var.gcs_kms_cmek_name != null ? ["encryption"] : []
+    for_each = var.gcs_kms_cmek_id != null ? ["encryption"] : []
 
     content {
-      default_kms_key_name = data.google_kms_crypto_key.braintrust_gcs_cmek[0].id
+      default_kms_key_name = var.gcs_kms_cmek_id
     }
   }
 
@@ -165,24 +165,6 @@ resource "google_storage_bucket" "lambda_response" {
   depends_on = [google_kms_crypto_key_iam_binding.gcp_project_gcs_cmek]
 }
 
-
-#------------------------------------------------------------------------------
-# KMS Google cloud storage (GCS) customer managed encryption key (CMEK)
-#------------------------------------------------------------------------------
-data "google_kms_key_ring" "braintrust_gcs_cmek" {
-  count = var.gcs_kms_keyring_name != null ? 1 : 0
-
-  name     = var.gcs_kms_keyring_name
-  location = lower(var.gcs_location)
-}
-
-data "google_kms_crypto_key" "braintrust_gcs_cmek" {
-  count = var.gcs_kms_cmek_name != null ? 1 : 0
-
-  name     = var.gcs_kms_cmek_name
-  key_ring = data.google_kms_key_ring.braintrust_gcs_cmek[0].id
-}
-
 #------------------------------------------------------------------------------
 # GCS KMS CMEK
 #------------------------------------------------------------------------------
@@ -191,9 +173,8 @@ locals {
 }
 
 resource "google_kms_crypto_key_iam_binding" "gcp_project_gcs_cmek" {
-  count = var.gcs_kms_cmek_name != null ? 1 : 0
 
-  crypto_key_id = data.google_kms_crypto_key.braintrust_gcs_cmek[0].id
+  crypto_key_id = var.gcs_kms_cmek_id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
 
   members = [

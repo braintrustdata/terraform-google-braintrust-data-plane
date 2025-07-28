@@ -51,6 +51,7 @@ variable "gcs_force_destroy" {
 variable "brainstore_license_key_secret_name" {
   description = "Secret name for Brainstore license key."
   type        = string
+  default     = null
 }
 
 variable "enable_brainstore_vm" {

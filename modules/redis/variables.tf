@@ -21,16 +21,9 @@ variable "redis_memory_size_gb" {
   default     = 3
 }
 
-variable "redis_kms_keyring_name" {
+variable "redis_kms_cmek_id" {
   type        = string
-  description = "Name of Cloud KMS key ring that contains KMS customer managed encryption key (CMEK) to use for Brainstore Redis instance. Geographic location (region) of key ring must match the location of the Braintrust Redis instance."
-  default     = null
-}
-
-variable "redis_kms_cmek_name" {
-  type        = string
-  description = "Name of Cloud KMS customer managed encryption key (CMEK) to use for Braintrust Redis instance."
-  default     = null
+  description = "ID of Cloud KMS customer managed encryption key (CMEK) to use for Braintrust Redis instance."
 }
 
 variable "redis_network" {
