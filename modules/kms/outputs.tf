@@ -3,7 +3,7 @@ output "kms_key_ring_name" {
 }
 
 output "kms_key_name" {
-  value = google_kms_crypto_key.root.name
+  value = google_kms_crypto_key.kms.name
 }
 
 output "kms_key_ring_id" {
@@ -11,5 +11,5 @@ output "kms_key_ring_id" {
 }
 
 output "kms_key_id" {
-  value = google_kms_crypto_key.root.id
+  value = google_kms_crypto_key.kms.id
 }
