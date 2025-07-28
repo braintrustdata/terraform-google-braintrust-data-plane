@@ -88,7 +88,7 @@ resource "google_sql_database_instance" "braintrust" {
   }
 
   depends_on = [
-    google_kms_crypto_key_iam_binding.cloud_sql_sa_postgres_cmek
+    google_kms_crypto_key_iam_member.cloud_sql_sa_postgres_cmek
   ]
 }
 
@@ -110,12 +110,11 @@ resource "google_project_service_identity" "cloud_sql_sa" {
   service = "sqladmin.googleapis.com"
 }
 
-resource "google_kms_crypto_key_iam_binding" "cloud_sql_sa_postgres_cmek" {
+resource "google_kms_crypto_key_iam_member" "cloud_sql_sa_postgres_cmek" {
 
   crypto_key_id = var.postgres_kms_cmek_id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
 
-  members = [
-    "serviceAccount:${google_project_service_identity.cloud_sql_sa.email}",
-  ]
+  member =     "serviceAccount:${google_project_service_identity.cloud_sql_sa.email}"
+
 }

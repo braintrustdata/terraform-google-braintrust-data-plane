@@ -62,7 +62,10 @@ resource "google_storage_bucket" "brainstore" {
     ]
   }
 
-  depends_on = [google_kms_crypto_key_iam_binding.gcp_project_gcs_cmek]
+  depends_on = [
+    google_kms_crypto_key_iam_member.gcp_project_gcs_cmek
+  ]
+
 }
 
 #------------------------------------------------------------------------------
@@ -112,7 +115,10 @@ resource "google_storage_bucket" "api_code_bundle" {
     ]
   }
 
-  depends_on = [google_kms_crypto_key_iam_binding.gcp_project_gcs_cmek]
+  depends_on = [
+    google_kms_crypto_key_iam_member.gcp_project_gcs_cmek
+  ]
+
 }
 
 #------------------------------------------------------------------------------
@@ -162,7 +168,10 @@ resource "google_storage_bucket" "lambda_response" {
     ]
   }
 
-  depends_on = [google_kms_crypto_key_iam_binding.gcp_project_gcs_cmek]
+  depends_on = [
+    google_kms_crypto_key_iam_member.gcp_project_gcs_cmek
+  ]
+
 }
 
 #------------------------------------------------------------------------------
@@ -172,12 +181,10 @@ locals {
   gcs_service_account_email = "service-${data.google_project.current.number}@gs-project-accounts.iam.gserviceaccount.com"
 }
 
-resource "google_kms_crypto_key_iam_binding" "gcp_project_gcs_cmek" {
+resource "google_kms_crypto_key_iam_member" "gcp_project_gcs_cmek" {
 
   crypto_key_id = var.gcs_kms_cmek_id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
 
-  members = [
-    "serviceAccount:${local.gcs_service_account_email}",
-  ]
+  member = "serviceAccount:${local.gcs_service_account_email}"
 }

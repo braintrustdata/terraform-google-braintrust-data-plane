@@ -28,7 +28,7 @@ resource "google_redis_instance" "braintrust" {
   labels                  = local.common_labels
 
   depends_on = [
-    google_kms_crypto_key_iam_binding.redis_sa_cmek
+    google_kms_crypto_key_iam_member.redis_sa_cmek
   ]
 }
 
@@ -39,12 +39,11 @@ locals {
   redis_service_account_email = "service-${data.google_project.current.number}@cloud-redis.iam.gserviceaccount.com"
 }
 
-resource "google_kms_crypto_key_iam_binding" "redis_sa_cmek" {
+resource "google_kms_crypto_key_iam_member" "redis_sa_cmek" {
 
   crypto_key_id = var.redis_kms_cmek_id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
 
-  members = [
-    "serviceAccount:${local.redis_service_account_email}",
-  ]
+  member  =  "serviceAccount:${local.redis_service_account_email}"
+  
 }
