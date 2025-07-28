@@ -52,3 +52,9 @@ variable "brainstore_license_key_secret_name" {
   description = "Secret name for Brainstore license key."
   type        = string
 }
+
+variable "enable_brainstore_vm" {
+  description = "Whether to enable the Brainstore VM."
+  type        = bool
+  default     = false
+}

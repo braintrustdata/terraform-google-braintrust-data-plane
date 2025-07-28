@@ -29,8 +29,10 @@ module "storage" {
   gcs_force_destroy = var.gcs_force_destroy 
 }
 
-module "brainstore" {
+module "brainstore-vm" {
   source = "./modules/brainstore-vm"
+
+  count = var.enable_brainstore_vm ? 1 : 0
 
   deployment_name                    = var.deployment_name
   brainstore_network                 = module.vpc.network_self_link
