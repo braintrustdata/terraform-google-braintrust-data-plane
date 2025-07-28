@@ -10,9 +10,9 @@ This module is currently alpha status and does not contain all necessary resourc
 
 ## Prereqs
 
-Google Project created
-All necessary APIs and services enabled. Steps to do so are below.
-A google secret created containing the brainstore license key.
+- Google Project created
+- All necessary APIs and services enabled. Steps to do so are below.
+- A google secret created containing the brainstore license key.
 
 ### Enabling APIs
 
