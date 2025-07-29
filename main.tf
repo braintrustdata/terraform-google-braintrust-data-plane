@@ -24,24 +24,23 @@ module "database" {
 module "redis" {
   source = "./modules/redis"
 
-  deployment_name        = var.deployment_name
-  redis_network          = module.vpc.network_self_link
-  redis_kms_cmek_id      = module.kms.kms_key_id
+  deployment_name   = var.deployment_name
+  redis_network     = module.vpc.network_self_link
+  redis_kms_cmek_id = module.kms.kms_key_id
 }
 
 module "storage" {
   source = "./modules/storage"
 
-  deployment_name      = var.deployment_name
-  gcs_location         = var.region
-  gcs_force_destroy    = var.gcs_force_destroy
-  gcs_kms_cmek_id      = module.kms.kms_key_id
+  deployment_name   = var.deployment_name
+  gcs_location      = var.region
+  gcs_force_destroy = var.gcs_force_destroy
+  gcs_kms_cmek_id   = module.kms.kms_key_id
 }
 
 module "brainstore-vm" {
   source = "./modules/brainstore-vm"
-
-  count = var.enable_brainstore_vm ? 1 : 0
+  count  = var.enable_brainstore_vm ? 1 : 0
 
   deployment_name                    = var.deployment_name
   brainstore_network                 = module.vpc.network_self_link
@@ -53,4 +52,25 @@ module "brainstore-vm" {
   brainstore_license_key_secret_name = var.brainstore_license_key_secret_name
 }
 
+module "gke-cluster" {
+  source = "./modules/gke-cluster"
 
+  count = var.deploy_gke_cluster ? 1 : 0
+
+  deployment_name         = var.deployment_name
+  gke_network             = module.vpc.network_self_link
+  gke_subnetwork          = module.vpc.subnet_self_link
+  gke_deletion_protection = var.gke_deletion_protection
+  gke_node_type           = "n1-standard-4"
+}
+
+module "gke-iam" {
+  source = "./modules/gke-iam"
+  count  = var.deploy_on_gke ? 1 : 0
+
+  deployment_name = var.deployment_name
+
+  braintrust_response_bucket_id    = module.storage.response_bucket_self_link
+  braintrust_code_bundle_bucket_id = module.storage.code_bundle_bucket_self_link
+  brainstore_gcs_bucket_id         = module.storage.brainstore_bucket_self_link
+}

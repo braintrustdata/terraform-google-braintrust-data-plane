@@ -30,3 +30,9 @@ variable "gcs_force_destroy" {
   type        = bool
   default     = false
 }
+
+variable "gke_deletion_protection" {
+  description = "Whether to protect the GKE cluster from deletion."
+  type        = bool
+  default     = true
+}

@@ -69,11 +69,11 @@ resource "google_storage_bucket" "brainstore" {
 }
 
 #------------------------------------------------------------------------------
-# Google cloud storage (GCS) bucket - api - code-bundle
+# Google cloud storage (GCS) bucket - code-bundle
 #------------------------------------------------------------------------------
 
-resource "google_storage_bucket" "api_code_bundle" {
-  name                        = "${var.deployment_name}-api-code-bundle-${random_id.gcs_suffix.hex}"
+resource "google_storage_bucket" "code_bundle" {
+  name                        = "${var.deployment_name}-code-bundle-${random_id.gcs_suffix.hex}"
   location                    = var.gcs_location
   storage_class               = var.gcs_storage_class
   uniform_bucket_level_access = var.gcs_uniform_bucket_level_access
@@ -122,11 +122,11 @@ resource "google_storage_bucket" "api_code_bundle" {
 }
 
 #------------------------------------------------------------------------------
-# Google cloud storage (GCS) bucket - api - lambda response
+# Google cloud storage (GCS) bucket - response
 #------------------------------------------------------------------------------
 
-resource "google_storage_bucket" "lambda_response" {
-  name                        = "${var.deployment_name}-lambda-response-${random_id.gcs_suffix.hex}"
+resource "google_storage_bucket" "response" {
+  name                        = "${var.deployment_name}-response-${random_id.gcs_suffix.hex}"
   location                    = var.gcs_location
   storage_class               = var.gcs_storage_class
   uniform_bucket_level_access = var.gcs_uniform_bucket_level_access

@@ -59,3 +59,21 @@ variable "enable_brainstore_vm" {
   type        = bool
   default     = false
 }
+
+variable "deploy_gke_cluster" {
+  description = "Whether to deploy the GKE cluster."
+  type        = bool
+  default     = true
+}
+
+variable "deploy_on_gke" {
+  description = "Whether to deploy Braintrust on GKE."
+  type        = bool
+  default     = true
+}
+
+variable "gke_deletion_protection" {
+  description = "Whether to protect the GKE cluster from deletion."
+  type        = bool
+  default     = true
+}

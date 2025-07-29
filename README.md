@@ -2,7 +2,6 @@
 
 This module is currently alpha status and does not contain all necessary resources for a proper braintrust deployment yet.
 
-- By Default everything is encrypted by default using google's KMS keys. Customer Manged Keys should be work fine, however this hasn't been tested yet.
 - Logging is configured to use the default project log sink, need to determine if a custom log sink will be needed. Project related resources and brainstore docker logs are being sent to it.
 - The default brainstore instance sizes are too large for the default CPU limit, recommend using `c4a-standard-4-lssd` for now. Need to explore requesting a quota limit increase via TF or Code
 - The API layer is missing from this module along with the remote support module
