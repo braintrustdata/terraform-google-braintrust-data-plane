@@ -24,7 +24,7 @@ variable "region" {
   default     = "us-central1"
 }
 
-variable "vpc_name" { 
+variable "vpc_name" {
   description = "Name of the VPC to deploy resources to."
   type        = string
   default     = "braintrust"
@@ -76,4 +76,10 @@ variable "gke_deletion_protection" {
   description = "Whether to protect the GKE cluster from deletion."
   type        = bool
   default     = true
+}
+
+variable "gke_control_plane_authorized_cidr" {
+  description = "The CIDR block for the GKE control plane authorized networks."
+  type        = string
+  default     = null
 }

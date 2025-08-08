@@ -17,5 +17,6 @@ module "braintrust" {
   postgres_deletion_protection       = var.postgres_deletion_protection
   gcs_force_destroy                  = var.gcs_force_destroy
   gke_deletion_protection            = var.gke_deletion_protection
+  gke_control_plane_authorized_cidr  = var.gke_control_plane_authorized_cidr
 }
 

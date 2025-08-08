@@ -15,7 +15,7 @@ variable "gke_network" {
   description = "The network of the GKE cluster."
 }
 
-variable "gke_subnetwork" { 
+variable "gke_subnetwork" {
   type        = string
   description = "The subnetwork of the GKE cluster."
 }
@@ -89,5 +89,11 @@ variable "gke_node_count" {
 variable "gke_node_type" {
   type        = string
   description = "The type of node in the GKE node pool."
-  default     = "c4a-standard-4" 
+  default     = "c4a-standard-4"
+}
+
+variable "gke_secret_manager_config_enabled" {
+  type        = bool
+  description = "Whether to enable secret manager config for the GKE cluster."
+  default     = false
 }

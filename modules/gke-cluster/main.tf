@@ -5,7 +5,7 @@ locals {
   common_labels = {
     braintrustdeploymentname = var.deployment_name
   }
-   available_zones = [
+  available_zones = [
     for zone_name, machine_types in data.google_compute_machine_types.gke_node_type :
     zone_name if length(machine_types.machine_types) > 0
   ]
@@ -36,7 +36,7 @@ resource "google_container_cluster" "braintrust" {
   name    = "${var.deployment_name}-gke"
   project = data.google_project.current.project_id
 
-  release_channel { 
+  release_channel {
     channel = var.gke_release_channel
   }
 
@@ -88,6 +88,10 @@ resource "google_container_cluster" "braintrust" {
   }
 
   logging_service = "logging.googleapis.com/kubernetes"
+
+  secret_manager_config {
+    enabled = var.gke_secret_manager_config_enabled
+  }
 }
 
 #----------------------------------------------------------------------------------------------
@@ -101,8 +105,8 @@ resource "google_container_node_pool" "braintrust" {
   node_count = var.gke_node_count
 
   node_config {
-    preemptible  = false
-    machine_type = var.gke_node_type
+    preemptible     = false
+    machine_type    = var.gke_node_type
     service_account = google_service_account.gke.email
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"

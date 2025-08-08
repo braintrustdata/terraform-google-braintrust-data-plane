@@ -44,6 +44,6 @@ resource "google_kms_crypto_key_iam_member" "redis_sa_cmek" {
   crypto_key_id = var.redis_kms_cmek_id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
 
-  member  =  "serviceAccount:${local.redis_service_account_email}"
-  
+  member = "serviceAccount:${local.redis_service_account_email}"
+
 }

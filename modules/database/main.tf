@@ -18,13 +18,13 @@ resource "random_password" "postgres_password" {
 }
 
 resource "google_secret_manager_secret" "postgres_password" {
-  secret_id = "postgres-password"
-
-  labels = local.common_labels
+  secret_id = "${var.deployment_name}-postgres-password"
 
   replication {
     auto {}
   }
+
+  labels = local.common_labels
 }
 
 resource "google_secret_manager_secret_version" "postgres_password" {
@@ -58,6 +58,16 @@ resource "google_sql_database_instance" "braintrust" {
     disk_type         = "PD_SSD"
     disk_size         = var.postgres_disk_size
     disk_autoresize   = true
+
+    # database_flags {
+    #   name  = "max_client_connections"
+    #   value = "1000"
+    # } # TODO: check on instance type to find max connections supported
+
+    database_flags {
+      name  = "cloudsql.enable_pg_cron"
+      value = "on"
+    }
 
     ip_configuration {
       ipv4_enabled    = false
@@ -115,6 +125,6 @@ resource "google_kms_crypto_key_iam_member" "cloud_sql_sa_postgres_cmek" {
   crypto_key_id = var.postgres_kms_cmek_id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
 
-  member =     "serviceAccount:${google_project_service_identity.cloud_sql_sa.email}"
+  member = "serviceAccount:${google_project_service_identity.cloud_sql_sa.email}"
 
 }

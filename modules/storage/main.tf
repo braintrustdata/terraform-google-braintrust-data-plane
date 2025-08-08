@@ -118,7 +118,6 @@ resource "google_storage_bucket" "code_bundle" {
   depends_on = [
     google_kms_crypto_key_iam_member.gcp_project_gcs_cmek
   ]
-
 }
 
 #------------------------------------------------------------------------------

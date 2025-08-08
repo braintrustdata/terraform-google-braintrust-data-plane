@@ -36,3 +36,9 @@ variable "gke_deletion_protection" {
   type        = bool
   default     = true
 }
+
+variable "gke_control_plane_authorized_cidr" {
+  description = "The CIDR block for the GKE control plane authorized networks."
+  type        = string
+  default     = null
+}

@@ -9,3 +9,11 @@ output "postgres_instance_ip" {
 output "postgres_password_secret_name" {
   value = basename(google_secret_manager_secret.postgres_password.id)
 }
+
+output "postgres_username" {
+  value = local.postgres_username
+}
+
+output "postgres_password" {
+  value = local.postgres_password
+}
