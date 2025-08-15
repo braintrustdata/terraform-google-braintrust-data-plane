@@ -18,11 +18,11 @@ output "brainstore_bucket_name" {
 # Service account
 #------------------------------------------------------------------------------
 output "braintrust_service_account" {
-  value = module.gke-iam[0].braintrust_service_account
+  value = var.deployment_type == "gke" ? module.gke-iam[0].braintrust_service_account : null
 }
 
 output "brainstore_service_account" {
-  value = module.gke-iam[0].brainstore_service_account
+  value = var.deployment_type == "gke" ? module.gke-iam[0].brainstore_service_account : null
 }
 
 
@@ -60,4 +60,8 @@ output "redis_instance_host" {
 
 output "redis_server_ca_certs" {
   value = module.redis.redis_server_ca_certs
+}
+
+output "api_url" {
+  value = var.deployment_type == "cloud-run" ? module.api-cloud-run[0].api_url : null
 }

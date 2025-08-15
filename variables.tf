@@ -18,10 +18,26 @@ variable "deployment_name" {
   }
 }
 
+variable "org_name" {
+  description = "Name of the braintrust organization."
+  type        = string
+  default     = "*"
+}
+
 variable "region" {
   description = "Region to deploy resources to."
   type        = string
   default     = "us-central1"
+}
+
+variable "deployment_type" {
+  description = "Type of deployment either using gke or cloud run."
+  type        = string
+  default     = "cloud-run"
+  validation {
+    condition     = contains(["gke", "cloud-run"], var.deployment_type)
+    error_message = "Deployment type must be either 'cloud-run' or 'gke'."
+  }
 }
 
 variable "vpc_name" {
@@ -34,6 +50,12 @@ variable "subnet_cidr_range" {
   description = "CIDR range for the subnet to deploy resources to."
   type        = string
   default     = "10.0.0.0/24"
+}
+
+variable "vpc_access_connector_ip_cidr_range" {
+  description = "IP CIDR range for the VPC access connector."
+  type        = string
+  default     = "10.8.0.0/28"
 }
 
 variable "postgres_deletion_protection" {
@@ -66,12 +88,6 @@ variable "deploy_gke_cluster" {
   default     = true
 }
 
-variable "deploy_on_gke" {
-  description = "Whether to deploy Braintrust on GKE."
-  type        = bool
-  default     = true
-}
-
 variable "gke_deletion_protection" {
   description = "Whether to protect the GKE cluster from deletion."
   type        = bool
@@ -82,4 +98,16 @@ variable "gke_control_plane_authorized_cidr" {
   description = "The CIDR block for the GKE control plane authorized networks."
   type        = string
   default     = null
+}
+
+variable "cloud_run_enable_public_access" {
+  description = "Whether to enable public access to the Cloud Run API."
+  type        = bool
+  default     = true
+}
+
+variable "cloud_run_deletion_protection" {
+  description = "Whether to protect the Cloud Run service from deletion."
+  type        = bool
+  default     = true
 }

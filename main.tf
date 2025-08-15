@@ -1,9 +1,11 @@
 module "vpc" {
   source = "./modules/vpc"
 
-  deployment_name   = var.deployment_name
-  vpc_name          = var.vpc_name
-  subnet_cidr_range = var.subnet_cidr_range
+  deployment_name                    = var.deployment_name
+  vpc_name                           = var.vpc_name
+  subnet_cidr_range                  = var.subnet_cidr_range
+  deployment_type                    = var.deployment_type
+  vpc_access_connector_ip_cidr_range = var.vpc_access_connector_ip_cidr_range
 }
 
 module "kms" {
@@ -40,7 +42,7 @@ module "storage" {
 
 module "brainstore-vm" {
   source = "./modules/brainstore-vm"
-  count  = var.enable_brainstore_vm ? 1 : 0
+  count  = var.deployment_type == "cloud-run" ? 1 : 0
 
   deployment_name                    = var.deployment_name
   brainstore_network                 = module.vpc.network_self_link
@@ -55,7 +57,7 @@ module "brainstore-vm" {
 module "gke-cluster" {
   source = "./modules/gke-cluster"
 
-  count = var.deploy_gke_cluster ? 1 : 0
+  count = var.deployment_type == "gke" && var.deploy_gke_cluster ? 1 : 0
 
   deployment_name                   = var.deployment_name
   gke_network                       = module.vpc.network_self_link
@@ -69,7 +71,7 @@ module "gke-cluster" {
 
 module "gke-iam" {
   source = "./modules/gke-iam"
-  count  = var.deploy_on_gke ? 1 : 0
+  count  = var.deployment_type == "gke" ? 1 : 0
 
   deployment_name = var.deployment_name
 
@@ -79,3 +81,30 @@ module "gke-iam" {
   brainstore_gcs_bucket_id         = module.storage.brainstore_bucket_self_link
   #secrets_kms_cmek_id              = module.kms.kms_key_id
 }
+
+module "api-cloud-run" {
+  source = "./modules/api-cloud-run"
+
+  count = var.deployment_type == "cloud-run" ? 1 : 0
+
+  region                 = var.region
+  deployment_name        = var.deployment_name
+  org_name               = var.org_name
+  database_username      = module.database.postgres_username
+  database_password      = module.database.postgres_password
+  database_host          = module.database.postgres_instance_ip
+  database_port          = 5432
+  database_name          = "postgres"
+  redis_host             = module.redis.redis_instance_host
+  redis_port             = module.redis.redis_instance_port
+  brainstore_reader_url  = module.brainstore-vm[0].brainstore_reader_load_balancer_ip
+  brainstore_writer_url  = module.brainstore-vm[0].brainstore_writer_load_balancer_ip
+  brainstore_reader_port = module.brainstore-vm[0].brainstore_reader_port
+  brainstore_writer_port = module.brainstore-vm[0].brainstore_writer_port
+
+  enable_public_access = var.cloud_run_enable_public_access
+  vpc_access_connector = module.vpc.vpc_access_connector_self_link
+  kms_key_name         = module.kms.kms_key_id
+  deletion_protection  = var.cloud_run_deletion_protection
+}
+

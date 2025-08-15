@@ -106,8 +106,8 @@ BRAINSTORE_PORT=${brainstore_port}
 BRAINSTORE_INDEX_URI=gs://${brainstore_gcs_bucket}/brainstore/index
 BRAINSTORE_REALTIME_WAL_URI=gs://${brainstore_gcs_bucket}/brainstore/wal
 BRAINSTORE_LOCKS_URI=redis://${redis_host}:${redis_port}
-BRAINSTORE_METADATA_URI=postgres://$DB_USERNAME:$DB_PASSWORD@${database_host}:${database_port}/postgres
-BRAINSTORE_WAL_URI=postgres://$DB_USERNAME:$DB_PASSWORD@${database_host}:${database_port}/postgres
+BRAINSTORE_METADATA_URI=postgres://$DB_USERNAME:$DB_PASSWORD@${database_host}:${database_port}/postgres?sslmode=require
+BRAINSTORE_WAL_URI=postgres://$DB_USERNAME:$DB_PASSWORD@${database_host}:${database_port}/postgres?sslmode=require
 BRAINSTORE_CACHE_DIR=/mnt/tmp/brainstore
 BRAINSTORE_LICENSE_KEY=$BRAINSTORE_LICENSE_KEY
 BRAINSTORE_DISABLE_OPTIMIZATION_WORKER=${brainstore_disable_optimization_worker}
