@@ -70,9 +70,9 @@ resource "google_service_networking_connection" "private_vpc_connection" {
 resource "google_vpc_access_connector" "connector" {
   count = var.deployment_type == "cloud-run" ? 1 : 0
 
-  name    = "${var.deployment_name}-${var.vpc_name}"
-  network = google_compute_network.vpc.id
-  region  = data.google_client_config.current.region
+  name          = "${var.deployment_name}-${var.vpc_name}"
+  network       = google_compute_network.vpc.id
+  region        = data.google_client_config.current.region
   ip_cidr_range = var.vpc_access_connector_ip_cidr_range
   min_instances = 2
   max_instances = 10
