@@ -1,3 +1,6 @@
+#----------------------------------------------------------------------------------------------
+# Common
+#----------------------------------------------------------------------------------------------
 variable "deployment_name" {
   description = "Name of the deployment. Used to prefix resource names."
   type        = string
@@ -18,28 +21,9 @@ variable "deployment_name" {
   }
 }
 
-variable "org_name" {
-  description = "Name of the braintrust organization."
-  type        = string
-  default     = "*"
-}
-
-variable "region" {
-  description = "Region to deploy resources to."
-  type        = string
-  default     = "us-central1"
-}
-
-variable "deployment_type" {
-  description = "Type of deployment either using gke or cloud run."
-  type        = string
-  default     = "cloud-run"
-  validation {
-    condition     = contains(["gke", "cloud-run"], var.deployment_type)
-    error_message = "Deployment type must be either 'cloud-run' or 'gke'."
-  }
-}
-
+#----------------------------------------------------------------------------------------------
+# VPC
+#----------------------------------------------------------------------------------------------
 variable "vpc_name" {
   description = "Name of the VPC to deploy resources to."
   type        = string
@@ -52,10 +36,66 @@ variable "subnet_cidr_range" {
   default     = "10.0.0.0/24"
 }
 
-variable "vpc_access_connector_ip_cidr_range" {
-  description = "IP CIDR range for the VPC access connector."
+#----------------------------------------------------------------------------------------------
+# Database
+#----------------------------------------------------------------------------------------------
+variable "postgres_version" {
   type        = string
-  default     = "10.8.0.0/28"
+  description = "PostgreSQL version to use."
+  default     = "POSTGRES_17"
+}
+
+variable "postgres_machine_type" {
+  type        = string
+  description = "Machine size of Cloud SQL for PostgreSQL instance."
+  default     = "db-perf-optimized-N-8"
+}
+
+variable "postgres_availability_type" {
+  type        = string
+  description = "Availability type of Cloud SQL for PostgreSQL instance."
+  default     = "REGIONAL"
+}
+
+variable "postgres_disk_size" {
+  type        = number
+  description = "Size in GB of PostgreSQL disk."
+  default     = 1000
+}
+
+variable "postgres_backup_start_time" {
+  type        = string
+  description = "HH:MM time format indicating when daily automatic backups of Cloud SQL for PostgreSQL should run. Defaults to 12 AM (midnight) UTC."
+  default     = "00:30"
+}
+
+variable "postgres_maintenance_window" {
+  type = object({
+    day          = number
+    hour         = number
+    update_track = string
+  })
+  description = "Optional maintenance window settings for the Cloud SQL for PostgreSQL instance."
+  default = {
+    day          = 1 # default to Monday
+    hour         = 8 # default to 12 AM
+    update_track = "stable"
+  }
+
+  validation {
+    condition     = var.postgres_maintenance_window.day >= 0 && var.postgres_maintenance_window.day <= 7
+    error_message = "`day` must be an integer between 0 and 7 (inclusive)."
+  }
+
+  validation {
+    condition     = var.postgres_maintenance_window.hour >= 0 && var.postgres_maintenance_window.hour <= 23
+    error_message = "`hour` must be an integer between 0 and 23 (inclusive)."
+  }
+
+  validation {
+    condition     = contains(["stable", "canary", "week5"], var.postgres_maintenance_window.update_track)
+    error_message = "`update_track` must be either 'canary', 'stable', or 'week5'."
+  }
 }
 
 variable "postgres_deletion_protection" {
@@ -64,34 +104,79 @@ variable "postgres_deletion_protection" {
   default     = true
 }
 
+#----------------------------------------------------------------------------------------------
+# Redis
+#----------------------------------------------------------------------------------------------
+variable "redis_version" {
+  type        = string
+  description = "The version of Redis software."
+  default     = "REDIS_7_2"
+}
+
+variable "redis_memory_size_gb" {
+  type        = number
+  description = "The size of the Redis instance in GiB."
+  default     = 3
+}
+
+#----------------------------------------------------------------------------------------------
+# Storage
+#----------------------------------------------------------------------------------------------
+variable "gcs_additional_allowed_origins" {
+  type        = list(string)
+  description = "Additional allowed origins for the Braintrust GCS buckets."
+  default     = []
+}
+
+variable "gcs_bucket_retention_days" {
+  type        = number
+  description = "Number of days to retain objects in the Brainstore GCS buckets."
+  default     = 7
+}
+
+variable "gcs_versioning_enabled" {
+  type        = bool
+  description = "Boolean to enable versioning on Braintrust GCS buckets."
+  default     = true
+}
+
+variable "gcs_uniform_bucket_level_access" {
+  type        = bool
+  description = "Boolean to enable uniform bucket level access on Braintrust GCS buckets."
+  default     = true
+}
+
+variable "gcs_storage_class" {
+  type        = string
+  description = "Storage class of Braintrust GCS buckets."
+  default     = "STANDARD"
+}
+
 variable "gcs_force_destroy" {
   description = "Whether to force destroy the GCS buckets."
   type        = bool
   default     = false
 }
 
-variable "brainstore_license_key_secret_name" {
-  description = "Secret name for Brainstore license key."
-  type        = string
-  default     = null
-}
-
-variable "enable_brainstore_vm" {
-  description = "Whether to enable the Brainstore VM."
+#----------------------------------------------------------------------------------------------
+# GKE Cluster (optional)
+#----------------------------------------------------------------------------------------------
+variable "deploy_gke_cluster" {
+  description = "Whether to deploy the GKE cluster."
   type        = bool
   default     = false
 }
 
-variable "deploy_gke_cluster" {
-  description = "Whether to deploy the GKE cluster."
+variable "gke_cluster_is_private" {
+  description = "Whether to deploy the GKE cluster in a private network."
   type        = bool
   default     = true
 }
 
-variable "gke_deletion_protection" {
-  description = "Whether to protect the GKE cluster from deletion."
-  type        = bool
-  default     = true
+variable "gke_control_plane_cidr" {
+  type        = string
+  description = "The CIDR block for the GKE control plane."
+  default     = "10.0.1.0/28"
 }
 
 variable "gke_control_plane_authorized_cidr" {
@@ -100,14 +185,59 @@ variable "gke_control_plane_authorized_cidr" {
   default     = null
 }
 
-variable "cloud_run_enable_public_access" {
-  description = "Whether to enable public access to the Cloud Run API."
+variable "gke_node_type" {
+  description = "The type of node to use for the GKE cluster."
+  type        = string
+  default     = "c4a-standard-16-lssd"
+}
+
+variable "gke_release_channel" {
+  type        = string
+  description = "The release channel of the GKE cluster."
+  default     = "REGULAR"
+}
+
+variable "gke_initial_node_count" {
+  type        = number
+  description = "The initial number of nodes in the GKE cluster."
+  default     = 1
+}
+
+variable "gke_enable_private_endpoint" {
+  type        = bool
+  description = "Whether to enable private endpoint for the GKE cluster."
+  default     = true
+}
+
+variable "gke_node_count" {
+  type        = number
+  description = "The number of nodes in the GKE node pool."
+  default     = 1
+}
+
+variable "gke_deletion_protection" {
+  description = "Whether to protect the GKE cluster from deletion."
   type        = bool
   default     = true
 }
 
-variable "cloud_run_deletion_protection" {
-  description = "Whether to protect the Cloud Run service from deletion."
-  type        = bool
-  default     = true
+#----------------------------------------------------------------------------------------------
+# GKE IAM
+#----------------------------------------------------------------------------------------------
+variable "braintrust_kube_namespace" {
+  type        = string
+  description = "The namespace of the Braintrust service account in the GKE cluster."
+  default     = "braintrust"
+}
+
+variable "braintrust_kube_svc_account" {
+  type        = string
+  description = "The service account of the Braintrust API in the GKE cluster."
+  default     = "braintrust-api"
+}
+
+variable "brainstore_kube_svc_account" {
+  type        = string
+  description = "The service account of the Brainstore in the GKE cluster."
+  default     = "brainstore"
 }

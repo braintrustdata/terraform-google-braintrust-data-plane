@@ -89,9 +89,6 @@ resource "google_container_cluster" "braintrust" {
 
   logging_service = "logging.googleapis.com/kubernetes"
 
-  secret_manager_config {
-    enabled = var.gke_secret_manager_config_enabled
-  }
 }
 
 #----------------------------------------------------------------------------------------------

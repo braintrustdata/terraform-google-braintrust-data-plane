@@ -38,12 +38,6 @@ variable "gke_deletion_protection" {
   default     = true
 }
 
-variable "gke_initial_node_count" {
-  type        = number
-  description = "The initial number of nodes in the GKE cluster."
-  default     = 1
-}
-
 variable "gke_cluster_is_private" {
   type        = bool
   description = "Whether to create a private GKE cluster."
@@ -89,11 +83,5 @@ variable "gke_node_count" {
 variable "gke_node_type" {
   type        = string
   description = "The type of node in the GKE node pool."
-  default     = "c4a-standard-4"
-}
-
-variable "gke_secret_manager_config_enabled" {
-  type        = bool
-  description = "Whether to enable secret manager config for the GKE cluster."
-  default     = false
+  default     = "c4a-standard-16-lssd"
 }

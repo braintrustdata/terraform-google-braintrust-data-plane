@@ -9,7 +9,6 @@ variable "deployment_name" {
 #----------------------------------------------------------------------------------------------
 # GKE Cluster
 #----------------------------------------------------------------------------------------------
-
 variable "braintrust_kube_namespace" {
   type        = string
   description = "The namespace of the Braintrust service account in the GKE cluster."
@@ -41,9 +40,4 @@ variable "braintrust_code_bundle_bucket_id" {
 variable "brainstore_gcs_bucket_id" {
   type        = string
   description = "The ID of the GCS bucket for Brainstore."
-}
-
-variable "region" {
-  type        = string
-  description = "The region to deploy resources to."
 }

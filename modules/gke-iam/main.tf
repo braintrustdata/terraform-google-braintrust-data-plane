@@ -11,9 +11,9 @@ data "google_client_config" "current" {}
 
 data "google_project" "current" {}
 
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 # Braintrust service account
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 resource "google_service_account" "braintrust" {
   account_id   = "${var.deployment_name}-braintrust"
   display_name = "${var.deployment_name}-braintrust"
@@ -61,9 +61,24 @@ resource "google_storage_bucket_iam_member" "braintrust_code_bundle_gcs_reader" 
   member = "serviceAccount:${google_service_account.braintrust.email}"
 }
 
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
+# Cloud SQL IAM permissions for braintrust service account
+#----------------------------------------------------------------------------------------------
+resource "google_project_iam_member" "braintrust_cloudsql_client" {
+  project = data.google_project.current.project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:${google_service_account.braintrust.email}"
+}
+
+resource "google_project_iam_member" "braintrust_cloudsql_instance_user" {
+  project = data.google_project.current.project_id
+  role    = "roles/cloudsql.instanceUser"
+  member  = "serviceAccount:${google_service_account.braintrust.email}"
+}
+
+#----------------------------------------------------------------------------------------------
 # Brainstore service account
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 resource "google_service_account" "brainstore" {
   account_id   = "${var.deployment_name}-brainstore"
   display_name = "${var.deployment_name}-brainstore"

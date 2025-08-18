@@ -18,20 +18,23 @@ locals {
 
 data "google_project" "current" {}
 
+data "google_client_config" "current" {}
+
 resource "random_id" "gcs_suffix" {
   byte_length = 4
 }
 
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 # Google cloud storage (GCS) bucket - Brainstore
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 
 resource "google_storage_bucket" "brainstore" {
   name                        = "${var.deployment_name}-brainstore-${random_id.gcs_suffix.hex}"
-  location                    = var.gcs_location
+  location                    = data.google_client_config.current.region
   storage_class               = var.gcs_storage_class
   uniform_bucket_level_access = var.gcs_uniform_bucket_level_access
   force_destroy               = var.gcs_force_destroy
+  public_access_prevention    = "enforced"
 
   versioning {
     enabled = var.gcs_versioning_enabled
@@ -68,16 +71,17 @@ resource "google_storage_bucket" "brainstore" {
 
 }
 
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 # Google cloud storage (GCS) bucket - code-bundle
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 
 resource "google_storage_bucket" "code_bundle" {
   name                        = "${var.deployment_name}-code-bundle-${random_id.gcs_suffix.hex}"
-  location                    = var.gcs_location
+  location                    = data.google_client_config.current.region
   storage_class               = var.gcs_storage_class
   uniform_bucket_level_access = var.gcs_uniform_bucket_level_access
   force_destroy               = var.gcs_force_destroy
+  public_access_prevention    = "enforced"
 
   versioning {
     enabled = var.gcs_versioning_enabled
@@ -120,16 +124,17 @@ resource "google_storage_bucket" "code_bundle" {
   ]
 }
 
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 # Google cloud storage (GCS) bucket - response
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 
 resource "google_storage_bucket" "response" {
   name                        = "${var.deployment_name}-response-${random_id.gcs_suffix.hex}"
-  location                    = var.gcs_location
+  location                    = data.google_client_config.current.region
   storage_class               = var.gcs_storage_class
   uniform_bucket_level_access = var.gcs_uniform_bucket_level_access
   force_destroy               = var.gcs_force_destroy
+  public_access_prevention    = "enforced"
 
   versioning {
     enabled = var.gcs_versioning_enabled
@@ -173,9 +178,9 @@ resource "google_storage_bucket" "response" {
 
 }
 
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 # GCS KMS CMEK
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 locals {
   gcs_service_account_email = "service-${data.google_project.current.number}@gs-project-accounts.iam.gserviceaccount.com"
 }

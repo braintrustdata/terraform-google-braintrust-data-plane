@@ -8,9 +8,9 @@ locals {
 
 data "google_client_config" "current" {}
 
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 # Google secret manager - Postgres password
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 resource "random_password" "postgres_password" {
   length           = 24
   special          = true
@@ -39,16 +39,16 @@ resource "google_secret_manager_secret_version" "postgres_password" {
   }
 }
 
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 # Cloud SQL for PostgreSQL
-#------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 resource "random_id" "postgres_suffix" {
   byte_length = 4
 }
 
 resource "google_sql_database_instance" "braintrust" {
   name                = "${var.deployment_name}-${random_id.postgres_suffix.hex}"
-  database_version    = var.database_version
+  database_version    = var.postgres_version
   encryption_key_name = var.postgres_kms_cmek_id
   deletion_protection = var.postgres_deletion_protection
 
@@ -108,12 +108,15 @@ resource "google_sql_user" "braintrust" {
   password = random_password.postgres_password.result
 }
 
-#------------------------------------------------------------------------------
+resource "google_sql_user" "braintrust_iam" {
+  name     = "${var.deployment_name}-braintrust@${data.google_client_config.current.project}.iam"
+  instance = google_sql_database_instance.braintrust.name
+  type     = "CLOUD_IAM_SERVICE_ACCOUNT"
+}
+
+#----------------------------------------------------------------------------------------------
 # Cloud SQL for PostgreSQL KMS CMEK
-#------------------------------------------------------------------------------
-// There is no Google-managed service account (service agent) for Cloud SQL,
-// so one must be created to allow the Cloud SQL instance to use the CMEK.
-// https://cloud.google.com/sql/docs/postgres/configure-cmek
+#----------------------------------------------------------------------------------------------
 resource "google_project_service_identity" "cloud_sql_sa" {
   provider = google-beta
 

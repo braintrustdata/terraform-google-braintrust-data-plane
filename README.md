@@ -1,17 +1,24 @@
-# terraform-google-braintrust-data-plane
+# Braintrust Terraform Google Module
 
-This module is currently alpha status and does not contain all necessary resources for a proper braintrust deployment yet.
+This module is currently beta status. There may be breaking changes that require a complete deletion and re-deployment
 
-- Logging is configured to use the default project log sink, need to determine if a custom log sink will be needed. Project related resources and brainstore docker logs are being sent to it.
-- The default brainstore instance sizes are too large for the default CPU limit, recommend using `c4a-standard-4-lssd` for now. Need to explore requesting a quota limit increase via TF or Code
-- The API layer is missing from this module along with the remote support module
-- This module will fail the first time it is deployed due to timing issue with the private connection for the VPC. Exploring ways to fix this still without adding a module depends on which causes issues.
+This module is used to create the VPC, Databases, Redis, Storage, IAM, and associated resources for the self-hosted Braintrust data plane on Google using Google Kubernetes Engine.
+
+## Module Configuration
+
+All module input variables and outputs are documented here:
+[`module-docs.md`](module-docs.md)
+
+## How to use this module
+
+To use this module, **copy the [`examples/braintrust-data-plane`](examples/braintrust-data-plane) directory to a new Terraform directory in your own repository**. Follow the instructions in the [`README.md`](examples/braintrust-data-plane/README.md) file in that directory to configure the module for your environment.
+
+The default configuration is a large production-sized deployment. Please consider that when testing and adjust the configuration to use smaller sized resources.
 
 ## Prereqs
 
 - Google Project created
 - All necessary APIs and services enabled. Steps to do so are below.
-- A google secret created containing the brainstore license key.
 
 ### Enabling APIs
 
@@ -35,3 +42,31 @@ done
 ```
 
 3. Wait 5~ minutes for the services to be enabled.
+
+## Customized Deployments
+
+It is highly recommended to use our root module to deploy Braintrust. It will make support and upgrades far easier. However, if you need to customize the deployment, you can pick and choose from our submodules since they are easily composable.
+
+Look at our `main.tf` as a reference for how to configure the submodules. For example, if you wanted to re-use an existing VPC, you could remove the `module.main_vpc` block and pass in the existing VPC's ID, subnets, and security group IDs to the `services`, `database`, and `redis` modules.
+
+
+## Development Setup
+
+This section is only relevant if you are a contributor who wants to make changes to this module. All others can skip this section.
+
+1. Clone the repository
+2. Install [mise](https://mise.jdx.dev/about.html):
+    ```
+    curl https://mise.run | sh
+    echo 'eval "$(mise activate zsh)"' >> "~/.zshrc"
+    echo 'eval "$(mise activate zsh --shims)"' >> ~/.zprofile
+    exec $SHELL
+    ```
+3. Run `mise install` to install required tools
+4. Run `mise run setup` to install pre-commit hooks
+
+## TODO
+
+- Logging is configured to use the default project log sink, need to determine if a custom log sink will be needed. Project related resources and brainstore docker logs are being sent to it.
+- The default brainstore instance sizes may be too large for your project quota
+- This module will fail the first time it is deployed due to timing issue with the private connection for the VPC. Exploring ways to fix this still without adding a module depends on which causes issues.

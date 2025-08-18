@@ -9,11 +9,6 @@ variable "deployment_name" {
 #----------------------------------------------------------------------------------------------
 # GCS
 #----------------------------------------------------------------------------------------------
-variable "gcs_location" {
-  type        = string
-  description = "Location of Braintrust GCS buckets to create. We only recommend using single region buckets due performance and cost considerations."
-}
-
 variable "gcs_storage_class" {
   type        = string
   description = "Storage class of Braintrust GCS buckets."
