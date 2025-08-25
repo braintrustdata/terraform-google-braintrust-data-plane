@@ -9,7 +9,6 @@ variable "deployment_name" {
 #----------------------------------------------------------------------------------------------
 # GKE Cluster
 #----------------------------------------------------------------------------------------------
-
 variable "gke_network" {
   type        = string
   description = "The network of the GKE cluster."
@@ -41,7 +40,7 @@ variable "gke_deletion_protection" {
 variable "gke_cluster_is_private" {
   type        = bool
   description = "Whether to create a private GKE cluster."
-  default     = true
+  default     = false
 }
 
 variable "gke_enable_private_endpoint" {
@@ -81,7 +80,13 @@ variable "gke_node_count" {
 }
 
 variable "gke_node_type" {
+  description = "The type of node to use for the GKE cluster."
   type        = string
-  description = "The type of node in the GKE node pool."
-  default     = "c4a-standard-16-lssd"
+  default     = "c4-standard-16-lssd"
+}
+
+variable "gke_local_ssd_count" {
+  description = "The number of local SSDs to attach to each GKE node. This value will change depending on the node type."
+  type        = number
+  default     = 2
 }

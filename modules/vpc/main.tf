@@ -20,7 +20,6 @@ resource "google_compute_network" "vpc" {
 }
 
 resource "google_compute_subnetwork" "subnets" {
-
   name                     = "${var.deployment_name}-${var.vpc_name}-private"
   network                  = google_compute_network.vpc.self_link
   ip_cidr_range            = var.subnet_cidr_range
@@ -28,13 +27,11 @@ resource "google_compute_subnetwork" "subnets" {
 }
 
 resource "google_compute_router" "router" {
-
   name    = "${var.deployment_name}-${var.vpc_name}-router"
   network = google_compute_network.vpc.self_link
 }
 
 resource "google_compute_router_nat" "nat" {
-
   name                               = "${var.deployment_name}-${var.vpc_name}"
   router                             = google_compute_router.router.name
   nat_ip_allocate_option             = "AUTO_ONLY"

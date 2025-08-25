@@ -1,9 +1,5 @@
-output "braintrust_response_bucket_name" {
-  value = module.braintrust-data-plane.braintrust_response_bucket_name
-}
-
-output "braintrust_code_bundle_bucket_name" {
-  value = module.braintrust-data-plane.braintrust_code_bundle_bucket_name
+output "braintrust_api_bucket_name" {
+  value = module.braintrust-data-plane.braintrust_api_bucket_name
 }
 
 output "brainstore_bucket_name" {

@@ -50,14 +50,13 @@ module "braintrust-data-plane" {
   # brainstore_kube_svc_account = "brainstore"
 
   ### GKE Cluster configuration
-  # Note: By default we do not deploy a GKE cluster. You must set deploy_gke_cluster to true to deploy a GKE cluster.
+  # Note: By default we deploy a GKE cluster. You must set deploy_gke_cluster to false to not deploy a GKE cluster, if you will provide your own GKE cluster.
 
-  # deploy_gke_cluster = true 
-
-  # gke_cluster_is_private = true
+  #deploy_gke_cluster = false 
+  #gke_cluster_is_private = false
   # gke_control_plane_cidr = "10.0.1.0/28"
   # gke_control_plane_authorized_cidr = "<your_internal or external cidr/24>"
-  # gke_node_type = "c4a-standard-16-lssd"
+  # gke_node_type = "c4-standard-16-lssd"
   # gke_release_channel = "REGULAR"
   # gke_enable_private_endpoint = true
   # gke_node_count = 1

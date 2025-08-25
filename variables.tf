@@ -24,16 +24,44 @@ variable "deployment_name" {
 #----------------------------------------------------------------------------------------------
 # VPC
 #----------------------------------------------------------------------------------------------
+variable "create_vpc" {
+  description = "Whether to create a new VPC or use an existing one."
+  type        = bool
+  default     = true
+}
+
 variable "vpc_name" {
-  description = "Name of the VPC to deploy resources to."
+  description = "Name of the VPC to deploy resources to (when create_vpc is true)."
   type        = string
   default     = "braintrust"
 }
 
 variable "subnet_cidr_range" {
-  description = "CIDR range for the subnet to deploy resources to."
+  description = "CIDR range for the subnet to deploy resources to (when create_vpc is true)."
   type        = string
   default     = "10.0.0.0/24"
+}
+
+variable "existing_network_self_link" {
+  description = "Self link of an existing VPC network (required when create_vpc is false)."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.create_vpc || var.existing_network_self_link != null
+    error_message = "existing_network_self_link must be provided when create_vpc is false."
+  }
+}
+
+variable "existing_subnet_self_link" {
+  description = "Self link of an existing subnet (required when create_vpc is false)."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.create_vpc || var.existing_subnet_self_link != null
+    error_message = "existing_subnet_self_link must be provided when create_vpc is false."
+  }
 }
 
 #----------------------------------------------------------------------------------------------
@@ -164,13 +192,13 @@ variable "gcs_force_destroy" {
 variable "deploy_gke_cluster" {
   description = "Whether to deploy the GKE cluster."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "gke_cluster_is_private" {
   description = "Whether to deploy the GKE cluster in a private network."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "gke_control_plane_cidr" {
@@ -188,7 +216,13 @@ variable "gke_control_plane_authorized_cidr" {
 variable "gke_node_type" {
   description = "The type of node to use for the GKE cluster."
   type        = string
-  default     = "c4a-standard-16-lssd"
+  default     = "c4-standard-16-lssd"
+}
+
+variable "gke_local_ssd_count" {
+  description = "The number of local SSDs to attach to each GKE node. This value will change depending on the node type."
+  type        = number
+  default     = 2
 }
 
 variable "gke_release_channel" {

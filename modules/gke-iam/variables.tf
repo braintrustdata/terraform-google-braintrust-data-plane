@@ -27,14 +27,9 @@ variable "brainstore_kube_svc_account" {
   default     = "brainstore"
 }
 
-variable "braintrust_response_bucket_id" {
+variable "braintrust_api_bucket_id" {
   type        = string
-  description = "The ID of the GCS bucket for Braintrust response."
-}
-
-variable "braintrust_code_bundle_bucket_id" {
-  type        = string
-  description = "The ID of the GCS bucket for Braintrust code bundle."
+  description = "The ID of the GCS bucket for Braintrust API (contains code-bundle/ and response/ paths)."
 }
 
 variable "brainstore_gcs_bucket_id" {

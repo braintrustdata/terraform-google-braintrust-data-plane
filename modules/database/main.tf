@@ -119,15 +119,11 @@ resource "google_sql_user" "braintrust_iam" {
 #----------------------------------------------------------------------------------------------
 resource "google_project_service_identity" "cloud_sql_sa" {
   provider = google-beta
-
-  service = "sqladmin.googleapis.com"
+  service  = "sqladmin.googleapis.com"
 }
 
 resource "google_kms_crypto_key_iam_member" "cloud_sql_sa_postgres_cmek" {
-
   crypto_key_id = var.postgres_kms_cmek_id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-
-  member = "serviceAccount:${google_project_service_identity.cloud_sql_sa.email}"
-
+  member        = "serviceAccount:${google_project_service_identity.cloud_sql_sa.email}"
 }

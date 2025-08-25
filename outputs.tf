@@ -2,12 +2,8 @@
 # Storage buckets
 #----------------------------------------------------------------------------------------------
 
-output "braintrust_response_bucket_name" {
-  value = module.storage.response_bucket_name
-}
-
-output "braintrust_code_bundle_bucket_name" {
-  value = module.storage.code_bundle_bucket_name
+output "braintrust_api_bucket_name" {
+  value = module.storage.api_bucket_name
 }
 
 output "brainstore_bucket_name" {

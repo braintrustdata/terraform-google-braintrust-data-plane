@@ -32,7 +32,6 @@ data "google_compute_machine_types" "gke_node_type" {
 #----------------------------------------------------------------------------------------------
 
 resource "google_container_cluster" "braintrust" {
-
   name    = "${var.deployment_name}-gke"
   project = data.google_project.current.project_id
 
@@ -94,9 +93,7 @@ resource "google_container_cluster" "braintrust" {
 #----------------------------------------------------------------------------------------------
 # GKE node pool
 #----------------------------------------------------------------------------------------------
-
 resource "google_container_node_pool" "braintrust" {
-
   name       = "${var.deployment_name}-gke-node-pool"
   cluster    = google_container_cluster.braintrust.id
   node_count = var.gke_node_count
@@ -105,16 +102,20 @@ resource "google_container_node_pool" "braintrust" {
     preemptible     = false
     machine_type    = var.gke_node_type
     service_account = google_service_account.gke.email
+
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
     ]
+
+    ephemeral_storage_local_ssd_config {
+      local_ssd_count = var.gke_local_ssd_count
+    }
   }
 }
 
 #----------------------------------------------------------------------------------------------
 # GKE cluster service account
 #----------------------------------------------------------------------------------------------
-
 resource "google_service_account" "gke" {
   account_id   = "${var.deployment_name}-gke-cluster"
   display_name = "${var.deployment_name}-gke-cluster"
