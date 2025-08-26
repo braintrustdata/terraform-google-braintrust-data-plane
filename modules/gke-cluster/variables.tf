@@ -90,3 +90,8 @@ variable "gke_local_ssd_count" {
   type        = number
   default     = 2
 }
+
+variable "gke_kms_cmek_id" {
+  type        = string
+  description = "ID of Cloud KMS customer managed encryption key (CMEK) to use for GKE cluster encryption."
+}

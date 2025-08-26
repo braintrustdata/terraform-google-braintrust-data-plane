@@ -88,6 +88,15 @@ resource "google_container_cluster" "braintrust" {
 
   logging_service = "logging.googleapis.com/kubernetes"
 
+  database_encryption {
+    state    = "ENCRYPTED"
+    key_name = var.gke_kms_cmek_id
+  }
+
+  depends_on = [
+    google_kms_crypto_key_iam_member.gke_cluster_cmek,
+    google_kms_crypto_key_iam_member.gke_compute_cmek
+  ]
 }
 
 #----------------------------------------------------------------------------------------------
@@ -99,9 +108,10 @@ resource "google_container_node_pool" "braintrust" {
   node_count = var.gke_node_count
 
   node_config {
-    preemptible     = false
-    machine_type    = var.gke_node_type
-    service_account = google_service_account.gke.email
+    preemptible       = false
+    machine_type      = var.gke_node_type
+    service_account   = google_service_account.gke.email
+    boot_disk_kms_key = var.gke_kms_cmek_id
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
@@ -156,4 +166,28 @@ resource "google_project_iam_member" "gke_artifact_reader" {
   project = data.google_project.current.project_id
   role    = "roles/artifactregistry.reader"
   member  = "serviceAccount:${google_service_account.gke.email}"
+}
+
+#----------------------------------------------------------------------------------------------
+# GKE KMS CMEK
+#----------------------------------------------------------------------------------------------
+locals {
+  # Container Engine Robot service account for cluster-level encryption
+  gke_cluster_service_account_email = "service-${data.google_project.current.number}@container-engine-robot.iam.gserviceaccount.com"
+  # Compute Engine service account for node boot disk encryption
+  gke_compute_service_account_email = "service-${data.google_project.current.number}@compute-system.iam.gserviceaccount.com"
+}
+
+# KMS permissions for GKE cluster (etcd/secrets encryption)
+resource "google_kms_crypto_key_iam_member" "gke_cluster_cmek" {
+  crypto_key_id = var.gke_kms_cmek_id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:${local.gke_cluster_service_account_email}"
+}
+
+# KMS permissions for GKE node boot disks
+resource "google_kms_crypto_key_iam_member" "gke_compute_cmek" {
+  crypto_key_id = var.gke_kms_cmek_id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:${local.gke_compute_service_account_email}"
 }
