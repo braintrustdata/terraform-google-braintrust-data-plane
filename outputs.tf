@@ -56,3 +56,7 @@ output "redis_instance_host" {
 output "redis_server_ca_certs" {
   value = module.redis.redis_server_ca_certs
 }
+
+output "redis_auth_string" {
+  value = module.redis.redis_auth_string
+}
