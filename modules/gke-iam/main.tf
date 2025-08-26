@@ -33,14 +33,26 @@ resource "google_service_account_iam_binding" "braintrust_workload_identity" {
   ]
 }
 
-resource "google_storage_bucket_iam_member" "braintrust_api_gcs_object_admin" {
+resource "google_storage_bucket_iam_member" "braintrust_api_api_bucket_gcs_object_admin" {
   bucket = var.braintrust_api_bucket_id
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_service_account.braintrust.email}"
 }
 
-resource "google_storage_bucket_iam_member" "braintrust_api_gcs_reader" {
+resource "google_storage_bucket_iam_member" "braintrust_api_api_bucket_gcs_reader" {
   bucket = var.braintrust_api_bucket_id
+  role   = "roles/storage.legacyBucketReader"
+  member = "serviceAccount:${google_service_account.braintrust.email}"
+}
+
+resource "google_storage_bucket_iam_member" "braintrust_api_brainstore_gcs_object_admin" {
+  bucket = var.brainstore_gcs_bucket_id
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.braintrust.email}"
+}
+
+resource "google_storage_bucket_iam_member" "braintrust_api_brainstore_gcs_reader" {
+  bucket = var.brainstore_gcs_bucket_id
   role   = "roles/storage.legacyBucketReader"
   member = "serviceAccount:${google_service_account.braintrust.email}"
 }
@@ -83,13 +95,13 @@ resource "google_service_account_iam_binding" "brainstore_workload_identity" {
   ]
 }
 
-resource "google_storage_bucket_iam_member" "brainstore_gcs_object_admin" {
+resource "google_storage_bucket_iam_member" "brainstore_brainstore_gcs_object_admin" {
   bucket = var.brainstore_gcs_bucket_id
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_service_account.brainstore.email}"
 }
 
-resource "google_storage_bucket_iam_member" "brainstore_gcs_reader" {
+resource "google_storage_bucket_iam_member" "brainstore_brainstore_gcs_reader" {
   bucket = var.brainstore_gcs_bucket_id
   role   = "roles/storage.legacyBucketReader"
   member = "serviceAccount:${google_service_account.brainstore.email}"
