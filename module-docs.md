@@ -37,13 +37,37 @@ Type: `string`
 
 Default: `"braintrust-api"`
 
+### <a name="input_create_vpc"></a> [create\_vpc](#input\_create\_vpc)
+
+Description: Whether to create a new VPC or use an existing one.
+
+Type: `bool`
+
+Default: `true`
+
 ### <a name="input_deploy_gke_cluster"></a> [deploy\_gke\_cluster](#input\_deploy\_gke\_cluster)
 
 Description: Whether to deploy the GKE cluster.
 
 Type: `bool`
 
-Default: `false`
+Default: `true`
+
+### <a name="input_existing_network_self_link"></a> [existing\_network\_self\_link](#input\_existing\_network\_self\_link)
+
+Description: Self link of an existing VPC network (required when create\_vpc is false).
+
+Type: `string`
+
+Default: `null`
+
+### <a name="input_existing_subnet_self_link"></a> [existing\_subnet\_self\_link](#input\_existing\_subnet\_self\_link)
+
+Description: Self link of an existing subnet (required when create\_vpc is false).
+
+Type: `string`
+
+Default: `null`
 
 ### <a name="input_gcs_additional_allowed_origins"></a> [gcs\_additional\_allowed\_origins](#input\_gcs\_additional\_allowed\_origins)
 
@@ -99,7 +123,7 @@ Description: Whether to deploy the GKE cluster in a private network.
 
 Type: `bool`
 
-Default: `true`
+Default: `false`
 
 ### <a name="input_gke_control_plane_authorized_cidr"></a> [gke\_control\_plane\_authorized\_cidr](#input\_gke\_control\_plane\_authorized\_cidr)
 
@@ -141,6 +165,36 @@ Type: `number`
 
 Default: `1`
 
+### <a name="input_gke_local_ssd_count"></a> [gke\_local\_ssd\_count](#input\_gke\_local\_ssd\_count)
+
+Description: The number of local SSDs to attach to each GKE node. This value will change depending on the node type.
+
+Type: `number`
+
+Default: `2`
+
+### <a name="input_gke_maintenance_window"></a> [gke\_maintenance\_window](#input\_gke\_maintenance\_window)
+
+Description: Optional maintenance window settings for the GKE cluster.
+
+Type:
+
+```hcl
+object({
+    day        = number
+    start_time = string
+  })
+```
+
+Default:
+
+```json
+{
+  "day": 1,
+  "start_time": "08:00"
+}
+```
+
 ### <a name="input_gke_node_count"></a> [gke\_node\_count](#input\_gke\_node\_count)
 
 Description: The number of nodes in the GKE node pool.
@@ -155,7 +209,7 @@ Description: The type of node to use for the GKE cluster.
 
 Type: `string`
 
-Default: `"c4a-standard-16-lssd"`
+Default: `"c4-standard-16-lssd"`
 
 ### <a name="input_gke_release_channel"></a> [gke\_release\_channel](#input\_gke\_release\_channel)
 
@@ -255,7 +309,7 @@ Default: `"REDIS_7_2"`
 
 ### <a name="input_subnet_cidr_range"></a> [subnet\_cidr\_range](#input\_subnet\_cidr\_range)
 
-Description: CIDR range for the subnet to deploy resources to.
+Description: CIDR range for the subnet to deploy resources to (when create\_vpc is true).
 
 Type: `string`
 
@@ -263,7 +317,7 @@ Default: `"10.0.0.0/24"`
 
 ### <a name="input_vpc_name"></a> [vpc\_name](#input\_vpc\_name)
 
-Description: Name of the VPC to deploy resources to.
+Description: Name of the VPC to deploy resources to (when create\_vpc is true).
 
 Type: `string`
 
@@ -281,11 +335,7 @@ Description: n/a
 
 Description: n/a
 
-### <a name="output_braintrust_code_bundle_bucket_name"></a> [braintrust\_code\_bundle\_bucket\_name](#output\_braintrust\_code\_bundle\_bucket\_name)
-
-Description: n/a
-
-### <a name="output_braintrust_response_bucket_name"></a> [braintrust\_response\_bucket\_name](#output\_braintrust\_response\_bucket\_name)
+### <a name="output_braintrust_api_bucket_name"></a> [braintrust\_api\_bucket\_name](#output\_braintrust\_api\_bucket\_name)
 
 Description: n/a
 
@@ -306,6 +356,10 @@ Description: n/a
 Description: n/a
 
 ### <a name="output_postgres_username"></a> [postgres\_username](#output\_postgres\_username)
+
+Description: n/a
+
+### <a name="output_redis_auth_string"></a> [redis\_auth\_string](#output\_redis\_auth\_string)
 
 Description: n/a
 
