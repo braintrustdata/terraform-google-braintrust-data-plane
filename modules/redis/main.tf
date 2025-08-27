@@ -21,7 +21,7 @@ resource "google_redis_instance" "braintrust" {
   redis_version           = var.redis_version
   memory_size_gb          = var.redis_memory_size_gb
   auth_enabled            = true
-  transit_encryption_mode = "SERVER_AUTHENTICATION"
+  #transit_encryption_mode = "SERVER_AUTHENTICATION" # Not supported at this time
   authorized_network      = var.redis_network
   connect_mode            = "PRIVATE_SERVICE_ACCESS"
   customer_managed_key    = var.redis_kms_cmek_id

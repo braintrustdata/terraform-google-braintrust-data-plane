@@ -32,7 +32,7 @@ output "postgres_password" {
 }
 
 output "pg_url" {
-  value     = "postgres://${module.braintrust-data-plane.postgres_username}:${module.braintrust-data-plane.postgres_password}@${module.braintrust-data-plane.postgres_instance_ip}:5432/postgres"
+  value     = "postgres://${module.braintrust-data-plane.postgres_username}:${module.braintrust-data-plane.postgres_password}@${module.braintrust-data-plane.postgres_instance_ip}:5432/postgres?sslmode=require"
   sensitive = true
 }
 
