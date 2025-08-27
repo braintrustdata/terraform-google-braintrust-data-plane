@@ -93,6 +93,12 @@ resource "google_container_cluster" "braintrust" {
     key_name = var.gke_kms_cmek_id
   }
 
+  maintenance_policy {
+    daily_maintenance_window {
+      start_time = var.gke_maintenance_window.start_time
+    }
+  }
+
   depends_on = [
     google_kms_crypto_key_iam_member.gke_cluster_cmek,
     google_kms_crypto_key_iam_member.gke_compute_cmek

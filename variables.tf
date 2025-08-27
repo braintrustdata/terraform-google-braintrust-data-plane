@@ -255,6 +255,28 @@ variable "gke_deletion_protection" {
   default     = true
 }
 
+variable "gke_maintenance_window" {
+  type = object({
+    day        = number
+    start_time = string
+  })
+  description = "Optional maintenance window settings for the GKE cluster."
+  default = {
+    day        = 1 # default to Monday (1-7, Monday=1)
+    start_time = "08:00" # default to 8:00 AM UTC
+  }
+
+  validation {
+    condition     = var.gke_maintenance_window.day >= 1 && var.gke_maintenance_window.day <= 7
+    error_message = "`day` must be an integer between 1 and 7 (inclusive), where Monday=1."
+  }
+
+  validation {
+    condition     = can(regex("^([01]?[0-9]|2[0-3]):[0-5][0-9]$", var.gke_maintenance_window.start_time))
+    error_message = "`start_time` must be in HH:MM format (24-hour), e.g., '08:00'."
+  }
+}
+
 #----------------------------------------------------------------------------------------------
 # GKE IAM
 #----------------------------------------------------------------------------------------------

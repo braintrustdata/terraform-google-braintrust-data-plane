@@ -68,6 +68,7 @@ module "gke-cluster" {
   gke_local_ssd_count               = var.gke_local_ssd_count
   gke_deletion_protection           = var.gke_deletion_protection
   gke_kms_cmek_id                   = module.kms.kms_key_id
+  gke_maintenance_window            = var.gke_maintenance_window
 }
 
 module "gke-iam" {
