@@ -181,14 +181,6 @@ Type: `number`
 
 Default: `1`
 
-### <a name="input_gke_local_ssd_count"></a> [gke\_local\_ssd\_count](#input\_gke\_local\_ssd\_count)
-
-Description: The number of local SSDs to attach to each GKE node. This value will change depending on the node type.
-
-Type: `number`
-
-Default: `2`
-
 ### <a name="input_gke_maintenance_window"></a> [gke\_maintenance\_window](#input\_gke\_maintenance\_window)
 
 Description: Optional maintenance window settings for the GKE cluster.

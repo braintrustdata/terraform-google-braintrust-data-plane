@@ -9,6 +9,10 @@ locals {
     for zone_name, machine_types in data.google_compute_machine_types.gke_node_type :
     zone_name if length(machine_types.machine_types) > 0
   ]
+  requires_explicit_ssd = can(regex(
+    "^(n1-|n2-|n2d-|c2-|c2d-|a2-highgpu-|a2-megagpu-|g2-|m1-|m3-)",
+    var.gke_node_type
+  ))
 }
 
 data "google_client_config" "current" {}
@@ -127,14 +131,18 @@ resource "google_container_node_pool" "braintrust" {
       "https://www.googleapis.com/auth/cloud-platform"
     ]
 
-    ephemeral_storage_local_ssd_config {
-      local_ssd_count = var.gke_local_ssd_count
+    dynamic "ephemeral_storage_local_ssd_config" {
+      for_each = local.requires_explicit_ssd ? [1] : []
+
+      content {
+        local_ssd_count = 1
+      }
     }
   }
 
   upgrade_settings {
     max_surge       = 2
-    max_unavailable = 0     
+    max_unavailable = 0
   }
 }
 
