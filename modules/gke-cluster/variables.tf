@@ -91,6 +91,7 @@ variable "gke_node_type" {
   default     = "c4-standard-16-lssd"
 }
 
+#This is required due to https://github.com/hashicorp/terraform-provider-google/issues/17068
 variable "gke_local_ssd_count" {
   description = "The number of local SSDs to attach to each GKE node. This value will change depending on the node type."
   type        = number

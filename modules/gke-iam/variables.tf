@@ -37,6 +37,7 @@ variable "brainstore_gcs_bucket_id" {
   description = "The ID of the GCS bucket for Brainstore."
 }
 
+# API container doesn't support GCS native storage integration yet, so we use HMAC keys instead. 
 variable "braintrust_hmac_key_enabled" {
   type        = bool
   description = "Whether to enable HMAC keys for Braintrust API."

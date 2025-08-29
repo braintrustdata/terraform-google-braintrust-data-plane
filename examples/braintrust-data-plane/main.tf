@@ -29,7 +29,7 @@ module "braintrust-data-plane" {
   # gke_control_plane_cidr = "10.0.1.0/28" # CIDR block for the control plane if it's Private
   # gke_control_plane_authorized_cidrs = ["<your_internal or external cidr/24>"] # If this is not provided the cluster will allow all IPs to access the control plane.
   # gke_node_type = "c4-standard-16-lssd"
-  # gke_local_ssd_count = 2 # we require local SSDs for the workloads, and depending on the node type the number of SSDs will change.
+  # gke_local_ssd_count = 2 # we require local SSDs for the workloads, and depending on the node type the number of SSDs will change. This has to match the node type, due to https://github.com/hashicorp/terraform-provider-google/issues/17068
   # gke_node_count = 1 The number of nodes per zone in the cluster. By default we deploy 1 node per zone a node type is available.
 
   ### Database configuration
