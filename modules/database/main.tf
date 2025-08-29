@@ -76,8 +76,9 @@ resource "google_sql_database_instance" "braintrust" {
     }
 
     backup_configuration {
-      enabled    = true
-      start_time = var.postgres_backup_start_time
+      enabled                        = true
+      start_time                     = var.postgres_backup_start_time
+      point_in_time_recovery_enabled = true
     }
 
     maintenance_window {
@@ -99,7 +100,7 @@ resource "google_sql_database_instance" "braintrust" {
 
   lifecycle {
     ignore_changes = [
-      settings[0].disk_size 
+      settings[0].disk_size
     ]
   }
 
