@@ -95,6 +95,10 @@ resource "google_sql_database_instance" "braintrust" {
       record_client_address   = var.postgres_insights_config.record_client_address
     }
 
+    data_cache_config {
+      data_cache_enabled = true
+    }
+
     user_labels = local.common_labels
   }
 
