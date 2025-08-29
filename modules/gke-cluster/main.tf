@@ -13,6 +13,100 @@ locals {
     "^(n1-|n2-|n2d-|c2-|c2d-|a2-highgpu-|a2-megagpu-|g2-|m1-|m3-)",
     var.gke_node_type
   ))
+  
+  # Lookup table for machine types with built-in local SSD counts
+  gke_local_ssd_counts = {
+    # C3 Series
+    "c3-standard-4-lssd"   = 1
+    "c3-standard-8-lssd"   = 2
+    "c3-standard-22-lssd"  = 6
+    "c3-standard-44-lssd"  = 12
+    "c3-standard-88-lssd"  = 24
+    "c3-standard-176-lssd" = 32
+    
+    # C4 Series
+    "c4-standard-4-lssd"   = 1
+    "c4-standard-8-lssd"   = 1
+    "c4-standard-16-lssd"  = 2
+    "c4-standard-32-lssd"  = 4
+    "c4-standard-48-lssd"  = 8
+    "c4-standard-96-lssd"  = 16
+    "c4-standard-144-lssd" = 24
+    "c4-standard-192-lssd" = 32
+    "c4-standard-288-lssd" = 48
+    
+    # C4A Series (Axion Processor)
+    "c4a-standard-4-lssd"  = 1
+    "c4a-standard-8-lssd"  = 2
+    "c4a-standard-16-lssd" = 4
+    "c4a-standard-24-lssd" = 6
+    "c4a-standard-32-lssd" = 8
+    "c4a-standard-48-lssd" = 12
+    "c4a-standard-72-lssd" = 16
+    
+    # C4D Series (AMD EPYC Turin)
+    "c4d-standard-8-lssd"   = 1
+    "c4d-standard-16-lssd"  = 2
+    "c4d-standard-32-lssd"  = 4
+    "c4d-standard-48-lssd"  = 6
+    "c4d-standard-96-lssd"  = 12
+    "c4d-standard-144-lssd" = 18
+    "c4d-standard-192-lssd" = 24
+    "c4d-standard-288-lssd" = 32
+    "c4d-standard-384-lssd" = 32
+    
+    # A2 Series (GPU Optimized)
+    "a2-highgpu-1g-lssd"  = 1
+    "a2-highgpu-2g-lssd"  = 2
+    "a2-highgpu-4g-lssd"  = 4
+    "a2-highgpu-8g-lssd"  = 8
+    "a2-megagpu-16g-lssd" = 8
+    
+    # A3 Series (Latest GPU Optimized)
+    "a3-highgpu-2g-lssd"  = 2
+    "a3-highgpu-4g-lssd"  = 4
+    "a3-highgpu-8g-lssd"  = 8
+    "a3-megagpu-8g-lssd"  = 16
+    
+    # A4 Series (GPU Optimized - Fixed 32 disks)
+    "a4-highgpu-4g"   = 32
+    "a4-highgpu-8g"   = 32
+    "a4-highgpu-16g"  = 32
+    "a4-highgpu-32g"  = 32
+    "a4-highgpu-48g"  = 32
+    "a4-highgpu-64g"  = 32
+    "a4-highgpu-96g"  = 32
+    "a4-highgpu-128g" = 32
+    
+    # A4X Series (GPU Optimized - Fixed 4 disks)
+    "a4x-standard-4"   = 4
+    "a4x-standard-8"   = 4
+    "a4x-standard-16"  = 4
+    "a4x-standard-32"  = 4
+    "a4x-standard-48"  = 4
+    "a4x-standard-64"  = 4
+    "a4x-standard-96"  = 4
+    "a4x-standard-128" = 4
+    
+    # Z3 Series (Storage Optimized - 3TB Titanium SSD per disk)
+    "z3-standard-4-standardlssd"    = 1
+    "z3-standard-8-standardlssd"    = 2
+    "z3-standard-16-standardlssd"   = 4
+    "z3-standard-32-standardlssd"   = 8
+    "z3-highmem-22-standardlssd"    = 6
+    "z3-highmem-44-standardlssd"    = 12
+    "z3-highmem-88-standardlssd"    = 24
+    "z3-standard-4-highlssd"        = 1
+    "z3-standard-8-highlssd"        = 2
+    "z3-standard-16-highlssd"       = 4
+    "z3-standard-32-highlssd"       = 8
+    "z3-highmem-22-highlssd"        = 6
+    "z3-highmem-44-highlssd"        = 12
+    "z3-highmem-88-highlssd"        = 24
+  }
+  
+  # Automatically determine local SSD count based on machine type
+  local_ssd_count = lookup(local.gke_local_ssd_counts, var.gke_node_type, 0)
 }
 
 data "google_client_config" "current" {}
@@ -131,12 +225,8 @@ resource "google_container_node_pool" "braintrust" {
       "https://www.googleapis.com/auth/cloud-platform"
     ]
 
-    dynamic "ephemeral_storage_local_ssd_config" {
-      for_each = local.requires_explicit_ssd ? [1] : []
-
-      content {
-        local_ssd_count = 1
-      }
+    ephemeral_storage_local_ssd_config {
+      local_ssd_count = local.local_ssd_count
     }
   }
 
