@@ -24,44 +24,28 @@ module "braintrust-data-plane" {
   ### GKE Cluster configuration
   # Note: By default we deploy a GKE cluster. You must set deploy_gke_cluster to false to not deploy a GKE cluster, if you will provide your own GKE cluster.
 
-  # deploy_gke_cluster = false 
+  # deploy_gke_cluster = true
   # gke_cluster_is_private = false # Default the cluster will be public and use public IPs addresses for the control plane
   # gke_control_plane_cidr = "10.0.1.0/28" # CIDR block for the control plane if it's Private
   # gke_control_plane_authorized_cidrs = ["<your_internal or external cidr/24>"] # If this is not provided the cluster will allow all IPs to access the control plane.
   # gke_node_type = "c4-standard-16-lssd"
   # gke_local_ssd_count = 2 # we require local SSDs for the workloads, and depending on the node type the number of SSDs will change.
   # gke_node_count = 1 The number of nodes per zone in the cluster. By default we deploy 1 node per zone a node type is available.
-  # gke_release_channel = "REGULAR"
-  # gke_enable_private_endpoint = true
-  # gke_enable_master_global_access = false
-  # gke_deletion_protection = true
-
-  ### GKE IAM configuration 
-  # Note: These values must match the kubernetes namespace and service account names when deploying the helm chart
-
-  # braintrust_kube_namespace = "braintrust"
-  # braintrust_kube_svc_account = "braintrust-api"
-  # brainstore_kube_svc_account = "brainstore"
 
   ### Database configuration
   # postgres_version = "POSTGRES_17"
   # postgres_machine_type = "db-perf-optimized-N-8"
   # postgres_availability_type = "REGIONAL"
   # postgres_disk_size = 1000
-  # postgres_backup_start_time = "00:30"
-  # postgres_maintenance_window = {
-  #   day = 1, hour = 8, update_track = "stable"
-  # }
+  # Does this auto expand? how do we handle that?
+  # How do we control disk perf IOPS/etc
 
   ### Redis configuration
   # redis_version = "REDIS_7_2"
   # redis_memory_size_gb = 3
 
-  ### Storage configuration
+
+  ### Advanced configuration
   # gcs_additional_allowed_origins = []
-  # gcs_bucket_retention_days = 7
-  # gcs_versioning_enabled = true
-  # gcs_storage_class = "STANDARD"
-  # gcs_uniform_bucket_level_access = true
 
 }
