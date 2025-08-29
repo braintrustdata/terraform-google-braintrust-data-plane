@@ -73,6 +73,13 @@ Below is an example using kubectl to create the secrets.
 
 Review the (helm chart)[https://github.com/braintrustdata/helm] to deploy Braintrust on the newly deployed GKE cluster.
 
+5. Accessing the API
+
+The dataplane requires a HTTPS connection to the API pods. This connection will require a valid HTTPS certificate that is trusted by the clients connecting to the data plane. Google doesn't have a native service that provides managed DNS & Managed SSL certificates like AWS CloudFront or Azure Front Door. There are a several ways to provide a DNS name with a SSL certificate however.
+
+1. Use Cloud Run to run a NGINX container to do SSL termination.
+2. Use a Load balancer for the API service with a certificate from an internal CA or with Let's Encrypt.
+
 ## Pointing your Organization to your data plane
 
 Once the Helm has been deployed and you have an end point for the data plane, this can be configured:
