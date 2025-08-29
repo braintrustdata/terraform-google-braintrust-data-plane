@@ -66,7 +66,6 @@ module "gke-cluster" {
   gke_release_channel                = var.gke_release_channel
   gke_enable_private_endpoint        = var.gke_enable_private_endpoint
   gke_node_count                     = var.gke_node_count
-  gke_local_ssd_count                = var.gke_local_ssd_count
   gke_deletion_protection            = var.gke_deletion_protection
   gke_kms_cmek_id                    = module.kms.kms_key_id
   gke_maintenance_window             = var.gke_maintenance_window
