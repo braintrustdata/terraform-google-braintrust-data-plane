@@ -127,14 +127,14 @@ resource "google_container_node_pool" "braintrust" {
       "https://www.googleapis.com/auth/cloud-platform"
     ]
 
-    upgrade_settings {
-      max_surge       = 2
-      max_unavailable = 0     
-    }
-
     ephemeral_storage_local_ssd_config {
       local_ssd_count = var.gke_local_ssd_count
     }
+  }
+
+  upgrade_settings {
+    max_surge       = 2
+    max_unavailable = 0     
   }
 }
 
