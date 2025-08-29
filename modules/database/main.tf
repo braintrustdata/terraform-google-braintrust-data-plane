@@ -97,6 +97,12 @@ resource "google_sql_database_instance" "braintrust" {
     user_labels = local.common_labels
   }
 
+  lifecycle {
+    ignore_changes = [
+      settings[0].disk_size 
+    ]
+  }
+
   depends_on = [
     google_kms_crypto_key_iam_member.cloud_sql_sa_postgres_cmek
   ]
