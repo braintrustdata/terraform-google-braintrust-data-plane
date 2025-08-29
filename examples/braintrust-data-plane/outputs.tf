@@ -10,6 +10,16 @@ output "braintrust_service_account" {
   value = module.braintrust-data-plane.braintrust_service_account
 }
 
+output "braintrust_hmac_access_id" {
+  value     = module.braintrust-data-plane.braintrust_hmac_access_id
+  sensitive = true
+}
+
+output "braintrust_hmac_secret" {
+  value     = module.braintrust-data-plane.braintrust_hmac_secret
+  sensitive = true
+}
+
 output "brainstore_service_account" {
   value = module.braintrust-data-plane.brainstore_service_account
 }
@@ -45,6 +55,6 @@ output "redis_instance_host" {
 }
 
 output "redis_url" {
-  value = "redis://:${module.braintrust-data-plane.redis_auth_string}@${module.braintrust-data-plane.redis_instance_host}:${module.braintrust-data-plane.redis_instance_port}"
+  value     = "redis://:${module.braintrust-data-plane.redis_auth_string}@${module.braintrust-data-plane.redis_instance_host}:${module.braintrust-data-plane.redis_instance_port}"
   sensitive = true
 }

@@ -36,3 +36,9 @@ variable "brainstore_gcs_bucket_id" {
   type        = string
   description = "The ID of the GCS bucket for Brainstore."
 }
+
+variable "braintrust_hmac_key_enabled" {
+  type        = bool
+  description = "Whether to enable HMAC keys for Braintrust API."
+  default     = true
+}

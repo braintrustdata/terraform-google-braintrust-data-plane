@@ -15,15 +15,23 @@ The following input variables are optional (have default values):
 
 ### <a name="input_brainstore_kube_svc_account"></a> [brainstore\_kube\_svc\_account](#input\_brainstore\_kube\_svc\_account)
 
-Description: The service account of the Brainstore in the GKE cluster.
+Description: The service account name for Brainstore.
 
 Type: `string`
 
 Default: `"brainstore"`
 
+### <a name="input_braintrust_hmac_key_enabled"></a> [braintrust\_hmac\_key\_enabled](#input\_braintrust\_hmac\_key\_enabled)
+
+Description: Whether to enable HMAC keys for Braintrust API.
+
+Type: `bool`
+
+Default: `true`
+
 ### <a name="input_braintrust_kube_namespace"></a> [braintrust\_kube\_namespace](#input\_braintrust\_kube\_namespace)
 
-Description: The namespace of the Braintrust service account in the GKE cluster.
+Description: The namespace name that Braintrust will be deployed into, in the GKE cluster.
 
 Type: `string`
 
@@ -31,7 +39,7 @@ Default: `"braintrust"`
 
 ### <a name="input_braintrust_kube_svc_account"></a> [braintrust\_kube\_svc\_account](#input\_braintrust\_kube\_svc\_account)
 
-Description: The service account of the Braintrust API in the GKE cluster.
+Description: The service account name for Braintrust API.
 
 Type: `string`
 
@@ -125,11 +133,11 @@ Type: `bool`
 
 Default: `false`
 
-### <a name="input_gke_control_plane_authorized_cidr"></a> [gke\_control\_plane\_authorized\_cidr](#input\_gke\_control\_plane\_authorized\_cidr)
+### <a name="input_gke_control_plane_authorized_cidrs"></a> [gke\_control\_plane\_authorized\_cidrs](#input\_gke\_control\_plane\_authorized\_cidrs)
 
-Description: The CIDR block for the GKE control plane authorized networks.
+Description: List of CIDR blocks authorized to access the GKE control plane. If not provided, allows all IPs (for public clusters).
 
-Type: `string`
+Type: `list(string)`
 
 Default: `null`
 
@@ -148,6 +156,14 @@ Description: Whether to protect the GKE cluster from deletion.
 Type: `bool`
 
 Default: `true`
+
+### <a name="input_gke_enable_master_global_access"></a> [gke\_enable\_master\_global\_access](#input\_gke\_enable\_master\_global\_access)
+
+Description: Whether to enable global access to the GKE control plane from any region.
+
+Type: `bool`
+
+Default: `false`
 
 ### <a name="input_gke_enable_private_endpoint"></a> [gke\_enable\_private\_endpoint](#input\_gke\_enable\_private\_endpoint)
 
@@ -336,6 +352,14 @@ Description: n/a
 Description: n/a
 
 ### <a name="output_braintrust_api_bucket_name"></a> [braintrust\_api\_bucket\_name](#output\_braintrust\_api\_bucket\_name)
+
+Description: n/a
+
+### <a name="output_braintrust_hmac_access_id"></a> [braintrust\_hmac\_access\_id](#output\_braintrust\_hmac\_access\_id)
+
+Description: n/a
+
+### <a name="output_braintrust_hmac_secret"></a> [braintrust\_hmac\_secret](#output\_braintrust\_hmac\_secret)
 
 Description: n/a
 

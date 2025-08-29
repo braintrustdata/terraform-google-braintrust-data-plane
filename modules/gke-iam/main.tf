@@ -20,8 +20,11 @@ resource "google_service_account" "braintrust" {
   description  = "Service account for Braintrust for GCP GKE workload identity."
 }
 
-resource "google_service_account_key" "braintrust" {
-  service_account_id = google_service_account.braintrust.name
+# API container doesn't support GCS native storage integration yet, so we use HMAC keys instead. 
+resource "google_storage_hmac_key" "braintrust" {
+  count = var.braintrust_hmac_key_enabled ? 1 : 0
+
+  service_account_email = google_service_account.braintrust.email
 }
 
 resource "google_service_account_iam_binding" "braintrust_workload_identity" {
@@ -57,9 +60,9 @@ resource "google_storage_bucket_iam_member" "braintrust_api_brainstore_gcs_reade
   member = "serviceAccount:${google_service_account.braintrust.email}"
 }
 
-# #----------------------------------------------------------------------------------------------
-# # Cloud SQL IAM permissions for braintrust service account
-# #----------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
+# Cloud SQL IAM permissions for braintrust service account
+#----------------------------------------------------------------------------------------------
 # Only username / password auth is supported for now, but future support for IAM auth is planned.
 # resource "google_project_iam_member" "braintrust_cloudsql_client" {
 #   project = data.google_project.current.project_id
@@ -80,10 +83,6 @@ resource "google_service_account" "brainstore" {
   account_id   = "${var.deployment_name}-brainstore"
   display_name = "${var.deployment_name}-brainstore"
   description  = "Service account for Brainstore for GCP GKE workload identity."
-}
-
-resource "google_service_account_key" "brainstore" {
-  service_account_id = google_service_account.brainstore.name
 }
 
 resource "google_service_account_iam_binding" "brainstore_workload_identity" {

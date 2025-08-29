@@ -21,6 +21,16 @@ output "brainstore_service_account" {
   value = module.gke-iam.brainstore_service_account
 }
 
+output "braintrust_hmac_access_id" {
+  value     = module.gke-iam.braintrust_hmac_access_id
+  sensitive = true
+}
+
+output "braintrust_hmac_secret" {
+  value     = module.gke-iam.braintrust_hmac_secret
+  sensitive = true
+}
+
 #----------------------------------------------------------------------------------------------
 # Database
 #----------------------------------------------------------------------------------------------

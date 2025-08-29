@@ -57,19 +57,23 @@ resource "google_container_cluster" "braintrust" {
       master_ipv4_cidr_block  = var.gke_control_plane_cidr
 
       master_global_access_config {
-        enabled = false
+        enabled = var.gke_enable_master_global_access
       }
     }
   }
 
-  master_authorized_networks_config {
-    gcp_public_cidrs_access_enabled = false
+  dynamic "master_authorized_networks_config" {
+    for_each = var.gke_control_plane_authorized_cidrs == null ? [] : [1]
 
-    dynamic "cidr_blocks" {
-      for_each = var.gke_control_plane_authorized_cidr != null ? [1] : []
+    content {
+      gcp_public_cidrs_access_enabled = false
 
-      content {
-        cidr_block = var.gke_control_plane_authorized_cidr
+      dynamic "cidr_blocks" {
+        for_each = var.gke_control_plane_authorized_cidrs
+
+        content {
+          cidr_block = cidr_blocks.value
+        }
       }
     }
   }

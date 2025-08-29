@@ -55,20 +55,21 @@ module "gke-cluster" {
   source = "./modules/gke-cluster"
   count  = var.deploy_gke_cluster ? 1 : 0
 
-  deployment_name                   = var.deployment_name
-  gke_network                       = var.create_vpc ? module.vpc[0].network_self_link : var.existing_network_self_link
-  gke_subnetwork                    = var.create_vpc ? module.vpc[0].subnet_self_link : var.existing_subnet_self_link
-  gke_control_plane_cidr            = var.gke_control_plane_cidr
-  gke_control_plane_authorized_cidr = var.gke_control_plane_authorized_cidr
-  gke_node_type                     = var.gke_node_type
-  gke_cluster_is_private            = var.gke_cluster_is_private
-  gke_release_channel               = var.gke_release_channel
-  gke_enable_private_endpoint       = var.gke_enable_private_endpoint
-  gke_node_count                    = var.gke_node_count
-  gke_local_ssd_count               = var.gke_local_ssd_count
-  gke_deletion_protection           = var.gke_deletion_protection
-  gke_kms_cmek_id                   = module.kms.kms_key_id
-  gke_maintenance_window            = var.gke_maintenance_window
+  deployment_name                    = var.deployment_name
+  gke_network                        = var.create_vpc ? module.vpc[0].network_self_link : var.existing_network_self_link
+  gke_subnetwork                     = var.create_vpc ? module.vpc[0].subnet_self_link : var.existing_subnet_self_link
+  gke_control_plane_cidr             = var.gke_control_plane_cidr
+  gke_control_plane_authorized_cidrs = var.gke_control_plane_authorized_cidrs
+  gke_enable_master_global_access    = var.gke_enable_master_global_access
+  gke_node_type                      = var.gke_node_type
+  gke_cluster_is_private             = var.gke_cluster_is_private
+  gke_release_channel                = var.gke_release_channel
+  gke_enable_private_endpoint        = var.gke_enable_private_endpoint
+  gke_node_count                     = var.gke_node_count
+  gke_local_ssd_count                = var.gke_local_ssd_count
+  gke_deletion_protection            = var.gke_deletion_protection
+  gke_kms_cmek_id                    = module.kms.kms_key_id
+  gke_maintenance_window             = var.gke_maintenance_window
 }
 
 module "gke-iam" {
@@ -78,6 +79,7 @@ module "gke-iam" {
   braintrust_kube_namespace   = var.braintrust_kube_namespace
   braintrust_kube_svc_account = var.braintrust_kube_svc_account
   brainstore_kube_svc_account = var.brainstore_kube_svc_account
-  braintrust_api_bucket_id    = module.storage.api_bucket_self_link
-  brainstore_gcs_bucket_id    = module.storage.brainstore_bucket_self_link
+  braintrust_api_bucket_id    = module.storage.api_bucket_name
+  brainstore_gcs_bucket_id    = module.storage.brainstore_bucket_name
+  braintrust_hmac_key_enabled = var.braintrust_hmac_key_enabled
 }

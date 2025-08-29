@@ -207,10 +207,16 @@ variable "gke_control_plane_cidr" {
   default     = "10.0.1.0/28"
 }
 
-variable "gke_control_plane_authorized_cidr" {
-  description = "The CIDR block for the GKE control plane authorized networks."
-  type        = string
+variable "gke_control_plane_authorized_cidrs" {
+  description = "List of CIDR blocks authorized to access the GKE control plane. If not provided, allows all IPs (for public clusters)."
+  type        = list(string)
   default     = null
+}
+
+variable "gke_enable_master_global_access" {
+  description = "Whether to enable global access to the GKE control plane from any region."
+  type        = bool
+  default     = false
 }
 
 variable "gke_node_type" {
@@ -262,7 +268,7 @@ variable "gke_maintenance_window" {
   })
   description = "Optional maintenance window settings for the GKE cluster."
   default = {
-    day        = 1 # default to Monday (1-7, Monday=1)
+    day        = 1       # default to Monday (1-7, Monday=1)
     start_time = "08:00" # default to 8:00 AM UTC
   }
 
@@ -282,18 +288,24 @@ variable "gke_maintenance_window" {
 #----------------------------------------------------------------------------------------------
 variable "braintrust_kube_namespace" {
   type        = string
-  description = "The namespace of the Braintrust service account in the GKE cluster."
+  description = "The namespace name that Braintrust will be deployed into, in the GKE cluster."
   default     = "braintrust"
 }
 
 variable "braintrust_kube_svc_account" {
   type        = string
-  description = "The service account of the Braintrust API in the GKE cluster."
+  description = "The service account name for Braintrust API."
   default     = "braintrust-api"
 }
 
 variable "brainstore_kube_svc_account" {
   type        = string
-  description = "The service account of the Brainstore in the GKE cluster."
+  description = "The service account name for Brainstore."
   default     = "brainstore"
+}
+
+variable "braintrust_hmac_key_enabled" {
+  type        = bool
+  description = "Whether to enable HMAC keys for Braintrust API."
+  default     = true
 }

@@ -55,10 +55,16 @@ variable "gke_control_plane_cidr" {
   default     = "10.0.1.0/28"
 }
 
-variable "gke_control_plane_authorized_cidr" {
-  type        = string
-  description = "The CIDR block for the GKE control plane authorized networks."
+variable "gke_control_plane_authorized_cidrs" {
+  type        = list(string)
+  description = "List of CIDR blocks authorized to access the GKE control plane. If not provided, allows all IPs (for public clusters)."
   default     = null
+}
+
+variable "gke_enable_master_global_access" {
+  type        = bool
+  description = "Whether to enable global access to the GKE control plane from any region."
+  default     = false
 }
 
 variable "gke_l4_ilb_subsetting_enabled" {
@@ -103,7 +109,7 @@ variable "gke_maintenance_window" {
   })
   description = "Optional maintenance window settings for the GKE cluster."
   default = {
-    day        = 1 # default to Monday (1-7, Monday=1)
+    day        = 1       # default to Monday (1-7, Monday=1)
     start_time = "08:00" # default to 8:00 AM UTC
   }
 
