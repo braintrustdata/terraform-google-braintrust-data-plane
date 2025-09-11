@@ -173,14 +173,6 @@ Type: `bool`
 
 Default: `true`
 
-### <a name="input_gke_initial_node_count"></a> [gke\_initial\_node\_count](#input\_gke\_initial\_node\_count)
-
-Description: The initial number of nodes in the GKE cluster.
-
-Type: `number`
-
-Default: `1`
-
 ### <a name="input_gke_maintenance_window"></a> [gke\_maintenance\_window](#input\_gke\_maintenance\_window)
 
 Description: Optional maintenance window settings for the GKE cluster.

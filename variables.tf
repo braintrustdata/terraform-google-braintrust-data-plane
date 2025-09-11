@@ -231,12 +231,6 @@ variable "gke_release_channel" {
   default     = "REGULAR"
 }
 
-variable "gke_initial_node_count" {
-  type        = number
-  description = "The initial number of nodes in the GKE cluster."
-  default     = 1
-}
-
 variable "gke_enable_private_endpoint" {
   type        = bool
   description = "Whether to enable private endpoint for the GKE cluster."

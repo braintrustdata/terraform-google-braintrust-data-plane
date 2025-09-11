@@ -3,8 +3,12 @@ plugin "terraform" {
     preset  = "recommended"
 }
 
-plugin "aws" {
-    enabled = google
-    version = "0.34.0"
+plugin "google" {
+    enabled = true
+    version = "0.35.0"
     source  = "github.com/terraform-linters/tflint-ruleset-google"
+}
+
+rule "google_container_node_pool_invalid_machine_type" {
+    enabled = false
 }

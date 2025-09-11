@@ -1,0 +1,40 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      module_version:
+        description: 'Terraform module release version (e.g., v1.2.3)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+
+    steps:
+      - name: Generate GitHub App token
+        uses: actions/create-github-app-token@v1
+        id: bot-token
+        with:
+          app-id: ${{ secrets.GH_BOT_APP_ID }}
+          private-key: ${{ secrets.GH_BOT_APP_PRIVATE_KEY }}
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.bot-token.outputs.token }}
+          ref: main
+
+      - name: Create GitHub Release
+        run: |
+            gh release create ${{ inputs.module_version }} \
+              --draft \
+              --generate-notes \
+              --title "${{ inputs.module_version }}"
+        env:
+          GH_TOKEN: ${{ steps.bot-token.outputs.token }}
