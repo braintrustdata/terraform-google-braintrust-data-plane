@@ -1,13 +1,6 @@
 #----------------------------------------------------------------------------------------------
 # Common
 #----------------------------------------------------------------------------------------------
-locals {
-  common_labels = {
-    braintrustdeploymentname = var.deployment_name
-  }
-}
-
-data "google_client_config" "current" {}
 
 data "google_project" "current" {}
 
