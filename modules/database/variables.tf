@@ -39,6 +39,16 @@ variable "postgres_disk_size" {
   default     = 1000
 }
 
+variable "postgres_enable_seqscan" {
+  type        = string
+  description = "Whether to enable seqscan."
+  default     = "off"
+  validation {
+    condition     = contains(["on", "off"], var.postgres_enable_seqscan)
+    error_message = "`postgres_enable_seqscan` must be either 'on' or 'off'."
+  }
+}
+
 variable "postgres_backup_start_time" {
   type        = string
   description = "HH:MM time format indicating when daily automatic backups of Cloud SQL for PostgreSQL should run. Defaults to 12 AM (midnight) UTC."

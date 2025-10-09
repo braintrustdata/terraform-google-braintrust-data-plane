@@ -59,14 +59,35 @@ resource "google_sql_database_instance" "braintrust" {
     disk_size         = var.postgres_disk_size
     disk_autoresize   = true
 
-    # database_flags {
-    #   name  = "max_client_connections"
-    #   value = "1000"
-    # } # TODO: check on instance type to find max connections supported
+    # Braintrust will create a high number of connections to the database. Setting this to an extremely high amount of connections as changing this requires a DB restart.
+    database_flags {
+      name  = "max_connections"
+      value = "8000"
+    }
 
     database_flags {
       name  = "cloudsql.enable_pg_cron"
       value = "on"
+    }
+
+    database_flags {
+      name  = "cloudsql.enable_pg_hint_plan"
+      value = "on"
+    }
+
+    database_flags {
+      name  = "random_page_cost"
+      value = "1"
+    }
+
+    database_flags {
+      name  = "cloudsql.enable_index_advisor"
+      value = "on"
+    }
+
+    database_flags {
+      name  = "enable_seqscan"
+      value = var.postgres_enable_seqscan
     }
 
     ip_configuration {
