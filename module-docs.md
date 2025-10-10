@@ -237,11 +237,11 @@ Default: `1000`
 
 ### <a name="input_postgres_enable_seqscan"></a> [postgres\_enable\_seqscan](#input\_postgres\_enable\_seqscan)
 
-Description: Whether to enable seqscan.
+Description: Whether to enable seqscan. Setting this to true requires a DB restart. Should only be enabled if directed by Braintrust support team.
 
-Type: `string`
+Type: `bool`
 
-Default: `"off"`
+Default: `false`
 
 ### <a name="input_postgres_machine_type"></a> [postgres\_machine\_type](#input\_postgres\_machine\_type)
 
