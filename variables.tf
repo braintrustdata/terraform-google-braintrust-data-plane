@@ -91,6 +91,12 @@ variable "postgres_disk_size" {
   default     = 1000
 }
 
+variable "postgres_enable_seqscan" {
+  type        = bool
+  description = "Whether to enable seqscan. Setting this to true requires a DB restart. Should only be enabled if directed by Braintrust support team."
+  default     = false
+}
+
 variable "postgres_backup_start_time" {
   type        = string
   description = "HH:MM time format indicating when daily automatic backups of Cloud SQL for PostgreSQL should run. Defaults to 12 AM (midnight) UTC."
@@ -219,12 +225,6 @@ variable "gke_enable_master_global_access" {
   default     = false
 }
 
-variable "gke_node_type" {
-  description = "The type of node to use for the GKE cluster."
-  type        = string
-  default     = "c4-standard-16-lssd"
-}
-
 variable "gke_release_channel" {
   type        = string
   description = "The release channel of the GKE cluster."
@@ -235,12 +235,6 @@ variable "gke_enable_private_endpoint" {
   type        = bool
   description = "Whether to enable private endpoint for the GKE cluster."
   default     = true
-}
-
-variable "gke_node_count" {
-  type        = number
-  description = "The number of nodes in the GKE node pool."
-  default     = 1
 }
 
 variable "gke_deletion_protection" {

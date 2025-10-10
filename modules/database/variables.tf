@@ -39,6 +39,12 @@ variable "postgres_disk_size" {
   default     = 1000
 }
 
+variable "postgres_enable_seqscan" {
+  type        = bool
+  description = "Whether to enable seqscan. Setting this to true requires a DB restart. Should only be enabled if directed by Braintrust support team."
+  default     = false
+}
+
 variable "postgres_backup_start_time" {
   type        = string
   description = "HH:MM time format indicating when daily automatic backups of Cloud SQL for PostgreSQL should run. Defaults to 12 AM (midnight) UTC."

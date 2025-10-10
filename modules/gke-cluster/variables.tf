@@ -25,12 +25,6 @@ variable "gke_release_channel" {
   default     = "REGULAR"
 }
 
-variable "gke_remove_default_node_pool" {
-  type        = bool
-  description = "Whether to remove the default node pool when creating a new node pool in an existing cluster."
-  default     = true
-}
-
 variable "gke_deletion_protection" {
   type        = bool
   description = "Whether to protect the GKE cluster from deletion."
@@ -77,18 +71,6 @@ variable "gke_http_load_balancing_disabled" {
   type        = bool
   description = "Whether to disable HTTP load balancing for the GKE cluster."
   default     = false
-}
-
-variable "gke_node_count" {
-  type        = number
-  description = "The number of nodes in the GKE node pool."
-  default     = 1
-}
-
-variable "gke_node_type" {
-  description = "The type of node to use for the GKE cluster."
-  type        = string
-  default     = "c4-standard-16-lssd"
 }
 
 variable "gke_kms_cmek_id" {

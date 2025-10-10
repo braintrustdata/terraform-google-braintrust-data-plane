@@ -195,22 +195,6 @@ Default:
 }
 ```
 
-### <a name="input_gke_node_count"></a> [gke\_node\_count](#input\_gke\_node\_count)
-
-Description: The number of nodes in the GKE node pool.
-
-Type: `number`
-
-Default: `1`
-
-### <a name="input_gke_node_type"></a> [gke\_node\_type](#input\_gke\_node\_type)
-
-Description: The type of node to use for the GKE cluster.
-
-Type: `string`
-
-Default: `"c4-standard-16-lssd"`
-
 ### <a name="input_gke_release_channel"></a> [gke\_release\_channel](#input\_gke\_release\_channel)
 
 Description: The release channel of the GKE cluster.
@@ -250,6 +234,14 @@ Description: Size in GB of PostgreSQL disk.
 Type: `number`
 
 Default: `1000`
+
+### <a name="input_postgres_enable_seqscan"></a> [postgres\_enable\_seqscan](#input\_postgres\_enable\_seqscan)
+
+Description: Whether to enable seqscan. Setting this to true requires a DB restart. Should only be enabled if directed by Braintrust support team.
+
+Type: `bool`
+
+Default: `false`
 
 ### <a name="input_postgres_machine_type"></a> [postgres\_machine\_type](#input\_postgres\_machine\_type)
 
