@@ -87,7 +87,7 @@ resource "google_sql_database_instance" "braintrust" {
 
     database_flags {
       name  = "enable_seqscan"
-      value = var.postgres_enable_seqscan
+      value = var.postgres_enable_seqscan ? "on" : "off"
     }
 
     ip_configuration {

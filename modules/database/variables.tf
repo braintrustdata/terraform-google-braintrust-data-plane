@@ -40,13 +40,9 @@ variable "postgres_disk_size" {
 }
 
 variable "postgres_enable_seqscan" {
-  type        = string
-  description = "Whether to enable seqscan."
-  default     = "off"
-  validation {
-    condition     = contains(["on", "off"], var.postgres_enable_seqscan)
-    error_message = "`postgres_enable_seqscan` must be either 'on' or 'off'."
-  }
+  type        = bool
+  description = "Whether to enable seqscan. Setting this to true requires a DB restart. Should only be enabled if directed by Braintrust support team."
+  default     = false
 }
 
 variable "postgres_backup_start_time" {
