@@ -229,12 +229,6 @@ variable "gke_enable_master_global_access" {
   default     = false
 }
 
-variable "gke_node_type" {
-  description = "The type of node to use for the GKE cluster."
-  type        = string
-  default     = "c4-standard-16-lssd"
-}
-
 variable "gke_release_channel" {
   type        = string
   description = "The release channel of the GKE cluster."
@@ -245,12 +239,6 @@ variable "gke_enable_private_endpoint" {
   type        = bool
   description = "Whether to enable private endpoint for the GKE cluster."
   default     = true
-}
-
-variable "gke_node_count" {
-  type        = number
-  description = "The number of nodes in the GKE node pool."
-  default     = 1
 }
 
 variable "gke_deletion_protection" {

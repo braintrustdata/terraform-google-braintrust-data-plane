@@ -62,11 +62,9 @@ module "gke-cluster" {
   gke_control_plane_cidr             = var.gke_control_plane_cidr
   gke_control_plane_authorized_cidrs = var.gke_control_plane_authorized_cidrs
   gke_enable_master_global_access    = var.gke_enable_master_global_access
-  gke_node_type                      = var.gke_node_type
   gke_cluster_is_private             = var.gke_cluster_is_private
   gke_release_channel                = var.gke_release_channel
   gke_enable_private_endpoint        = var.gke_enable_private_endpoint
-  gke_node_count                     = var.gke_node_count
   gke_deletion_protection            = var.gke_deletion_protection
   gke_kms_cmek_id                    = module.kms.kms_key_id
   gke_maintenance_window             = var.gke_maintenance_window
