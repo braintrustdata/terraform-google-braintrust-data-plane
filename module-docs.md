@@ -101,6 +101,14 @@ Type: `bool`
 
 Default: `false`
 
+### <a name="input_gcs_soft_delete_retention_days"></a> [gcs\_soft\_delete\_retention\_days](#input\_gcs\_soft\_delete\_retention\_days)
+
+Description: Number of days to retain soft-deleted objects in Braintrust GCS buckets. During this period, deleted objects can be recovered.
+
+Type: `number`
+
+Default: `7`
+
 ### <a name="input_gcs_storage_class"></a> [gcs\_storage\_class](#input\_gcs\_storage\_class)
 
 Description: Storage class of Braintrust GCS buckets.

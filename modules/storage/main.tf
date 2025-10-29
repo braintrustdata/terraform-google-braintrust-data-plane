@@ -39,6 +39,10 @@ resource "google_storage_bucket" "brainstore" {
     enabled = var.gcs_versioning_enabled
   }
 
+  soft_delete_policy {
+    retention_duration_seconds = var.gcs_soft_delete_retention_days * 86400
+  }
+
   lifecycle_rule {
     condition {
       days_since_noncurrent_time = var.gcs_bucket_retention_days
@@ -82,6 +86,10 @@ resource "google_storage_bucket" "api" {
 
   versioning {
     enabled = var.gcs_versioning_enabled
+  }
+
+  soft_delete_policy {
+    retention_duration_seconds = var.gcs_soft_delete_retention_days * 86400
   }
 
   # Lifecycle rule for code-bundle path
