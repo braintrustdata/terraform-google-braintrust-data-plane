@@ -50,6 +50,7 @@ module "storage" {
   gcs_storage_class               = var.gcs_storage_class
   gcs_uniform_bucket_level_access = var.gcs_uniform_bucket_level_access
   gcs_force_destroy               = var.gcs_force_destroy
+  gcs_soft_delete_retention_days  = var.gcs_soft_delete_retention_days
 }
 
 module "gke-cluster" {
