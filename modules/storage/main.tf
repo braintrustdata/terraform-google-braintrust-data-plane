@@ -39,8 +39,12 @@ resource "google_storage_bucket" "brainstore" {
     enabled = var.gcs_versioning_enabled
   }
 
-  soft_delete_policy {
-    retention_duration_seconds = var.gcs_soft_delete_retention_days * 86400
+  dynamic "soft_delete_policy" {
+    for_each = var.gcs_soft_delete_retention_days > 0 ? [1] : []
+
+    content {
+      retention_duration_seconds = var.gcs_soft_delete_retention_days * 86400
+    }
   }
 
   lifecycle_rule {
@@ -49,6 +53,15 @@ resource "google_storage_bucket" "brainstore" {
     }
     action {
       type = "Delete"
+    }
+  }
+
+  lifecycle_rule {
+    condition {
+      age = 1
+    }
+    action {
+      type = "AbortIncompleteMultipartUpload"
     }
   }
 
@@ -88,8 +101,12 @@ resource "google_storage_bucket" "api" {
     enabled = var.gcs_versioning_enabled
   }
 
-  soft_delete_policy {
-    retention_duration_seconds = var.gcs_soft_delete_retention_days * 86400
+  dynamic "soft_delete_policy" {
+    for_each = var.gcs_soft_delete_retention_days > 0 ? [1] : []
+
+    content {
+      retention_duration_seconds = var.gcs_soft_delete_retention_days * 86400
+    }
   }
 
   # Lifecycle rule for code-bundle path
@@ -111,6 +128,16 @@ resource "google_storage_bucket" "api" {
     }
     action {
       type = "Delete"
+    }
+  }
+
+  # Lifecycle rule for incomplete multipart uploads
+  lifecycle_rule {
+    condition {
+      age = 1
+    }
+    action {
+      type = "AbortIncompleteMultipartUpload"
     }
   }
 

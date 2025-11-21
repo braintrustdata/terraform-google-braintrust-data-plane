@@ -53,7 +53,7 @@ variable "gcs_kms_cmek_id" {
 
 variable "gcs_soft_delete_retention_days" {
   type        = number
-  description = "Number of days to retain soft-deleted objects in Braintrust GCS buckets. During this period, deleted objects can be recovered."
+  description = "Number of days to retain soft-deleted objects in Braintrust GCS buckets. During this period, deleted objects can be recovered. Set to 0 to disable soft delete policy."
   default     = 7
 }
 
