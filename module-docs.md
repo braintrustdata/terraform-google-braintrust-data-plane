@@ -85,6 +85,30 @@ Type: `list(string)`
 
 Default: `[]`
 
+### <a name="input_gcs_brainstore_lifecycle_rules"></a> [gcs\_brainstore\_lifecycle\_rules](#input\_gcs\_brainstore\_lifecycle\_rules)
+
+Description: Additional lifecycle rules for the brainstore GCS bucket. Allows defining custom object expiration policies for specific prefixes.
+
+Type:
+
+```hcl
+list(object({
+    action = object({
+      type          = string
+      storage_class = optional(string)
+    })
+    condition = object({
+      age                        = optional(number)
+      days_since_noncurrent_time = optional(number)
+      matches_prefix             = optional(list(string))
+      matches_suffix             = optional(list(string))
+      with_state                 = optional(string)
+    })
+  }))
+```
+
+Default: `[]`
+
 ### <a name="input_gcs_bucket_retention_days"></a> [gcs\_bucket\_retention\_days](#input\_gcs\_bucket\_retention\_days)
 
 Description: Number of days to retain objects in the Brainstore GCS buckets.

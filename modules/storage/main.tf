@@ -52,6 +52,23 @@ resource "google_storage_bucket" "brainstore" {
     }
   }
 
+  dynamic "lifecycle_rule" {
+    for_each = var.gcs_brainstore_lifecycle_rules
+    content {
+      action {
+        type          = lifecycle_rule.value.action.type
+        storage_class = lifecycle_rule.value.action.storage_class
+      }
+      condition {
+        age                        = lifecycle_rule.value.condition.age
+        days_since_noncurrent_time = lifecycle_rule.value.condition.days_since_noncurrent_time
+        matches_prefix             = lifecycle_rule.value.condition.matches_prefix
+        matches_suffix             = lifecycle_rule.value.condition.matches_suffix
+        with_state                 = lifecycle_rule.value.condition.with_state
+      }
+    }
+  }
+
   dynamic "encryption" {
     for_each = var.gcs_kms_cmek_id != null ? ["encryption"] : []
 

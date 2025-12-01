@@ -51,6 +51,7 @@ module "storage" {
   gcs_uniform_bucket_level_access = var.gcs_uniform_bucket_level_access
   gcs_force_destroy               = var.gcs_force_destroy
   gcs_soft_delete_retention_days  = var.gcs_soft_delete_retention_days
+  gcs_brainstore_lifecycle_rules  = var.gcs_brainstore_lifecycle_rules
 }
 
 module "gke-cluster" {
