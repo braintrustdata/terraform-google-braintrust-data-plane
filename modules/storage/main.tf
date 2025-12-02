@@ -52,6 +52,27 @@ resource "google_storage_bucket" "brainstore" {
     }
   }
 
+  lifecycle_rule {
+    condition {
+      age = 1
+    }
+    action {
+      type = "AbortIncompleteMultipartUpload"
+    }
+  }
+
+  # Lifecycle rule to clean up delete ops from Brainstore index and wal prefixes
+  # !IMPORTANT!: do not change this path
+  lifecycle_rule {
+    condition {
+      age            = var.gcs_bucket_retention_days
+      matches_prefix = ["brainstore/index/delete_ops/", "brainstore/wal/delete_ops/"]
+    }
+    action {
+      type = "Delete"
+    }
+  }
+
   dynamic "encryption" {
     for_each = var.gcs_kms_cmek_id != null ? ["encryption"] : []
 
@@ -111,6 +132,16 @@ resource "google_storage_bucket" "api" {
     }
     action {
       type = "Delete"
+    }
+  }
+
+  # Lifecycle rule for incomplete multipart uploads
+  lifecycle_rule {
+    condition {
+      age = 1
+    }
+    action {
+      type = "AbortIncompleteMultipartUpload"
     }
   }
 
