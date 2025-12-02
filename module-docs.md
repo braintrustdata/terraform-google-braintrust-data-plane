@@ -103,7 +103,7 @@ Default: `false`
 
 ### <a name="input_gcs_soft_delete_retention_days"></a> [gcs\_soft\_delete\_retention\_days](#input\_gcs\_soft\_delete\_retention\_days)
 
-Description: Number of days to retain soft-deleted objects in Braintrust GCS buckets. During this period, deleted objects can be recovered. Set to 0 to disable soft delete policy.
+Description: Number of days to retain soft-deleted objects in Braintrust GCS buckets. During this period, deleted objects can be recovered. Set to 0 to disable soft delete policy. This value must be be 0 or between 7 and 90 days.
 
 Type: `number`
 

@@ -39,12 +39,8 @@ resource "google_storage_bucket" "brainstore" {
     enabled = var.gcs_versioning_enabled
   }
 
-  dynamic "soft_delete_policy" {
-    for_each = var.gcs_soft_delete_retention_days > 0 ? [1] : []
-
-    content {
-      retention_duration_seconds = var.gcs_soft_delete_retention_days * 86400
-    }
+  soft_delete_policy {
+    retention_duration_seconds = var.gcs_soft_delete_retention_days * 86400
   }
 
   lifecycle_rule {
@@ -113,12 +109,8 @@ resource "google_storage_bucket" "api" {
     enabled = var.gcs_versioning_enabled
   }
 
-  dynamic "soft_delete_policy" {
-    for_each = var.gcs_soft_delete_retention_days > 0 ? [1] : []
-
-    content {
-      retention_duration_seconds = var.gcs_soft_delete_retention_days * 86400
-    }
+  soft_delete_policy {
+    retention_duration_seconds = var.gcs_soft_delete_retention_days * 86400
   }
 
   # Lifecycle rule for code-bundle path
