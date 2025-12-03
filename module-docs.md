@@ -53,6 +53,54 @@ Type: `bool`
 
 Default: `true`
 
+### <a name="input_custom_gcs_api_lifecycle_rules"></a> [custom\_gcs\_api\_lifecycle\_rules](#input\_custom\_gcs\_api\_lifecycle\_rules)
+
+Description: Additional lifecycle rules for the API GCS bucket. Allows defining custom object expiration policies for specific prefixes.
+
+Type:
+
+```hcl
+list(object({
+    action = object({
+      type          = string
+      storage_class = optional(string)
+    })
+    condition = object({
+      age                        = optional(number)
+      days_since_noncurrent_time = optional(number)
+      matches_prefix             = optional(list(string))
+      matches_suffix             = optional(list(string))
+      with_state                 = optional(string)
+    })
+  }))
+```
+
+Default: `[]`
+
+### <a name="input_custom_gcs_brainstore_lifecycle_rules"></a> [custom\_gcs\_brainstore\_lifecycle\_rules](#input\_custom\_gcs\_brainstore\_lifecycle\_rules)
+
+Description: Additional lifecycle rules for the brainstore GCS bucket. Allows defining custom object expiration policies for specific prefixes.
+
+Type:
+
+```hcl
+list(object({
+    action = object({
+      type          = string
+      storage_class = optional(string)
+    })
+    condition = object({
+      age                        = optional(number)
+      days_since_noncurrent_time = optional(number)
+      matches_prefix             = optional(list(string))
+      matches_suffix             = optional(list(string))
+      with_state                 = optional(string)
+    })
+  }))
+```
+
+Default: `[]`
+
 ### <a name="input_deploy_gke_cluster"></a> [deploy\_gke\_cluster](#input\_deploy\_gke\_cluster)
 
 Description: Whether to deploy the GKE cluster.
@@ -85,30 +133,6 @@ Type: `list(string)`
 
 Default: `[]`
 
-### <a name="input_gcs_brainstore_lifecycle_rules"></a> [gcs\_brainstore\_lifecycle\_rules](#input\_gcs\_brainstore\_lifecycle\_rules)
-
-Description: Additional lifecycle rules for the brainstore GCS bucket. Allows defining custom object expiration policies for specific prefixes.
-
-Type:
-
-```hcl
-list(object({
-    action = object({
-      type          = string
-      storage_class = optional(string)
-    })
-    condition = object({
-      age                        = optional(number)
-      days_since_noncurrent_time = optional(number)
-      matches_prefix             = optional(list(string))
-      matches_suffix             = optional(list(string))
-      with_state                 = optional(string)
-    })
-  }))
-```
-
-Default: `[]`
-
 ### <a name="input_gcs_bucket_retention_days"></a> [gcs\_bucket\_retention\_days](#input\_gcs\_bucket\_retention\_days)
 
 Description: Number of days to retain objects in the Brainstore GCS buckets.
@@ -127,7 +151,7 @@ Default: `false`
 
 ### <a name="input_gcs_soft_delete_retention_days"></a> [gcs\_soft\_delete\_retention\_days](#input\_gcs\_soft\_delete\_retention\_days)
 
-Description: Number of days to retain soft-deleted objects in Braintrust GCS buckets. During this period, deleted objects can be recovered.
+Description: Number of days to retain soft-deleted objects in Braintrust GCS buckets. During this period, deleted objects can be recovered. Set to 0 to disable soft delete policy. This value must be be 0 or between 7 and 90 days.
 
 Type: `number`
 
