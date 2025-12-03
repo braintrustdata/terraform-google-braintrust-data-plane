@@ -42,15 +42,17 @@ module "redis" {
 module "storage" {
   source = "./modules/storage"
 
-  deployment_name                 = var.deployment_name
-  gcs_kms_cmek_id                 = module.kms.kms_key_id
-  gcs_additional_allowed_origins  = var.gcs_additional_allowed_origins
-  gcs_bucket_retention_days       = var.gcs_bucket_retention_days
-  gcs_versioning_enabled          = var.gcs_versioning_enabled
-  gcs_storage_class               = var.gcs_storage_class
-  gcs_uniform_bucket_level_access = var.gcs_uniform_bucket_level_access
-  gcs_force_destroy               = var.gcs_force_destroy
-  gcs_soft_delete_retention_days  = var.gcs_soft_delete_retention_days
+  deployment_name                       = var.deployment_name
+  gcs_kms_cmek_id                       = module.kms.kms_key_id
+  gcs_additional_allowed_origins        = var.gcs_additional_allowed_origins
+  gcs_bucket_retention_days             = var.gcs_bucket_retention_days
+  gcs_versioning_enabled                = var.gcs_versioning_enabled
+  gcs_storage_class                     = var.gcs_storage_class
+  gcs_uniform_bucket_level_access       = var.gcs_uniform_bucket_level_access
+  gcs_force_destroy                     = var.gcs_force_destroy
+  gcs_soft_delete_retention_days        = var.gcs_soft_delete_retention_days
+  custom_gcs_brainstore_lifecycle_rules = var.custom_gcs_brainstore_lifecycle_rules
+  custom_gcs_api_lifecycle_rules        = var.custom_gcs_api_lifecycle_rules
 }
 
 module "gke-cluster" {

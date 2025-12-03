@@ -62,3 +62,39 @@ variable "gcs_soft_delete_retention_days" {
   }
 }
 
+variable "custom_gcs_brainstore_lifecycle_rules" {
+  description = "Additional lifecycle rules for the brainstore GCS bucket. Allows defining custom object expiration policies for specific prefixes."
+  type = list(object({
+    action = object({
+      type          = string
+      storage_class = optional(string)
+    })
+    condition = object({
+      age                        = optional(number)
+      days_since_noncurrent_time = optional(number)
+      matches_prefix             = optional(list(string))
+      matches_suffix             = optional(list(string))
+      with_state                 = optional(string)
+    })
+  }))
+  default = []
+}
+
+variable "custom_gcs_api_lifecycle_rules" {
+  description = "Additional lifecycle rules for the API GCS bucket. Allows defining custom object expiration policies for specific prefixes."
+  type = list(object({
+    action = object({
+      type          = string
+      storage_class = optional(string)
+    })
+    condition = object({
+      age                        = optional(number)
+      days_since_noncurrent_time = optional(number)
+      matches_prefix             = optional(list(string))
+      matches_suffix             = optional(list(string))
+      with_state                 = optional(string)
+    })
+  }))
+  default = []
+}
+

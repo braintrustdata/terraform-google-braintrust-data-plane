@@ -52,6 +52,23 @@ resource "google_storage_bucket" "brainstore" {
     }
   }
 
+  dynamic "lifecycle_rule" {
+    for_each = var.custom_gcs_brainstore_lifecycle_rules
+    content {
+      action {
+        type          = lifecycle_rule.value.action.type
+        storage_class = lifecycle_rule.value.action.storage_class
+      }
+      condition {
+        age                        = lifecycle_rule.value.condition.age
+        days_since_noncurrent_time = lifecycle_rule.value.condition.days_since_noncurrent_time
+        matches_prefix             = lifecycle_rule.value.condition.matches_prefix
+        matches_suffix             = lifecycle_rule.value.condition.matches_suffix
+        with_state                 = lifecycle_rule.value.condition.with_state
+      }
+    }
+  }
+
   lifecycle_rule {
     condition {
       age = 1
@@ -111,6 +128,23 @@ resource "google_storage_bucket" "api" {
 
   soft_delete_policy {
     retention_duration_seconds = var.gcs_soft_delete_retention_days * 86400
+  }
+
+  dynamic "lifecycle_rule" {
+    for_each = var.custom_gcs_api_lifecycle_rules
+    content {
+      action {
+        type          = lifecycle_rule.value.action.type
+        storage_class = lifecycle_rule.value.action.storage_class
+      }
+      condition {
+        age                        = lifecycle_rule.value.condition.age
+        days_since_noncurrent_time = lifecycle_rule.value.condition.days_since_noncurrent_time
+        matches_prefix             = lifecycle_rule.value.condition.matches_prefix
+        matches_suffix             = lifecycle_rule.value.condition.matches_suffix
+        with_state                 = lifecycle_rule.value.condition.with_state
+      }
+    }
   }
 
   # Lifecycle rule for code-bundle path
