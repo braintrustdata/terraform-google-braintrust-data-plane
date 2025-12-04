@@ -6,8 +6,8 @@ This module is used to create the VPC, Databases, Redis, Storage, IAM, and assoc
 
 ## Module Configuration
 
-All module input variables and outputs are documented here:
-[`module-docs.md`](module-docs.md)
+Module input variables are defined in [`variables.tf`](variables.tf) and
+outputs are defined in [`outputs.tf`](outputs.tf).
 
 ## How to use this module
 
