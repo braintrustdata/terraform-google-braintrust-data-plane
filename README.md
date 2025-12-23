@@ -4,7 +4,7 @@ This module is used to create the VPC, Databases, Redis, Storage, IAM, and assoc
 
 ## Architecture Diagram
 
-![Architecture Diagram](assets/lambda-arch-diagram-export-12-23-2025.png)
+![Architecture Diagram](assets/gke-arch-diagram-export-12-23-2025.png)
 
 ## Module Configuration
 
