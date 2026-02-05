@@ -47,7 +47,6 @@ Once the Terraform has been deployed, there are several steps that will need to 
     gcloud container clusters get-credentials "<your-gke-cluster-name>" --region "<your-deployed-region>"
     ```
 
-1. Namespace creation
 
 1. Create the Kubernetes Namespace for Braintrust:
 
