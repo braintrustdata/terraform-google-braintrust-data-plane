@@ -1,4 +1,6 @@
-# This is an example of a standard **production-sized** Braintrust data plane deployment. Copy this directory to a new directory in your own repository and modify the files to match your environment.
+# Example GCP Braintrust data plane
+
+This is an example of a standard **production-sized** Braintrust data plane deployment. Copy this directory to a new directory in your own repository and modify the files to match your environment.
 
 ## Configure Terraform
 
@@ -18,7 +20,7 @@ With GCP, their services or APIs are disabled by default in a project. When tryi
 gcloud config set project "project id"
 ```
 
-2. The below code will enable all the services that are required for Braintrust. Some of these may already be enabled
+1. The below code will enable all the services that are required for Braintrust. Some of these may already be enabled
 
 ```bash
 services_to_enable=("storage-api.googleapis.com" "storage-component.googleapis.com" "storage.googleapis.com" "redis.googleapis.com" "secretmanager.googleapis.com" "servicenetworking.googleapis.com" "logging.googleapis.com" "monitoring.googleapis.com" "oslogin.googleapis.com" "dns.googleapis.com" "cloudresourcemanager.googleapis.com" "compute.googleapis.com" "cloudkms.googleapis.com" "autoscaling.googleapis.com" "iam.googleapis.com" "iamcredentials.googleapis.com" "vpcaccess.googleapis.com" "sts.googleapis.com" "container.googleapis.com" "sqladmin.googleapis.com" "artifactregistry.googleapis.com")
@@ -29,8 +31,7 @@ for service in ${services_to_enable[*]}; do
 done
 ```
 
-3. Wait 5~ minutes for the services to be enabled.
-
+1. Wait 5~ minutes for the services to be enabled.
 
 ## After Terraform deployment
 
@@ -38,7 +39,7 @@ Once the Terraform has been deployed, there are several steps that will need to 
 
 1. Kubernetes Auth
 
-Authenticate to the GKE cluster:
+    Authenticate to the GKE cluster:
 
     ```shell
     gcloud auth login
@@ -46,39 +47,40 @@ Authenticate to the GKE cluster:
     gcloud container clusters get-credentials "<your-gke-cluster-name>" --region "<your-deployed-region>"
     ```
 
-2. Namespace creation
 
-3. Create the Kubernetes Namespace for Braintrust:
+1. Create the Kubernetes Namespace for Braintrust:
 
-  ```shell
-   kubectl create namespace braintrust
-   ```
+    ```shell
+    kubectl create namespace braintrust
+    ```
 
-3. Kubernetes Secret Creation
+1. Kubernetes Secret Creation
 
-Create the required secrets for the deployment. There are a variety of ways to create kubernetes secrets, if you have an existing process / method feel free to use that to create the secrets. The values for most of these will come from the Terraform and can be shown with `terraform output "<output-name>"`
+    Create the required secrets for the deployment. There are a variety of ways to create kubernetes secrets, if you have an existing process / method feel free to use that to create the secrets. The values for most of these will come from the Terraform and can be shown with `terraform output "<output-name>"`
 
-Below is an example using kubectl to create the secrets.
+    Below is an example using kubectl to create the secrets.
 
- kubectl create secret generic braintrust-secrets \
-   --from-literal=REDIS_URL="<redis_url>" \
-   --from-literal=PG_URL="<pg_url>" \
-   --from-literal=GCS_ACCESS_KEY_ID="<braintrust_hmac_access_id>" \
-   --from-literal=GCS_SECRET_ACCESS_KEY="<braintrust_hmac_secret>" \
-   --from-literal=BRAINSTORE_LICENSE_KEY="<your-brainstore-license-key>" \
-   --from-literal=FUNCTION_SECRET_KEY="<randomly-generated-secret-string>" \
-   --namespace=braintrust
+    ```shell
+    kubectl create secret generic braintrust-secrets \
+      --from-literal=REDIS_URL="<redis_url>" \
+      --from-literal=PG_URL="<pg_url>" \
+      --from-literal=GCS_ACCESS_KEY_ID="<braintrust_hmac_access_id>" \
+      --from-literal=GCS_SECRET_ACCESS_KEY="<braintrust_hmac_secret>" \
+      --from-literal=BRAINSTORE_LICENSE_KEY="<your-brainstore-license-key>" \
+      --from-literal=FUNCTION_SECRET_KEY="<randomly-generated-secret-string>" \
+      --namespace=braintrust
+    ```
 
-4. Deploy Helm Chart
+1. Deploy Helm Chart
 
-Review the (helm chart)[https://github.com/braintrustdata/helm] to deploy Braintrust on the newly deployed GKE cluster.
+    Review the [helm chart](https://github.com/braintrustdata/helm) to deploy Braintrust on the newly deployed GKE cluster.
 
-5. Accessing the API
+1. Accessing the API
 
-The dataplane requires a HTTPS connection to the API pods. This connection will require a valid HTTPS certificate that is trusted by the clients connecting to the data plane. Google doesn't have a native service that provides managed DNS & Managed SSL certificates like AWS CloudFront or Azure Front Door. There are a several ways to provide a DNS name with a SSL certificate however.
+    The dataplane requires a HTTPS connection to the API pods. This connection will require a valid HTTPS certificate that is trusted by the clients connecting to the data plane. Google doesn't have a native service that provides managed DNS & Managed SSL certificates like AWS CloudFront or Azure Front Door. There are a several ways to provide a DNS name with a SSL certificate however.
 
-1. Use Cloud Run to run a NGINX container to do SSL termination.
-2. Use a Load balancer for the API service with a certificate from an internal CA or with Let's Encrypt.
+    1. Use Cloud Run to run a NGINX container to do SSL termination.
+    1. Use a Load balancer for the API service with a certificate from an internal CA or with Let's Encrypt.
 
 ## Pointing your Organization to your data plane
 
