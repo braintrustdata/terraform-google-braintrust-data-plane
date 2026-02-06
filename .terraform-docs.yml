@@ -1,0 +1,22 @@
+formatter: markdown table
+
+output:
+  file: README.md
+  mode: inject
+  template: |-
+    <!-- BEGIN_TF_DOCS -->
+
+    ## Reference
+
+    {{ .Content }}
+
+    <!-- END_TF_DOCS -->
+
+recursive:
+  enabled: true
+  path: modules
+  include-main: true
+
+settings:
+  indent: 3
+
