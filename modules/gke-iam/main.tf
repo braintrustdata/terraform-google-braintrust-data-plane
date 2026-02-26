@@ -104,3 +104,15 @@ resource "google_storage_bucket_iam_member" "brainstore_brainstore_gcs_reader" {
   role   = "roles/storage.legacyBucketReader"
   member = "serviceAccount:${google_service_account.brainstore.email}"
 }
+
+resource "google_storage_bucket_iam_member" "brainstore_api_bucket_gcs_object_admin" {
+  bucket = var.braintrust_api_bucket_id
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.brainstore.email}"
+}
+
+resource "google_storage_bucket_iam_member" "brainstore_api_bucket_gcs_reader" {
+  bucket = var.braintrust_api_bucket_id
+  role   = "roles/storage.legacyBucketReader"
+  member = "serviceAccount:${google_service_account.brainstore.email}"
+}
