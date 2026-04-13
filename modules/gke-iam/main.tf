@@ -89,8 +89,8 @@ resource "google_service_account_iam_binding" "brainstore_workload_identity" {
   role               = "roles/iam.workloadIdentityUser"
 
   members = [
-    "serviceAccount:${data.google_project.current.project_id}.svc.id.goog[${var.braintrust_kube_namespace}/${var.brainstore_kube_svc_account}]",
-    "serviceAccount:${data.google_project.current.project_id}.svc.id.goog[${var.braintrust_kube_namespace}/${var.braintrust_kube_svc_account}]",
+    "serviceAccount:${data.google_project.current.project_id}.svc.id.goog[${var.braintrust_kube_namespace}/${var.brainstore_kube_svc_account}]", # brainstore pods
+    "serviceAccount:${data.google_project.current.project_id}.svc.id.goog[${var.braintrust_kube_namespace}/${var.braintrust_kube_svc_account}]", # API pod (needs GCS access for 2.0+)
   ]
 }
 

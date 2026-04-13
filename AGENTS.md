@@ -33,10 +33,6 @@ The `gke-iam` module uses `google_service_account_iam_binding`, which is **autho
 
 Both the `brainstore` and `braintrust-api` Kubernetes service accounts must be bound to the brainstore GCP service account. The API pod accesses GCS directly for endpoints like `/brainstore/object-data-exists`.
 
-### Database Encryption Cosmetic Drift
-
-GCP API returns `database_encryption.state` as `ALL_OBJECTS_ENCRYPTION_ENABLED` but Terraform writes `ENCRYPTED`. This causes a no-op GKE cluster update (10-15 min) on every apply. A `lifecycle { ignore_changes }` block is the recommended fix but has not been applied yet.
-
 ### First-Deploy Timing Issue
 
 The module may fail on the first `terraform apply` due to a timing issue with the VPC private service connection. Re-running `terraform apply` typically resolves it.
