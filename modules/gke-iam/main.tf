@@ -116,3 +116,11 @@ resource "google_storage_bucket_iam_member" "brainstore_api_bucket_gcs_reader" {
   role   = "roles/storage.legacyBucketReader"
   member = "serviceAccount:${google_service_account.brainstore.email}"
 }
+
+resource "google_service_account_iam_member" "brainstore_impersonation_target" {
+  for_each = toset(var.brainstore_impersonation_targets)
+
+  service_account_id = each.value
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${google_service_account.brainstore.email}"
+}

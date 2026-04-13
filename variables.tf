@@ -333,9 +333,15 @@ variable "brainstore_kube_svc_account" {
   default     = "brainstore"
 }
 
-# API container doesn't support GCS native storage integration yet, so we use HMAC keys instead. 
+# With data plane 2.0.0 and later native auth can be used instead of HMAC keys.
 variable "braintrust_hmac_key_enabled" {
   type        = bool
   description = "Whether to enable HMAC keys for Braintrust API."
   default     = true
+}
+
+variable "brainstore_impersonation_targets" {
+  type        = list(string)
+  description = "Full resource names of service accounts (same or other projects) that the brainstore service account can impersonate via roles/iam.serviceAccountTokenCreator. Format: projects/{project_id}/serviceAccounts/{email}"
+  default     = []
 }
