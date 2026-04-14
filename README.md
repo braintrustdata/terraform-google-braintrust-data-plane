@@ -1,7 +1,5 @@
 # Braintrust Terraform Google Module
 
-This module is currently beta status. There may be breaking changes that require a complete deletion and re-deployment
-
 This module is used to create the VPC, Databases, Redis, Storage, IAM, and associated resources for the self-hosted Braintrust data plane on Google using Google Kubernetes Engine.
 
 ## Module Configuration
@@ -36,9 +34,6 @@ This section is only relevant if you are a contributor who wants to make changes
 
 ## TODO
 
-- Logging is configured to use the default project log sink, need to determine if a custom log sink will be needed.
 - This module will fail the first time it is deployed due to timing issue with the private connection for the VPC. Exploring ways to fix this still without adding a module depends on which causes issues.
 - Explore customer support module like AWS module
-- Explore optional cloud-run module as front end for braintrust api frontend
 - Explore using Terraform to enable google services instead of CLI/GUI
-- Test support for GKE auto pilot nodes

@@ -43,3 +43,9 @@ variable "braintrust_hmac_key_enabled" {
   description = "Whether to enable HMAC keys for Braintrust API."
   default     = true
 }
+
+variable "brainstore_impersonation_targets" {
+  type        = list(string)
+  description = "Full resource names of service accounts (same or other projects) that the brainstore service account can impersonate via roles/iam.serviceAccountTokenCreator. Format: projects/{project_id}/serviceAccounts/{email}"
+  default     = []
+}

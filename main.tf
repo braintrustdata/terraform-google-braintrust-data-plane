@@ -76,11 +76,12 @@ module "gke-cluster" {
 module "gke-iam" {
   source = "./modules/gke-iam"
 
-  deployment_name             = var.deployment_name
-  braintrust_kube_namespace   = var.braintrust_kube_namespace
-  braintrust_kube_svc_account = var.braintrust_kube_svc_account
-  brainstore_kube_svc_account = var.brainstore_kube_svc_account
-  braintrust_api_bucket_id    = module.storage.api_bucket_name
-  brainstore_gcs_bucket_id    = module.storage.brainstore_bucket_name
-  braintrust_hmac_key_enabled = var.braintrust_hmac_key_enabled
+  deployment_name                  = var.deployment_name
+  braintrust_kube_namespace        = var.braintrust_kube_namespace
+  braintrust_kube_svc_account      = var.braintrust_kube_svc_account
+  brainstore_kube_svc_account      = var.brainstore_kube_svc_account
+  braintrust_api_bucket_id         = module.storage.api_bucket_name
+  brainstore_gcs_bucket_id         = module.storage.brainstore_bucket_name
+  braintrust_hmac_key_enabled      = var.braintrust_hmac_key_enabled
+  brainstore_impersonation_targets = var.brainstore_impersonation_targets
 }
