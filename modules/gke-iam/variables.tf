@@ -29,7 +29,7 @@ variable "brainstore_kube_svc_account" {
 
 variable "braintrust_api_bucket_id" {
   type        = string
-  description = "The ID of the GCS bucket for Braintrust API (contains code-bundle/ and response/ paths)."
+  description = "The ID of the GCS bucket for Braintrust API (contains code-bundle and brainstore-cache paths)."
 }
 
 variable "brainstore_gcs_bucket_id" {
