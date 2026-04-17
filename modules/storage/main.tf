@@ -112,7 +112,7 @@ resource "google_storage_bucket" "brainstore" {
 }
 
 #----------------------------------------------------------------------------------------------
-# Google cloud storage (GCS) bucket - api (combines code-bundle and response)
+# Google cloud storage (GCS) bucket - api (combines code-bundle and brainstore-cache)
 #----------------------------------------------------------------------------------------------
 resource "google_storage_bucket" "api" {
   name                        = "${var.deployment_name}-api-${random_id.gcs_suffix.hex}"
@@ -147,7 +147,7 @@ resource "google_storage_bucket" "api" {
     }
   }
 
-  # Lifecycle rule for code-bundle path
+  # Lifecycle rule for code-bundle path (API layer writes here)
   lifecycle_rule {
     condition {
       days_since_noncurrent_time = var.gcs_bucket_retention_days
@@ -158,11 +158,22 @@ resource "google_storage_bucket" "api" {
     }
   }
 
-  # Lifecycle rule for response path
+  # Lifecycle rule for response path (API layer writes here)
   lifecycle_rule {
     condition {
       age            = 1
       matches_prefix = ["response/"]
+    }
+    action {
+      type = "Delete"
+    }
+  }
+
+  # Lifecycle rule for brainstore-cache path (Brainstore writes here, ephemeral cache)
+  lifecycle_rule {
+    condition {
+      age            = 1
+      matches_prefix = ["brainstore-cache/"]
     }
     action {
       type = "Delete"
