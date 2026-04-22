@@ -2,9 +2,9 @@
 # Common
 #----------------------------------------------------------------------------------------------
 locals {
-  common_labels = {
+  common_labels = merge(var.custom_labels, {
     braintrustdeploymentname = var.deployment_name
-  }
+  })
 }
 
 data "google_project" "current" {}

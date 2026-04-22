@@ -11,9 +11,9 @@ locals {
 
   all_origins = concat(local.default_origins, var.gcs_additional_allowed_origins)
 
-  common_labels = {
+  common_labels = merge(var.custom_labels, {
     braintrustdeploymentname = var.deployment_name
-  }
+  })
 }
 
 data "google_project" "current" {}
