@@ -21,6 +21,25 @@ variable "deployment_name" {
   }
 }
 
+variable "custom_labels" {
+  type        = map(string)
+  description = "Optional labels to apply to all resources that support labels."
+  default     = {}
+
+  validation {
+    condition = alltrue([
+      for k, v in var.custom_labels :
+      can(regex("^[a-z][a-z0-9_-]{0,62}$", k)) && can(regex("^[a-z0-9_-]{0,63}$", v))
+    ])
+    error_message = "Label keys must start with a lowercase letter and contain only lowercase letters, numbers, underscores, and dashes (max 63 chars). Values must contain only lowercase letters, numbers, underscores, and dashes (max 63 chars)."
+  }
+
+  validation {
+    condition     = length(var.custom_labels) <= 63
+    error_message = "A maximum of 63 custom labels are allowed."
+  }
+}
+
 #----------------------------------------------------------------------------------------------
 # VPC
 #----------------------------------------------------------------------------------------------
@@ -342,6 +361,6 @@ variable "braintrust_hmac_key_enabled" {
 
 variable "brainstore_impersonation_targets" {
   type        = list(string)
-  description = "Full resource names of service accounts (same or other projects) that the brainstore service account can impersonate via roles/iam.serviceAccountTokenCreator. Format: projects/{project_id}/serviceAccounts/{email}"
+  description = "Full resource names of service accounts (same or other projects) that the brainstore service account can impersonate via roles/iam.serviceAccountTokenCreator. Format: projects/{project_id}/serviceAccounts/{email}. Only required if you are not granting IAM access to the brainstore service account yourself. Note: the principal running this Terraform deployment must have permission to manage IAM policies on the target service accounts (e.g. roles/iam.serviceAccountAdmin or roles/resourcemanager.projectIamAdmin)."
   default     = []
 }

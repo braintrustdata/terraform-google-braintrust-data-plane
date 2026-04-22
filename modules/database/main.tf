@@ -1,7 +1,7 @@
 locals {
-  common_labels = {
+  common_labels = merge(var.custom_labels, {
     braintrustdeploymentname = var.deployment_name
-  }
+  })
   postgres_username = "postgres"
   postgres_password = random_password.postgres_password.result
 }

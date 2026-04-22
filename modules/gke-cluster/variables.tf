@@ -6,6 +6,12 @@ variable "deployment_name" {
   type        = string
 }
 
+variable "custom_labels" {
+  type        = map(string)
+  description = "Optional labels to apply to all resources that support labels."
+  default     = {}
+}
+
 #----------------------------------------------------------------------------------------------
 # GKE Cluster
 #----------------------------------------------------------------------------------------------

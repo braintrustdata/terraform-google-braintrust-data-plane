@@ -11,12 +11,14 @@ module "kms" {
   source = "./modules/kms"
 
   deployment_name = var.deployment_name
+  custom_labels   = var.custom_labels
 }
 
 module "database" {
   source = "./modules/database"
 
   deployment_name              = var.deployment_name
+  custom_labels                = var.custom_labels
   postgres_network             = var.create_vpc ? module.vpc[0].network_self_link : var.existing_network_self_link
   postgres_kms_cmek_id         = module.kms.kms_key_id
   postgres_version             = var.postgres_version
@@ -33,6 +35,7 @@ module "redis" {
   source = "./modules/redis"
 
   deployment_name      = var.deployment_name
+  custom_labels        = var.custom_labels
   redis_network        = var.create_vpc ? module.vpc[0].network_self_link : var.existing_network_self_link
   redis_kms_cmek_id    = module.kms.kms_key_id
   redis_version        = var.redis_version
@@ -43,6 +46,7 @@ module "storage" {
   source = "./modules/storage"
 
   deployment_name                       = var.deployment_name
+  custom_labels                         = var.custom_labels
   gcs_kms_cmek_id                       = module.kms.kms_key_id
   gcs_additional_allowed_origins        = var.gcs_additional_allowed_origins
   gcs_bucket_retention_days             = var.gcs_bucket_retention_days
@@ -60,6 +64,7 @@ module "gke-cluster" {
   count  = var.deploy_gke_cluster ? 1 : 0
 
   deployment_name                    = var.deployment_name
+  custom_labels                      = var.custom_labels
   gke_network                        = var.create_vpc ? module.vpc[0].network_self_link : var.existing_network_self_link
   gke_subnetwork                     = var.create_vpc ? module.vpc[0].subnet_self_link : var.existing_subnet_self_link
   gke_control_plane_cidr             = var.gke_control_plane_cidr

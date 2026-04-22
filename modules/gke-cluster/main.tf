@@ -1,6 +1,12 @@
 #----------------------------------------------------------------------------------------------
 # Common
 #----------------------------------------------------------------------------------------------
+locals {
+  common_labels = merge(var.custom_labels, {
+    braintrustdeploymentname = var.deployment_name
+  })
+}
+
 data "google_client_config" "current" {}
 
 data "google_project" "current" {}
@@ -24,6 +30,8 @@ resource "google_container_cluster" "braintrust_autopilot" {
   subnetwork = var.gke_subnetwork
 
   deletion_protection = var.gke_deletion_protection
+
+  resource_labels = local.common_labels
 
   # Private cluster configuration
   dynamic "private_cluster_config" {
