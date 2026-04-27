@@ -21,6 +21,7 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 
 BYOC_ADMIN_GROUP="byoc-admins@braintrustdata.com"
+AUTOMATION_SA="serviceAccount:terraform-execution@braintrust-byoc-management.iam.gserviceaccount.com"
 SA_NAME="braintrust-mgmt"
 PROJECT_ID=""
 
@@ -61,6 +62,7 @@ if [[ -z "$PROJECT_ID" ]]; then
   usage
 fi
 
+
 if ! command -v gcloud &>/dev/null; then
   echo "Error: gcloud CLI is not installed. Install it from https://cloud.google.com/sdk/docs/install"
   exit 1
@@ -88,6 +90,7 @@ echo "=========================================="
 echo " Project:         $PROJECT_ID"
 echo " Service Account: $SA_EMAIL"
 echo " Admin Group:     $BYOC_ADMIN_GROUP"
+echo " Automation SA:   $AUTOMATION_SA"
 echo "=========================================="
 echo ""
 
@@ -162,6 +165,19 @@ echo ">>> Granting impersonation on $SA_EMAIL to $BYOC_ADMIN_GROUP..."
 gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
   --project="$PROJECT_ID" \
   --member="group:$BYOC_ADMIN_GROUP" \
+  --role="roles/iam.serviceAccountTokenCreator"
+echo "    Done."
+echo ""
+
+# -----------------------------------------------------------------------------
+# Step 5: Grant impersonation to the Braintrust automation SA
+# This allows the automated pipeline (Atlantis, CI) to impersonate this SA
+# via SA chaining from the WIF-federated terraform-execution service account.
+# -----------------------------------------------------------------------------
+echo ">>> Granting impersonation on $SA_EMAIL to $AUTOMATION_SA..."
+gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
+  --project="$PROJECT_ID" \
+  --member="$AUTOMATION_SA" \
   --role="roles/iam.serviceAccountTokenCreator"
 echo "    Done."
 echo ""

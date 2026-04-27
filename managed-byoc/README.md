@@ -50,7 +50,9 @@ Run the provided `setup.sh` script to create the Braintrust management service a
 
 4. **Grants the same IAM roles to `byoc-admins@braintrustdata.com`** — Allows Braintrust engineers to operate directly in the project when needed.
 
-5. **Grants impersonation on the service account to `byoc-admins@braintrustdata.com`** — Allows Braintrust's systems to assume the management service account identity to deploy and manage your data plane.
+5. **Grants impersonation on the service account to `byoc-admins@braintrustdata.com`** — Allows Braintrust engineers to manually assume the management service account identity when needed.
+
+6. **Grants impersonation on the service account to Braintrust's automation SA** — Allows Braintrust's automated pipeline (CI/CD) to assume the management service account identity to deploy and manage your data plane. The automation SA authenticates to GCP via AWS→GCP Workload Identity Federation; no long-lived credentials are stored.
 
 ### Reviewing the script
 
