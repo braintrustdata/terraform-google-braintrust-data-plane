@@ -48,7 +48,8 @@ output "postgres_username" {
 }
 
 output "postgres_password" {
-  value = module.database.postgres_password
+  value     = module.database.postgres_password
+  sensitive = true
 }
 
 #----------------------------------------------------------------------------------------------
@@ -68,5 +69,6 @@ output "redis_server_ca_certs" {
 }
 
 output "redis_auth_string" {
-  value = module.redis.redis_auth_string
+  value     = module.redis.redis_auth_string
+  sensitive = true
 }
