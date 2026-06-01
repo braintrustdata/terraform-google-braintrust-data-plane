@@ -39,7 +39,8 @@ resource "google_compute_global_address" "private_ip_address" {
   name          = "${var.deployment_name}-private-ip-address"
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"
-  prefix_length = 16
+  address       = var.private_service_access_address
+  prefix_length = var.private_service_access_prefix_length
   network       = google_compute_network.vpc.id
 }
 

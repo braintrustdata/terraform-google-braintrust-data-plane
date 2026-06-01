@@ -20,6 +20,12 @@ module "braintrust-data-plane" {
 
   # The CIDR range for the subnet to deploy resources to.
   # subnet_cidr_range = "10.0.0.0/24"
+  #
+  # Private Service Access range for Cloud SQL and Memorystore. Defaults to a Google-selected /16.
+  # Set these if you need the private services peering range to avoid overlap with existing networks.
+  # Changing this after deployment can require rebuilding dependent resources.
+  # private_service_access_prefix_length = 16
+  # private_service_access_address       = "10.10.0.0"
 
   ### GKE Cluster configuration
   # Note: By default we deploy a GKE cluster. You must set deploy_gke_cluster to false to not deploy a GKE cluster, if you will provide your own GKE cluster.
@@ -28,6 +34,14 @@ module "braintrust-data-plane" {
   # gke_control_plane_authorized_cidrs = null # Allow all IPs to access the control plane
   # gke_enable_private_endpoint = false # Make sure the control plane endpoint is public
   # gke_control_plane_cidr = "10.0.1.0/28" # CIDR block for the control plane if it's Private
+  # Optional GKE Pod and Service IP ranges. Set these if you need to control the secondary ranges
+  # used by the cluster, especially to avoid overlap with peered VPCs or corporate networks.
+  # You can either provide CIDR blocks/netmask sizes or existing subnet secondary range names.
+  # Do not set both forms for the same range type. Changing these after deployment is disruptive.
+  # gke_pods_ipv4_cidr_block = "/20"
+  # gke_services_ipv4_cidr_block = "/22"
+  # gke_pods_secondary_range_name = "braintrust-pods"
+  # gke_services_secondary_range_name = "braintrust-services"
 
   ### Database configuration
   # postgres_version = "POSTGRES_17"
