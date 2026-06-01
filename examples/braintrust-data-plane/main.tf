@@ -36,10 +36,10 @@ module "braintrust-data-plane" {
   # gke_control_plane_cidr = "10.0.1.0/28" # CIDR block for the control plane if it's Private
   # Optional GKE Pod and Service IP ranges. Set these if you need to control the secondary ranges
   # used by the cluster, especially to avoid overlap with peered VPCs or corporate networks.
-  # You can either provide CIDR blocks/netmask sizes or existing subnet secondary range names.
+  # You can either provide CIDR blocks, netmask sizes such as "/20", or existing subnet secondary range names.
   # Do not set both forms for the same range type. Changing these after deployment is disruptive.
-  # gke_pods_ipv4_cidr_block = "/20"
-  # gke_services_ipv4_cidr_block = "/22"
+  # gke_pods_ipv4_cidr_block = "10.20.0.0/20"
+  # gke_services_ipv4_cidr_block = "10.30.0.0/22"
   # gke_pods_secondary_range_name = "braintrust-pods"
   # gke_services_secondary_range_name = "braintrust-services"
 
