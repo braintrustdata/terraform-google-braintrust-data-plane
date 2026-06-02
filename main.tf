@@ -29,6 +29,8 @@ module "database" {
   postgres_backup_start_time   = var.postgres_backup_start_time
   postgres_maintenance_window  = var.postgres_maintenance_window
   postgres_deletion_protection = var.postgres_deletion_protection
+
+  depends_on = [module.vpc]
 }
 
 module "redis" {
@@ -40,6 +42,8 @@ module "redis" {
   redis_kms_cmek_id    = module.kms.kms_key_id
   redis_version        = var.redis_version
   redis_memory_size_gb = var.redis_memory_size_gb
+
+  depends_on = [module.vpc]
 }
 
 module "storage" {
