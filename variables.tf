@@ -62,7 +62,7 @@ variable "subnet_cidr_range" {
 }
 
 variable "private_service_access_prefix_length" {
-  description = "Prefix length for the Private Service Access range used by Cloud SQL and Memorystore (when create_vpc is true). Must be 24 or lower, where lower values create larger ranges. Choose this carefully before first deployment; changing Private Service Access ranges later can require rebuilding dependent resources."
+  description = "Prefix length for the Private Service Access range used by Cloud SQL and Memorystore (when create_vpc is true). Valid values are 8 through 24: lower prefix lengths create larger ranges, while higher prefix lengths create smaller ranges. Smaller ranges are supported, but choose the size based on networking requirements after discussing with your Braintrust architecture team because they reduce future expansion headroom. Choose this carefully before first deployment; changing Private Service Access ranges later can require rebuilding dependent resources."
   type        = number
   default     = 16
 
@@ -309,13 +309,13 @@ variable "gke_pods_ipv4_cidr_block" {
 
 variable "gke_pods_secondary_range_name" {
   type        = string
-  description = "Optional name of an existing subnet secondary range to use for GKE Pod IPs. Cannot be set with gke_pods_ipv4_cidr_block. Use this when you want GKE to consume a pre-planned secondary range."
+  description = "Optional name of a secondary range that already exists on the selected subnet for GKE Pod IPs. This variable does not create the range. Cannot be set with gke_pods_ipv4_cidr_block."
   default     = null
 }
 
 variable "gke_services_ipv4_cidr_block" {
   type        = string
-  description = "Optional CIDR block or netmask size for GKE Service IPs. For example, '10.30.0.0/22' or '/22'. Cannot be set with gke_services_secondary_range_name. Choose this carefully before first deployment; changing GKE secondary ranges later is disruptive."
+  description = "Optional CIDR block or netmask size for GKE Service IPs. Most deployments should leave this unset unless they intentionally need a custom Service CIDR. For example, '10.30.0.0/22' or '/22'. Cannot be set with gke_services_secondary_range_name. Choose this carefully before first deployment; changing GKE secondary ranges later is disruptive."
   default     = null
 
   validation {
@@ -326,7 +326,7 @@ variable "gke_services_ipv4_cidr_block" {
 
 variable "gke_services_secondary_range_name" {
   type        = string
-  description = "Optional name of an existing subnet secondary range to use for GKE Service IPs. Cannot be set with gke_services_ipv4_cidr_block. Use this when you want GKE to consume a pre-planned secondary range."
+  description = "Optional name of a secondary range that already exists on the selected subnet for GKE Service IPs. This variable does not create the range. Most deployments should leave this unset unless they intentionally need a custom Service CIDR. Cannot be set with gke_services_ipv4_cidr_block."
   default     = null
 }
 

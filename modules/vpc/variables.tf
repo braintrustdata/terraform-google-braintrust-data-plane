@@ -20,7 +20,7 @@ variable "subnet_cidr_range" {
 }
 
 variable "private_service_access_prefix_length" {
-  description = "Prefix length for the Private Service Access range used by Cloud SQL and Memorystore. Must be 24 or lower, where lower values create larger ranges. Choose this carefully before first deployment; changing Private Service Access ranges later can require rebuilding dependent resources."
+  description = "Prefix length for the Private Service Access range used by Cloud SQL and Memorystore. Valid values are 8 through 24: lower prefix lengths create larger ranges, while higher prefix lengths create smaller ranges. Smaller ranges are supported, but choose the size based on the customer's networking requirements because they reduce future expansion headroom. Choose this carefully before first deployment; changing Private Service Access ranges later can require rebuilding dependent resources."
   type        = number
 
   validation {
