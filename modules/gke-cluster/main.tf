@@ -33,6 +33,22 @@ resource "google_container_cluster" "braintrust_autopilot" {
 
   resource_labels = local.common_labels
 
+  dynamic "ip_allocation_policy" {
+    for_each = (
+      var.gke_pods_ipv4_cidr_block != null ||
+      var.gke_pods_secondary_range_name != null ||
+      var.gke_services_ipv4_cidr_block != null ||
+      var.gke_services_secondary_range_name != null
+    ) ? [1] : []
+
+    content {
+      cluster_ipv4_cidr_block       = var.gke_pods_ipv4_cidr_block
+      cluster_secondary_range_name  = var.gke_pods_secondary_range_name
+      services_ipv4_cidr_block      = var.gke_services_ipv4_cidr_block
+      services_secondary_range_name = var.gke_services_secondary_range_name
+    }
+  }
+
   # Private cluster configuration
   dynamic "private_cluster_config" {
     for_each = var.gke_cluster_is_private ? [1] : []

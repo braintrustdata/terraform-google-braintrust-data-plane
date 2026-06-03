@@ -55,6 +55,40 @@ variable "gke_control_plane_cidr" {
   default     = "10.0.1.0/28"
 }
 
+variable "gke_pods_ipv4_cidr_block" {
+  type        = string
+  description = "Optional CIDR block or netmask size for GKE Pod IPs. For example, '10.20.0.0/20' or '/20'. Cannot be set with gke_pods_secondary_range_name. Choose this carefully before first deployment; changing GKE secondary ranges later is disruptive."
+  default     = null
+
+  validation {
+    condition     = var.gke_pods_ipv4_cidr_block == null || var.gke_pods_secondary_range_name == null
+    error_message = "`gke_pods_ipv4_cidr_block` cannot be set when `gke_pods_secondary_range_name` is set."
+  }
+}
+
+variable "gke_pods_secondary_range_name" {
+  type        = string
+  description = "Optional name of a secondary range that already exists on the selected subnet for GKE Pod IPs. This variable does not create the range. Cannot be set with gke_pods_ipv4_cidr_block."
+  default     = null
+}
+
+variable "gke_services_ipv4_cidr_block" {
+  type        = string
+  description = "Optional CIDR block or netmask size for GKE Service IPs. Most deployments should leave this unset unless they intentionally need a custom Service CIDR. For example, '10.30.0.0/22' or '/22'. Cannot be set with gke_services_secondary_range_name. Choose this carefully before first deployment; changing GKE secondary ranges later is disruptive."
+  default     = null
+
+  validation {
+    condition     = var.gke_services_ipv4_cidr_block == null || var.gke_services_secondary_range_name == null
+    error_message = "`gke_services_ipv4_cidr_block` cannot be set when `gke_services_secondary_range_name` is set."
+  }
+}
+
+variable "gke_services_secondary_range_name" {
+  type        = string
+  description = "Optional name of a secondary range that already exists on the selected subnet for GKE Service IPs. This variable does not create the range. Most deployments should leave this unset unless they intentionally need a custom Service CIDR. Cannot be set with gke_services_ipv4_cidr_block."
+  default     = null
+}
+
 variable "gke_control_plane_authorized_cidrs" {
   type        = list(string)
   description = "List of CIDR blocks authorized to access the GKE control plane. If not provided, allows all IPs (for public clusters)."

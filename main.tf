@@ -5,6 +5,9 @@ module "vpc" {
   deployment_name   = var.deployment_name
   vpc_name          = var.vpc_name
   subnet_cidr_range = var.subnet_cidr_range
+
+  private_service_access_prefix_length = var.private_service_access_prefix_length
+  private_service_access_address       = var.private_service_access_address
 }
 
 module "kms" {
@@ -68,6 +71,10 @@ module "gke-cluster" {
   gke_network                        = var.create_vpc ? module.vpc[0].network_self_link : var.existing_network_self_link
   gke_subnetwork                     = var.create_vpc ? module.vpc[0].subnet_self_link : var.existing_subnet_self_link
   gke_control_plane_cidr             = var.gke_control_plane_cidr
+  gke_pods_ipv4_cidr_block           = var.gke_pods_ipv4_cidr_block
+  gke_pods_secondary_range_name      = var.gke_pods_secondary_range_name
+  gke_services_ipv4_cidr_block       = var.gke_services_ipv4_cidr_block
+  gke_services_secondary_range_name  = var.gke_services_secondary_range_name
   gke_control_plane_authorized_cidrs = var.gke_control_plane_authorized_cidrs
   gke_enable_master_global_access    = var.gke_enable_master_global_access
   gke_cluster_is_private             = var.gke_cluster_is_private
