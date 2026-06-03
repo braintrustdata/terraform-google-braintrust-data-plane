@@ -75,6 +75,25 @@ Once the Terraform has been deployed, there are several steps that will need to 
 
     Review the [helm chart](https://github.com/braintrustdata/helm) to deploy Braintrust on the newly deployed GKE cluster.
 
+    Optional Braintrust data plane URL-security settings can also be configured through Terraform variables. If you set any of these variables, use the corresponding Terraform outputs to read the normalized values:
+
+    ```shell
+    terraform output -raw braintrust_data_plane_unsafe_url_request_mode
+    terraform output -raw braintrust_data_plane_url_security_dns_servers
+    terraform output -raw braintrust_data_plane_url_security_allow_cidrs
+    ```
+
+    Then add only the non-empty values under `api` in `helm-values.yaml`:
+
+    ```yaml
+    api:
+      unsafeUrlRequestMode: "reject"
+      urlSecurityDnsServers: "1.1.1.1,8.8.8.8"
+      urlSecurityAllowCidrs: "10.0.0.0/8,192.168.0.0/16"
+    ```
+
+    Leave these settings unset or empty to omit the corresponding data plane URL-security config. `unsafeUrlRequestMode` then uses the application default of `warn`.
+
 1. Accessing the API
 
     The dataplane requires a HTTPS connection to the API pods. This connection will require a valid HTTPS certificate that is trusted by the clients connecting to the data plane. Google doesn't have a native service that provides managed DNS & Managed SSL certificates like AWS CloudFront or Azure Front Door. There are a several ways to provide a DNS name with a SSL certificate however.

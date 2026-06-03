@@ -32,6 +32,22 @@ output "braintrust_hmac_secret" {
 }
 
 #----------------------------------------------------------------------------------------------
+# Braintrust data plane
+#----------------------------------------------------------------------------------------------
+
+output "braintrust_data_plane_unsafe_url_request_mode" {
+  value = lower(trimspace(var.unsafe_url_request_mode))
+}
+
+output "braintrust_data_plane_url_security_dns_servers" {
+  value = trimspace(var.url_security_dns_servers)
+}
+
+output "braintrust_data_plane_url_security_allow_cidrs" {
+  value = trimspace(var.url_security_allow_cidrs)
+}
+
+#----------------------------------------------------------------------------------------------
 # Database
 #----------------------------------------------------------------------------------------------
 
@@ -48,7 +64,8 @@ output "postgres_username" {
 }
 
 output "postgres_password" {
-  value = module.database.postgres_password
+  value     = module.database.postgres_password
+  sensitive = true
 }
 
 #----------------------------------------------------------------------------------------------
@@ -68,5 +85,6 @@ output "redis_server_ca_certs" {
 }
 
 output "redis_auth_string" {
-  value = module.redis.redis_auth_string
+  value     = module.redis.redis_auth_string
+  sensitive = true
 }

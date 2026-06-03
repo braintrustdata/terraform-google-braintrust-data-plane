@@ -62,4 +62,10 @@ module "braintrust-data-plane" {
   ### Advanced configuration
   # gcs_additional_allowed_origins = []
 
+  # Optional Braintrust data plane URL-security config. Leave unset or empty to omit these
+  # values. When unsafe_url_request_mode is omitted, the application defaults to warn.
+  # unsafe_url_request_mode  = "reject"
+  # url_security_dns_servers = "1.1.1.1,8.8.8.8"
+  # url_security_allow_cidrs = "10.0.0.0/8,192.168.0.0/16"
+
 }

@@ -24,6 +24,18 @@ output "brainstore_service_account" {
   value = module.braintrust-data-plane.brainstore_service_account
 }
 
+output "braintrust_data_plane_unsafe_url_request_mode" {
+  value = module.braintrust-data-plane.braintrust_data_plane_unsafe_url_request_mode
+}
+
+output "braintrust_data_plane_url_security_dns_servers" {
+  value = module.braintrust-data-plane.braintrust_data_plane_url_security_dns_servers
+}
+
+output "braintrust_data_plane_url_security_allow_cidrs" {
+  value = module.braintrust-data-plane.braintrust_data_plane_url_security_allow_cidrs
+}
+
 output "postgres_instance_name" {
   value = module.braintrust-data-plane.postgres_instance_name
 }
