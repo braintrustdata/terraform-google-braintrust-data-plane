@@ -1,0 +1,72 @@
+[
+  {
+    "name": "C3 vCPUs",
+    "quota_id": "C3-CPUS-per-project-region",
+    "compute_metric": "C3_CPUS",
+    "dimensions": {},
+    "desired_value": 500
+  },
+  {
+    "name": "C3D vCPUs",
+    "quota_id": "CPUS-PER-VM-FAMILY-per-project-region",
+    "compute_metric": "",
+    "dimensions": {"vm_family": "c3d"},
+    "desired_value": 500
+  },
+  {
+    "name": "C4 vCPUs",
+    "quota_id": "CPUS-PER-VM-FAMILY-per-project-region",
+    "compute_metric": "",
+    "dimensions": {"vm_family": "c4"},
+    "desired_value": 500
+  },
+  {
+    "name": "C4A vCPUs",
+    "quota_id": "CPUS-PER-VM-FAMILY-per-project-region",
+    "compute_metric": "",
+    "dimensions": {"vm_family": "c4a"},
+    "desired_value": 500
+  },
+  {
+    "name": "C4D vCPUs",
+    "quota_id": "CPUS-PER-VM-FAMILY-per-project-region",
+    "compute_metric": "",
+    "dimensions": {"vm_family": "c4d"},
+    "desired_value": 500
+  },
+  {
+    "name": "C3 Local SSD (GB)",
+    "quota_id": "LOCAL-SSD-TOTAL-GB-PER-VM-FAMILY-per-project-region",
+    "compute_metric": "",
+    "dimensions": {"vm_family": "c3"},
+    "desired_value": 22500
+  },
+  {
+    "name": "C3D Local SSD (GB)",
+    "quota_id": "LOCAL-SSD-TOTAL-GB-PER-VM-FAMILY-per-project-region",
+    "compute_metric": "",
+    "dimensions": {"vm_family": "c3d"},
+    "desired_value": 22500
+  },
+  {
+    "name": "C4 Local SSD (GB)",
+    "quota_id": "LOCAL-SSD-TOTAL-GB-PER-VM-FAMILY-per-project-region",
+    "compute_metric": "",
+    "dimensions": {"vm_family": "c4"},
+    "desired_value": 22500
+  },
+  {
+    "name": "C4A Local SSD (GB)",
+    "quota_id": "LOCAL-SSD-TOTAL-GB-PER-VM-FAMILY-per-project-region",
+    "compute_metric": "",
+    "dimensions": {"vm_family": "c4a"},
+    "desired_value": 22500
+  },
+  {
+    "name": "C4D Local SSD (GB)",
+    "quota_id": "LOCAL-SSD-TOTAL-GB-PER-VM-FAMILY-per-project-region",
+    "compute_metric": "",
+    "dimensions": {"vm_family": "c4d"},
+    "desired_value": 22500
+  }
+]

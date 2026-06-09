@@ -1,0 +1,18 @@
+[
+  "roles/compute.networkAdmin",
+  "roles/container.admin",
+  "roles/cloudsql.admin",
+  "roles/redis.admin",
+  "roles/storage.admin",
+  "roles/cloudkms.admin",
+  "roles/secretmanager.admin",
+  "roles/iam.serviceAccountAdmin",
+  "roles/resourcemanager.projectIamAdmin",
+  "roles/servicenetworking.networksAdmin",
+  "roles/serviceusage.serviceUsageAdmin",
+  "roles/dns.admin",
+  "roles/logging.admin",
+  "roles/monitoring.admin",
+  "roles/viewer",
+  "roles/cloudsupport.techSupportEditor"
+]
