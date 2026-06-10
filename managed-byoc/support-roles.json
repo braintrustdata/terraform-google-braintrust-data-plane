@@ -1,0 +1,7 @@
+[
+  "roles/viewer",
+  "roles/container.developer",
+  "roles/logging.viewer",
+  "roles/monitoring.viewer",
+  "roles/cloudsupport.techSupportEditor"
+]

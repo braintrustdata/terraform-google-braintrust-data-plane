@@ -15,7 +15,8 @@ output "postgres_username" {
 }
 
 output "postgres_password" {
-  value = local.postgres_password
+  value     = local.postgres_password
+  sensitive = true
 }
 
 output "postgres_iam_username" {

@@ -18,6 +18,7 @@ set -euo pipefail
 # Requirements:
 #   - gcloud CLI installed and authenticated
 #   - jq installed
+#   - curl installed
 # -----------------------------------------------------------------------------
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -35,6 +36,8 @@ MODE="list"
 PROJECT_ID=""
 REGION=""
 CONTACT_EMAIL="byoc-admins@braintrustdata.com"
+COMPUTE_SERVICE="compute.googleapis.com"
+QUOTAS_API_BASE="https://cloudquotas.googleapis.com/v1"
 
 usage() {
   cat <<'EOF'
@@ -65,6 +68,145 @@ compare_lt() {
   awk -v a="$1" -v b="$2" 'BEGIN { print (a < b) ? "1" : "0" }'
 }
 
+slugify() {
+  echo "$1" \
+    | tr '[:upper:]_' '[:lower:]-' \
+    | sed -E 's/[^a-z0-9-]+/-/g; s/-+/-/g; s/^-//; s/-$//'
+}
+
+quota_api_get() {
+  local path="$1"
+
+  curl -fsS \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "Accept: application/json" \
+    "${QUOTAS_API_BASE}/${path}"
+}
+
+lookup_cloud_quota_value() {
+  local quota_id="$1"
+  local dimensions_json="$2"
+  local quota_info_json
+
+  if ! quota_info_json=$(quota_api_get "projects/${PROJECT_NUMBER}/locations/global/services/${COMPUTE_SERVICE}/quotaInfos/${quota_id}" 2>/dev/null); then
+    return 1
+  fi
+
+  jq -er \
+    --arg region "$REGION" \
+    --argjson wanted_dims "$dimensions_json" '
+      def quota_value:
+        .details.quotaValue
+        // .details.value
+        // .details.effectiveValue
+        // .details.resetValue
+        // empty;
+
+      def region_matches:
+        (((.dimensions.region? // "") | ascii_downcase) == ($region | ascii_downcase))
+        or (
+          (.dimensions.region? // "") == ""
+          and ((.applicableLocations // []) | index($region))
+        );
+
+      def wanted_dimensions_match:
+        . as $info
+        | all(
+            $wanted_dims | to_entries[];
+            (($info.dimensions[.key]? // "") | ascii_downcase) == (.value | ascii_downcase)
+          );
+
+      (.dimensionsInfos // .dimensionsInfo // [])
+      | map(select(region_matches and wanted_dimensions_match))
+      | .[0]
+      | quota_value
+    ' <<<"$quota_info_json"
+}
+
+lookup_compute_region_quota_value() {
+  local compute_metric="$1"
+
+  if [[ -z "$compute_metric" ]]; then
+    return 1
+  fi
+
+  jq -er \
+    --arg metric "$compute_metric" \
+    '.[] | select(.metric == $metric) | .limit' \
+    <<<"$REGION_QUOTAS_JSON"
+}
+
+lookup_current_quota_value() {
+  local quota_id="$1"
+  local dimensions_json="$2"
+  local compute_metric="$3"
+  local value
+
+  if value=$(lookup_cloud_quota_value "$quota_id" "$dimensions_json" 2>/dev/null); then
+    echo "$value"
+    return 0
+  fi
+
+  if value=$(lookup_compute_region_quota_value "$compute_metric" 2>/dev/null); then
+    echo "$value"
+    return 0
+  fi
+
+  return 1
+}
+
+preference_id_for_quota() {
+  local quota_id="$1"
+  local dimensions_json="$2"
+  local dim_suffix
+
+  dim_suffix=$(jq -r \
+    --arg region "$REGION" \
+    '(. + {region: $region}) | to_entries | sort_by(.key) | map("\(.key)-\(.value)") | join("-")' \
+    <<<"$dimensions_json")
+
+  slugify "braintrust-${quota_id}-${dim_suffix}"
+}
+
+request_quota_preference() {
+  local quota_id="$1"
+  local dimensions_json="$2"
+  local desired_value="$3"
+  local preference_id="$4"
+  local request_body
+
+  request_body=$(jq -n \
+    --arg name "projects/${PROJECT_NUMBER}/locations/global/quotaPreferences/${preference_id}" \
+    --arg service "$COMPUTE_SERVICE" \
+    --arg quota_id "$quota_id" \
+    --arg email "$CONTACT_EMAIL" \
+    --arg justification "Braintrust managed BYOC data plane deployment requires GKE node pools with headroom for autoscaling." \
+    --argjson desired_value "$desired_value" \
+    --argjson dimensions "$(
+      jq -c --arg region "$REGION" '
+        . + {region: $region}
+        | if has("vm_family") then .vm_family = (.vm_family | ascii_upcase) else . end
+      ' <<<"$dimensions_json"
+    )" \
+    '{
+      name: $name,
+      service: $service,
+      quotaId: $quota_id,
+      quotaConfig: { preferredValue: $desired_value },
+      dimensions: $dimensions,
+      justification: $justification,
+      contactEmail: $email
+    }')
+
+  curl -fsS \
+    -X PATCH \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "$request_body" \
+    "${QUOTAS_API_BASE}/projects/${PROJECT_NUMBER}/locations/global/quotaPreferences/${preference_id}?allowMissing=true" \
+    >/dev/null
+}
+
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -84,8 +226,9 @@ fi
 
 require_cmd gcloud
 require_cmd jq
+require_cmd curl
 
-if ! gcloud auth print-access-token &>/dev/null; then
+if ! ACCESS_TOKEN=$(gcloud auth print-access-token 2>/dev/null); then
   echo "Error: not authenticated with gcloud. Run: gcloud auth login" >&2
   exit 1
 fi
@@ -98,14 +241,14 @@ fi
 # Validate config JSON
 jq empty "$CONFIG_PATH" >/dev/null
 if ! jq -e 'all(.[]; (.name | type == "string" and length > 0) and (.quota_id | type == "string" and length > 0) and (.desired_value | type == "number"))' "$CONFIG_PATH" >/dev/null; then
-  echo "Error: invalid quota config — each entry must have non-empty name, quota_id, and numeric desired_value." >&2
+  echo "Error: invalid quota config: each entry must have non-empty name, quota_id, and numeric desired_value." >&2
   exit 1
 fi
 
-# The Cloud Quotas API requires project number
+# The Cloud Quotas API requires project number.
 PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
 
-# Fetch all regional quotas once for current-value lookups
+# Keep this older lookup as a fallback for legacy quota metrics.
 REGION_QUOTAS_JSON=$(gcloud compute regions describe "$REGION" \
   --project="$PROJECT_ID" \
   --format=json 2>/dev/null | jq '.quotas')
@@ -129,84 +272,55 @@ printf "%-36s %-12s %-12s %-20s\n" "Quota" "Current" "Desired" "Action"
 printf "%-36s %-12s %-12s %-20s\n" "------------------------------------" "------------" "------------" "--------------------"
 
 while IFS= read -r entry; do
-  name=$(echo "$entry"           | jq -r '.name')
-  quota_id=$(echo "$entry"       | jq -r '.quota_id')
+  name=$(echo "$entry" | jq -r '.name')
+  quota_id=$(echo "$entry" | jq -r '.quota_id')
   compute_metric=$(echo "$entry" | jq -r '.compute_metric // ""')
-  dimensions_json=$(echo "$entry"| jq -r '.dimensions // {} | tojson')
-  desired_value=$(echo "$entry"  | jq -r '.desired_value')
+  dimensions_json=$(echo "$entry" | jq -r '.dimensions // {} | tojson')
+  desired_value=$(echo "$entry" | jq -r '.desired_value')
 
-  # Look up current quota limit from compute regions describe if metric is available
   current_value="n/a"
-  if [[ -n "$compute_metric" ]]; then
-    fetched=$(echo "$REGION_QUOTAS_JSON" | \
-      jq -r --arg m "$compute_metric" '.[] | select(.metric == $m) | .limit' 2>/dev/null || true)
-    [[ -n "$fetched" ]] && current_value="$fetched"
+  current_readable="0"
+  if fetched=$(lookup_current_quota_value "$quota_id" "$dimensions_json" "$compute_metric" 2>/dev/null); then
+    current_value="$fetched"
+    current_readable="1"
   fi
 
   if [[ "$MODE" == "request" ]]; then
-    # Build dimensions string: region + any extra dims from config
-    dim_str="region=$REGION"
-    extra_dims=$(echo "$dimensions_json" | jq -r 'to_entries[] | "\(.key)=\(.value)"' 2>/dev/null || true)
-    if [[ -n "$extra_dims" ]]; then
-      dim_str="${dim_str},${extra_dims//$'\n'/,}"
-    fi
-
-    # Request if current is below desired, or if current is unknown
+    # Request if current is below desired, or if current is unreadable.
     should_request="1"
-    if [[ "$current_value" != "n/a" ]]; then
+    if [[ "$current_readable" == "1" ]]; then
       should_request=$(compare_lt "$current_value" "$desired_value")
     fi
 
     if [[ "$should_request" == "1" ]]; then
+      preference_id=$(preference_id_for_quota "$quota_id" "$dimensions_json")
       err_file=$(mktemp)
-      if gcloud beta quotas preferences create \
-          --project="$PROJECT_NUMBER" \
-          --service=compute.googleapis.com \
-          --quota-id="$quota_id" \
-          --preferred-value="$desired_value" \
-          --dimensions="$dim_str" \
-          --email="$CONTACT_EMAIL" \
-          --justification="Braintrust managed BYOC data plane deployment requires GKE node pools with headroom for autoscaling." \
-          --quiet >/dev/null 2>"$err_file"; then
-        action="requested"
+      if request_quota_preference "$quota_id" "$dimensions_json" "$desired_value" "$preference_id" 2>"$err_file"; then
+        action="requested/updated"
       else
-        # Preference may already exist — try update
-        dim_suffix=$(echo "$dimensions_json" | jq -r 'to_entries | map("\(.key)-\(.value)") | join("-")' 2>/dev/null || true)
-        pref_id="${quota_id}${dim_suffix:+-$dim_suffix}"
-        if gcloud beta quotas preferences update "$pref_id" \
-            --service=compute.googleapis.com \
-            --quota-id="$quota_id" \
-            --preferred-value="$desired_value" \
-            --project="$PROJECT_NUMBER" \
-            --quiet >/dev/null 2>>"$err_file"; then
-          action="updated"
-        else
-          action="request-failed: $(tr '\n' ' ' < "$err_file")"
-        fi
+        action="request-failed: $(tr '\n' ' ' < "$err_file")"
       fi
       rm -f "$err_file"
     else
       action="already-ok"
     fi
   else
-    # list mode
-    if [[ "$current_value" != "n/a" ]]; then
+    if [[ "$current_readable" == "1" ]]; then
       if [[ "$(compare_lt "$current_value" "$desired_value")" == "1" ]]; then
         action="needs-raise"
       else
         action="ok"
       fi
     else
-      action="unknown"
+      action="unreadable"
     fi
   fi
 
   printf "%-36s %-12s %-12s %-20s\n" "$name" "$current_value" "$desired_value" "$action"
-
 done < <(jq -c '.[]' "$CONFIG_PATH")
 
 echo
 if [[ "$MODE" == "request" ]]; then
   echo "Quota requests submitted. Approval by Google typically takes minutes to a few business days."
-  echo "Monitor status with: gcloud beta quotas preferences list --project=$PROJECT_ID"
+  echo "Monitor status in the Google Cloud console or with the Cloud Quotas API."
 fi

@@ -1,3 +1,7 @@
+data "google_client_config" "current" {}
+
+data "google_project" "current" {}
+
 module "vpc" {
   source = "./modules/vpc"
   count  = var.create_vpc ? 1 : 0

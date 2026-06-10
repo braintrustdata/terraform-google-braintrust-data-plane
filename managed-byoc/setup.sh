@@ -4,15 +4,15 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 # Braintrust BYOC Setup Script for GCP
 #
-# Creates a service account in a customer GCP project,
-# grants it the IAM roles needed to deploy the braintrust-data-plane module,
-# and allows byoc-admins@braintrustdata.com to impersonate it.
+# Creates the customer-project access envelope used by Braintrust managed BYOC:
+# one deployment service account for automation and one support service account
+# for approved human support.
 #
-# Roles are loaded from roles.json and services from services.json in the
-# same directory as this script.
+# Roles are loaded from deployment-roles.json and support-roles.json. Services
+# are loaded from services.json in the same directory as this script.
 #
 # Usage:
-#   ./setup.sh --project <gcp-project-id> [--sa-name <service-account-name>]
+#   ./setup.sh --project <gcp-project-id>
 #
 # Requirements:
 #   - gcloud CLI installed and authenticated
@@ -20,18 +20,22 @@ set -euo pipefail
 #   - Caller must have permission to create SAs and set IAM policies in the project
 # -----------------------------------------------------------------------------
 
-BYOC_ADMIN_GROUP="byoc-admins@braintrustdata.com"
+SUPPORT_GROUP="byoc-admins@braintrustdata.com"
 AUTOMATION_SA="serviceAccount:terraform-execution@braintrust-byoc-management.iam.gserviceaccount.com"
-SA_NAME="braintrust-mgmt"
+DEPLOY_SA_NAME="braintrust-deploy"
+SUPPORT_SA_NAME="braintrust-support"
 PROJECT_ID=""
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 usage() {
-  echo "Usage: $0 --project <gcp-project-id> [--sa-name <service-account-name>]"
+  echo "Usage: $0 --project <gcp-project-id> [options]"
   echo ""
-  echo "  --project   (required) GCP project ID to set up"
-  echo "  --sa-name   (optional) Service account name (default: braintrust-mgmt)"
+  echo "  --project          (required) GCP project ID to set up"
+  echo "  --deploy-sa-name   (optional) Deployment service account name (default: braintrust-deploy)"
+  echo "  --support-sa-name  (optional) Support service account name (default: braintrust-support)"
+  echo "  --automation-sa    (optional) IAM member for Braintrust automation"
+  echo "  --support-group    (optional) Braintrust support Google group"
   exit 1
 }
 
@@ -42,8 +46,20 @@ while [[ $# -gt 0 ]]; do
       PROJECT_ID="$2"
       shift 2
       ;;
-    --sa-name)
-      SA_NAME="$2"
+    --deploy-sa-name)
+      DEPLOY_SA_NAME="$2"
+      shift 2
+      ;;
+    --support-sa-name)
+      SUPPORT_SA_NAME="$2"
+      shift 2
+      ;;
+    --automation-sa)
+      AUTOMATION_SA="$2"
+      shift 2
+      ;;
+    --support-group)
+      SUPPORT_GROUP="$2"
       shift 2
       ;;
     -h|--help)
@@ -78,19 +94,22 @@ if ! gcloud auth print-access-token &>/dev/null; then
   exit 1
 fi
 
-SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+DEPLOY_SA_EMAIL="${DEPLOY_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+SUPPORT_SA_EMAIL="${SUPPORT_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 
 # Load services and roles from JSON files
-mapfile -t SERVICES < <(jq -r '.[]' "$SCRIPT_DIR/services.json")
-mapfile -t ROLES    < <(jq -r '.[]' "$SCRIPT_DIR/roles.json")
+mapfile -t SERVICES         < <(jq -r '.[]' "$SCRIPT_DIR/services.json")
+mapfile -t DEPLOYMENT_ROLES < <(jq -r '.[]' "$SCRIPT_DIR/deployment-roles.json")
+mapfile -t SUPPORT_ROLES    < <(jq -r '.[]' "$SCRIPT_DIR/support-roles.json")
 
 echo "=========================================="
 echo " Braintrust BYOC GCP Setup"
 echo "=========================================="
-echo " Project:         $PROJECT_ID"
-echo " Service Account: $SA_EMAIL"
-echo " Admin Group:     $BYOC_ADMIN_GROUP"
-echo " Automation SA:   $AUTOMATION_SA"
+echo " Project:              $PROJECT_ID"
+echo " Deployment SA:        $DEPLOY_SA_EMAIL"
+echo " Support SA:           $SUPPORT_SA_EMAIL"
+echo " Support Group:        $SUPPORT_GROUP"
+echo " Automation Principal: $AUTOMATION_SA"
 echo "=========================================="
 echo ""
 
@@ -104,7 +123,7 @@ chunk=()
 count=0
 for svc in "${SERVICES[@]}"; do
   chunk+=("$svc")
-  (( count++ ))
+  (( count += 1 ))
   if (( count == 20 )); then
     gcloud services enable "${chunk[@]}" --project="$PROJECT_ID"
     chunk=()
@@ -118,68 +137,83 @@ fi
 echo "    Done."
 echo ""
 
-# -----------------------------------------------------------------------------
-# Step 2: Create service account
-# -----------------------------------------------------------------------------
-echo ">>> Creating service account: $SA_EMAIL"
+create_service_account() {
+  local account_name="$1"
+  local account_email="$2"
+  local display_name="$3"
 
-if gcloud iam service-accounts describe "$SA_EMAIL" --project="$PROJECT_ID" &>/dev/null; then
-  echo "    Service account already exists, skipping creation."
-else
-  gcloud iam service-accounts create "$SA_NAME" \
+  echo ">>> Creating service account: $account_email"
+
+  if gcloud iam service-accounts describe "$account_email" --project="$PROJECT_ID" &>/dev/null; then
+    echo "    Service account already exists, skipping creation."
+    return
+  fi
+
+  gcloud iam service-accounts create "$account_name" \
     --project="$PROJECT_ID" \
-    --display-name="Braintrust Management"
+    --display-name="$display_name"
   echo "    Created. Waiting for propagation..."
-  # GCP IAM has eventual consistency — wait briefly before binding roles to the new SA
+  # GCP IAM has eventual consistency; wait briefly before binding roles to the new SA.
   sleep 10
-fi
+}
+
+grant_project_roles() {
+  local member="$1"
+  local label="$2"
+  shift 2
+  local roles=("$@")
+
+  echo ">>> Granting project IAM roles to $label..."
+  for role in "${roles[@]}"; do
+    echo "    $role"
+    gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+      --member="$member" \
+      --role="$role" \
+      --quiet >/dev/null
+  done
+}
+
+grant_service_account_impersonation() {
+  local service_account_email="$1"
+  local member="$2"
+  local label="$3"
+
+  echo ">>> Granting impersonation on $service_account_email to $label..."
+  gcloud iam service-accounts add-iam-policy-binding "$service_account_email" \
+    --project="$PROJECT_ID" \
+    --member="$member" \
+    --role="roles/iam.serviceAccountTokenCreator" \
+    --quiet >/dev/null
+  echo "    Done."
+}
+
+# -----------------------------------------------------------------------------
+# Step 2: Create service accounts
+# -----------------------------------------------------------------------------
+create_service_account "$DEPLOY_SA_NAME" "$DEPLOY_SA_EMAIL" "Braintrust Deployment"
+create_service_account "$SUPPORT_SA_NAME" "$SUPPORT_SA_EMAIL" "Braintrust Support"
 echo ""
 
 # -----------------------------------------------------------------------------
 # Step 3: Grant project-level IAM roles
 # -----------------------------------------------------------------------------
-echo ">>> Granting project IAM roles to service account..."
-for role in "${ROLES[@]}"; do
-  echo "    $role"
-  gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-    --member="serviceAccount:$SA_EMAIL" \
-    --role="$role" \
-    --quiet >/dev/null
-done
-echo ""
-
-echo ">>> Granting project IAM roles to $BYOC_ADMIN_GROUP..."
-for role in "${ROLES[@]}"; do
-  echo "    $role"
-  gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-    --member="group:$BYOC_ADMIN_GROUP" \
-    --role="$role" \
-    --quiet >/dev/null
-done
+grant_project_roles "serviceAccount:$DEPLOY_SA_EMAIL" "$DEPLOY_SA_EMAIL" "${DEPLOYMENT_ROLES[@]}"
+grant_project_roles "serviceAccount:$SUPPORT_SA_EMAIL" "$SUPPORT_SA_EMAIL" "${SUPPORT_ROLES[@]}"
 echo ""
 
 # -----------------------------------------------------------------------------
-# Step 4: Grant impersonation to the admin group
+# Step 4: Grant impersonation to Braintrust support
 # -----------------------------------------------------------------------------
-echo ">>> Granting impersonation on $SA_EMAIL to $BYOC_ADMIN_GROUP..."
-gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
-  --project="$PROJECT_ID" \
-  --member="group:$BYOC_ADMIN_GROUP" \
-  --role="roles/iam.serviceAccountTokenCreator"
-echo "    Done."
+grant_service_account_impersonation "$SUPPORT_SA_EMAIL" "group:$SUPPORT_GROUP" "$SUPPORT_GROUP"
 echo ""
 
 # -----------------------------------------------------------------------------
-# Step 5: Grant impersonation to the Braintrust automation SA
-# This allows the automated pipeline (Atlantis, CI) to impersonate this SA
-# via SA chaining from the WIF-federated terraform-execution service account.
+# Step 5: Grant impersonation to Braintrust automation
+# This allows the Braintrust automation identity to impersonate the customer
+# deployment service account. The AWS-to-GCP WIF bridge itself is maintained in
+# the Braintrust-owned braintrust-byoc-management project, not this project.
 # -----------------------------------------------------------------------------
-echo ">>> Granting impersonation on $SA_EMAIL to $AUTOMATION_SA..."
-gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
-  --project="$PROJECT_ID" \
-  --member="$AUTOMATION_SA" \
-  --role="roles/iam.serviceAccountTokenCreator"
-echo "    Done."
+grant_service_account_impersonation "$DEPLOY_SA_EMAIL" "$AUTOMATION_SA" "$AUTOMATION_SA"
 echo ""
 
 # -----------------------------------------------------------------------------
@@ -189,5 +223,8 @@ echo "=========================================="
 echo " Setup complete!"
 echo "=========================================="
 echo ""
-echo " Service account: $SA_EMAIL"
+echo " Deployment service account: $DEPLOY_SA_EMAIL"
+echo " Support service account:    $SUPPORT_SA_EMAIL"
+echo " Automation principal:       $AUTOMATION_SA"
+echo " Support group:              $SUPPORT_GROUP"
 echo ""

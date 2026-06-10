@@ -15,5 +15,6 @@ output "redis_server_ca_certs" {
 }
 
 output "redis_auth_string" {
-  value = google_redis_instance.braintrust.auth_string
+  value     = google_redis_instance.braintrust.auth_string
+  sensitive = true
 }
