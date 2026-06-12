@@ -10,19 +10,19 @@ Braintrust deploys the data plane.
   project IAM controls, audit logs, SIEM exports, and project-level monitoring.
 - Braintrust manages the Braintrust data-plane deployment and platform
   operation.
-- Customer-managed Terraform or Terragrunt should own only the project/access
-  bootstrap unless otherwise agreed.
+- Customer-managed automation should own only the project/access bootstrap
+  unless otherwise agreed.
 
 ## Deployment Flow
 
 1. Customer designates a dedicated GCP project and target region.
-2. Customer runs `setup.sh`, or mirrors its end state in Terraform/Terragrunt.
+2. Customer runs `setup.sh`, or implements the same end state with an approved
+   internal provisioning process.
 3. Customer reviews quota readiness with `request-quotas.sh`.
 4. Braintrust applies the infra root using
    `terraform-google-braintrust-data-plane`.
 5. Braintrust applies the app root using
-   `terraform-google-braintrust-gke-app`, consuming the infra outputs from
-   Terraform remote state.
+   `terraform-google-braintrust-gke-app`, consuming the infra-root outputs.
 
 ## Bootstrap End State
 
@@ -76,22 +76,23 @@ Options:
 | `--automation-sa` | `serviceAccount:braintrust-byoc-deploy-bridge@braintrust-byoc-management.iam.gserviceaccount.com` | Braintrust automation principal |
 | `--support-group` | `byoc-admins@braintrustdata.com` | Braintrust support group |
 
-If the customer uses Terraform or Terragrunt for bootstrap, use `setup.sh`,
-`services.json`, `deployment-roles.json`, and `support-roles.json` as the source
-of truth for the required end state.
+If the customer mirrors bootstrap with their own provisioning process, use
+`setup.sh`, `services.json`, `deployment-roles.json`, and `support-roles.json`
+as the source of truth for the required end state.
 
 ## Quota Review
 
-New GCP projects may need quota increases for GKE Autopilot compute families and
-local SSD. Review quotas before deployment:
+New GCP projects may need quota increases for the recommended GKE Autopilot
+Brainstore machine family and Local SSD. Review quotas before deployment:
 
 ```bash
 ./request-quotas.sh --project <gcp-project-id> --region <gcp-region> list
 ./request-quotas.sh --project <gcp-project-id> --region <gcp-region> request
 ```
 
-Desired values live in `quota-config.json`. To override them locally, create
-`quota-config.override.json` in this directory.
+Desired values live in `quota-config.json`. The default config follows the
+recommended Braintrust GKE app setting. To review a different machine family,
+create `quota-config.override.json` in this directory.
 
 ## App-Root Contract
 
@@ -105,8 +106,8 @@ This module now exports the values expected by
 - Postgres and Redis connection URLs
 - GKE cluster name and endpoint metadata
 
-The app root should read these outputs from the infra root remote state and pass
-them directly into `terraform-google-braintrust-gke-app`.
+The app root should read these outputs from the infra root state and pass them
+directly into `terraform-google-braintrust-gke-app`.
 
 ## Handoff Values
 
