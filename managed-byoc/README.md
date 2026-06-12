@@ -36,6 +36,9 @@ The standard bootstrap creates or mirrors:
 - Project roles in `deployment-roles.json` granted to the deployment service
   account.
 - Project roles in `support-roles.json` granted to the support service account.
+  These roles allow approved Braintrust support engineers to inspect and operate
+  the cluster and surrounding managed services. They intentionally do not include
+  GCS object-read roles.
 - `roles/iam.serviceAccountTokenCreator` on the deployment service account for:
 
   ```text
