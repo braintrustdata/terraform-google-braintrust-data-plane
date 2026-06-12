@@ -21,7 +21,7 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 
 SUPPORT_GROUP="byoc-admins@braintrustdata.com"
-AUTOMATION_SA="serviceAccount:terraform-execution@braintrust-byoc-management.iam.gserviceaccount.com"
+AUTOMATION_SA="serviceAccount:braintrust-byoc-deploy-bridge@braintrust-byoc-management.iam.gserviceaccount.com"
 DEPLOY_SA_NAME="braintrust-deploy"
 SUPPORT_SA_NAME="braintrust-support"
 PROJECT_ID=""
