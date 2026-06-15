@@ -7,12 +7,14 @@
   "roles/cloudkms.admin",
   "roles/secretmanager.admin",
   "roles/iam.serviceAccountAdmin",
+  "roles/iam.serviceAccountUser",
   "roles/resourcemanager.projectIamAdmin",
   "roles/servicenetworking.networksAdmin",
   "roles/serviceusage.serviceUsageAdmin",
   "roles/dns.admin",
   "roles/logging.admin",
   "roles/monitoring.admin",
+  "roles/storage.hmacKeyAdmin",
   "roles/viewer",
   "roles/cloudsupport.techSupportEditor"
 ]
