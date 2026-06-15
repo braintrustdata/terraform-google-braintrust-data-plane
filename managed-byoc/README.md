@@ -33,6 +33,8 @@ The standard bootstrap creates or mirrors:
   `braintrust-deploy@<project-id>.iam.gserviceaccount.com`.
 - Support service account:
   `braintrust-support@<project-id>.iam.gserviceaccount.com`.
+- Secret Manager secret containing the Brainstore license key:
+  `brainstore-license-key`.
 - Project roles in `deployment-roles.json` granted to the deployment service
   account.
 - Project roles in `support-roles.json` granted to the support service account.
@@ -63,7 +65,18 @@ installed. The caller must be allowed to enable APIs, create service accounts,
 and manage IAM policies in the target project.
 
 ```bash
-./setup.sh --project <gcp-project-id>
+./setup.sh \
+  --project <gcp-project-id> \
+  --license-key <brainstore-license-key>
+```
+
+Preview the project changes without creating resources or changing IAM:
+
+```bash
+./setup.sh \
+  --project <gcp-project-id> \
+  --license-key <brainstore-license-key> \
+  --dry-run
 ```
 
 Options:
@@ -75,10 +88,17 @@ Options:
 | `--support-sa-name` | `braintrust-support` | Support service account name |
 | `--automation-sa` | `serviceAccount:braintrust-byoc-deploy-bridge@braintrust-byoc-management.iam.gserviceaccount.com` | Braintrust automation principal |
 | `--support-group` | `byoc-admins@braintrustdata.com` | Braintrust support group |
+| `--license-key` | unset | Brainstore license key to store in the customer project Secret Manager |
+| `--license-secret` | `brainstore-license-key` | Secret Manager secret name for the Brainstore license key |
+| `--dry-run` | `false` | Print the API, service account, IAM, and impersonation changes without applying them |
 
 If the customer mirrors bootstrap with their own provisioning process, use
 `setup.sh`, `services.json`, `deployment-roles.json`, and `support-roles.json`
 as the source of truth for the required end state.
+
+The script is safe to re-run. It skips existing service accounts, re-applies IAM
+bindings idempotently, and only adds a new Brainstore license secret version if
+the latest version differs from the provided `--license-key` value.
 
 ## Quota Review
 
