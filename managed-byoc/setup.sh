@@ -22,7 +22,7 @@ set -euo pipefail
 #   - Caller must have permission to create SAs and set IAM policies in the project
 # -----------------------------------------------------------------------------
 
-SUPPORT_GROUP="byoc-admins@braintrustdata.com"
+SUPPORT_GROUP="byoc-support@braintrustdata.com"
 AUTOMATION_SA="serviceAccount:braintrust-byoc-deploy-bridge@braintrust-byoc-management.iam.gserviceaccount.com"
 DEPLOY_SA_NAME="braintrust-deploy"
 SUPPORT_SA_NAME="braintrust-support"

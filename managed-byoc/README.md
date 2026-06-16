@@ -50,7 +50,7 @@ The standard bootstrap creates or mirrors:
 - `roles/iam.serviceAccountTokenCreator` on the support service account for:
 
   ```text
-  group:byoc-admins@braintrustdata.com
+  group:byoc-support@braintrustdata.com
   ```
 
 Do not create a workload identity pool in the customer project for the standard
@@ -87,7 +87,7 @@ Options:
 | `--deploy-sa-name` | `braintrust-deploy` | Deployment service account name |
 | `--support-sa-name` | `braintrust-support` | Support service account name |
 | `--automation-sa` | `serviceAccount:braintrust-byoc-deploy-bridge@braintrust-byoc-management.iam.gserviceaccount.com` | Braintrust automation principal |
-| `--support-group` | `byoc-admins@braintrustdata.com` | Braintrust support group |
+| `--support-group` | `byoc-support@braintrustdata.com` | Braintrust support group |
 | `--license-key` | unset | Brainstore license key to store in the customer project Secret Manager |
 | `--license-secret` | `brainstore-license-key` | Secret Manager secret name for the Brainstore license key |
 | `--dry-run` | `false` | Print the API, service account, IAM, and impersonation changes without applying them |
