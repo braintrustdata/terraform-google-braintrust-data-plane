@@ -13,16 +13,17 @@ data "google_project" "current" {}
 # Redis instance
 #----------------------------------------------------------------------------------------------
 resource "google_redis_instance" "braintrust" {
-  name                 = "${var.deployment_name}-redis"
-  display_name         = "${var.deployment_name}-redis"
-  tier                 = "STANDARD_HA"
-  redis_version        = var.redis_version
-  memory_size_gb       = var.redis_memory_size_gb
-  auth_enabled         = true
-  authorized_network   = var.redis_network
-  connect_mode         = "PRIVATE_SERVICE_ACCESS"
-  customer_managed_key = var.redis_kms_cmek_id
-  labels               = local.common_labels
+  name                    = "${var.deployment_name}-redis"
+  display_name            = "${var.deployment_name}-redis"
+  tier                    = "STANDARD_HA"
+  redis_version           = var.redis_version
+  memory_size_gb          = var.redis_memory_size_gb
+  auth_enabled            = true
+  authorized_network      = var.redis_network
+  connect_mode            = "PRIVATE_SERVICE_ACCESS"
+  transit_encryption_mode = "DISABLED"
+  customer_managed_key    = var.redis_kms_cmek_id
+  labels                  = local.common_labels
 
   depends_on = [
     google_kms_crypto_key_iam_member.redis_sa_cmek
