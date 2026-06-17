@@ -1,0 +1,16 @@
+[
+  {
+    "name": "C4 vCPUs",
+    "quota_id": "CPUS-PER-VM-FAMILY-per-project-region",
+    "compute_metric": "",
+    "dimensions": {"vm_family": "c4"},
+    "desired_value": 500
+  },
+  {
+    "name": "C4 Local SSD (GB)",
+    "quota_id": "LOCAL-SSD-TOTAL-GB-PER-VM-FAMILY-per-project-region",
+    "compute_metric": "",
+    "dimensions": {"vm_family": "c4"},
+    "desired_value": 22500
+  }
+]

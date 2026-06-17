@@ -1,0 +1,11 @@
+[
+  "roles/viewer",
+  "roles/container.admin",
+  "roles/compute.networkAdmin",
+  "roles/cloudsql.admin",
+  "roles/redis.admin",
+  "roles/storage.viewer",
+  "roles/logging.viewer",
+  "roles/monitoring.viewer",
+  "roles/cloudsupport.techSupportEditor"
+]
