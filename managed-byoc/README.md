@@ -29,6 +29,7 @@ Braintrust deploys the data plane.
 The standard bootstrap creates or mirrors:
 
 - APIs enabled from `services.json`.
+- Cloud Storage service agent initialized for CMEK-backed GCS buckets.
 - Deployment service account:
   `braintrust-deploy@<project-id>.iam.gserviceaccount.com`.
 - Support service account:
@@ -94,7 +95,13 @@ Options:
 
 If the customer mirrors bootstrap with their own provisioning process, use
 `setup.sh`, `services.json`, `deployment-roles.json`, and `support-roles.json`
-as the source of truth for the required end state.
+as the source of truth for the required end state. The provisioning process must
+also initialize the Cloud Storage service agent for the project; `setup.sh` does
+this with:
+
+```bash
+gcloud storage service-agent --project <gcp-project-id>
+```
 
 The script is safe to re-run. It skips existing service accounts, re-applies IAM
 bindings idempotently, and only adds a new Brainstore license secret version if

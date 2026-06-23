@@ -20,6 +20,10 @@ data "google_project" "current" {}
 
 data "google_client_config" "current" {}
 
+data "google_storage_project_service_account" "gcs" {
+  project = data.google_project.current.project_id
+}
+
 resource "random_id" "gcs_suffix" {
   byte_length = 4
 }
@@ -219,15 +223,8 @@ resource "google_storage_bucket" "api" {
   ]
 }
 
-#----------------------------------------------------------------------------------------------
-# GCS KMS CMEK
-#----------------------------------------------------------------------------------------------
-locals {
-  gcs_service_account_email = "service-${data.google_project.current.number}@gs-project-accounts.iam.gserviceaccount.com"
-}
-
 resource "google_kms_crypto_key_iam_member" "gcp_project_gcs_cmek" {
   crypto_key_id = var.gcs_kms_cmek_id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${local.gcs_service_account_email}"
+  member        = "serviceAccount:${data.google_storage_project_service_account.gcs.email_address}"
 }
