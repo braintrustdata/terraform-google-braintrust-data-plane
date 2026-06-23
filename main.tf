@@ -104,7 +104,5 @@ module "gke-iam" {
   brainstore_gcs_bucket_id         = module.storage.brainstore_bucket_name
   braintrust_hmac_key_enabled      = var.braintrust_hmac_key_enabled
   brainstore_impersonation_targets = var.brainstore_impersonation_targets
-
-  # GKE creates the workload identity pool used by these IAM bindings.
-  depends_on = [module.gke-cluster]
+  workload_identity_pool           = var.deploy_gke_cluster ? module.gke-cluster[0].workload_identity_pool : "${data.google_project.current.project_id}.svc.id.goog"
 }
