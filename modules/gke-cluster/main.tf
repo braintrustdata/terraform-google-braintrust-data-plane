@@ -96,7 +96,7 @@ resource "google_container_cluster" "braintrust_autopilot" {
   logging_service = "logging.googleapis.com/kubernetes"
 
   database_encryption {
-    state    = "ALL_OBJECTS_ENCRYPTION_ENABLED"
+    state    = "ENCRYPTED"
     key_name = var.gke_kms_cmek_id
   }
 
@@ -122,6 +122,14 @@ resource "google_container_cluster" "braintrust_autopilot" {
     google_kms_crypto_key_iam_member.gke_cluster_cmek,
     google_kms_crypto_key_iam_member.gke_compute_cmek
   ]
+
+  lifecycle {
+    # GKE Autopilot may report ALL_OBJECTS_ENCRYPTION_ENABLED after create, but
+    # the Terraform provider currently accepts only ENCRYPTED/DECRYPTED as input.
+    ignore_changes = [
+      database_encryption[0].state,
+    ]
+  }
 }
 
 #----------------------------------------------------------------------------------------------
