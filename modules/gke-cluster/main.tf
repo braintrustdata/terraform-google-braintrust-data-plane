@@ -96,7 +96,7 @@ resource "google_container_cluster" "braintrust_autopilot" {
   logging_service = "logging.googleapis.com/kubernetes"
 
   database_encryption {
-    state    = "ENCRYPTED"
+    state    = "ALL_OBJECTS_ENCRYPTION_ENABLED"
     key_name = var.gke_kms_cmek_id
   }
 
