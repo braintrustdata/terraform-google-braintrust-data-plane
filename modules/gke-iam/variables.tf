@@ -27,6 +27,11 @@ variable "brainstore_kube_svc_account" {
   default     = "brainstore"
 }
 
+variable "workload_identity_pool" {
+  type        = string
+  description = "GKE Workload Identity pool used for Kubernetes service account IAM bindings, typically <project_id>.svc.id.goog."
+}
+
 variable "braintrust_api_bucket_id" {
   type        = string
   description = "The ID of the GCS bucket for Braintrust API (contains code-bundle and brainstore-cache paths)."

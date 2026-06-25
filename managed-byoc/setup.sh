@@ -278,34 +278,46 @@ create_or_update_license_secret() {
   echo "    Added new secret version."
 }
 
+ensure_gcs_service_agent() {
+  echo ">>> Ensuring Cloud Storage service agent exists..."
+  run gcloud storage service-agent --project="$PROJECT_ID" >/dev/null
+  echo "    Done."
+}
+
 # -----------------------------------------------------------------------------
-# Step 2: Create service accounts
+# Step 2: Ensure Google-managed service agents
+# -----------------------------------------------------------------------------
+ensure_gcs_service_agent
+echo ""
+
+# -----------------------------------------------------------------------------
+# Step 3: Create service accounts
 # -----------------------------------------------------------------------------
 create_service_account "$DEPLOY_SA_NAME" "$DEPLOY_SA_EMAIL" "Braintrust Deployment"
 create_service_account "$SUPPORT_SA_NAME" "$SUPPORT_SA_EMAIL" "Braintrust Support"
 echo ""
 
 # -----------------------------------------------------------------------------
-# Step 3: Grant project-level IAM roles
+# Step 4: Grant project-level IAM roles
 # -----------------------------------------------------------------------------
 grant_project_roles "serviceAccount:$DEPLOY_SA_EMAIL" "$DEPLOY_SA_EMAIL" "${DEPLOYMENT_ROLES[@]}"
 grant_project_roles "serviceAccount:$SUPPORT_SA_EMAIL" "$SUPPORT_SA_EMAIL" "${SUPPORT_ROLES[@]}"
 echo ""
 
 # -----------------------------------------------------------------------------
-# Step 4: Create or update Brainstore license secret
+# Step 5: Create or update Brainstore license secret
 # -----------------------------------------------------------------------------
 create_or_update_license_secret
 echo ""
 
 # -----------------------------------------------------------------------------
-# Step 5: Grant impersonation to Braintrust support
+# Step 6: Grant impersonation to Braintrust support
 # -----------------------------------------------------------------------------
 grant_service_account_impersonation "$SUPPORT_SA_EMAIL" "group:$SUPPORT_GROUP" "$SUPPORT_GROUP"
 echo ""
 
 # -----------------------------------------------------------------------------
-# Step 6: Grant impersonation to Braintrust automation
+# Step 7: Grant impersonation to Braintrust automation
 # This allows the Braintrust automation identity to impersonate the customer
 # deployment service account. The AWS-to-GCP WIF bridge itself is maintained in
 # the Braintrust-owned braintrust-byoc-management project, not this project.
