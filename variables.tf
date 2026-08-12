@@ -109,6 +109,14 @@ variable "subnet_flow_logs_config" {
   }
 
   validation {
+    condition = var.subnet_flow_logs_config == null || var.subnet_flow_logs_config.metadata != "CUSTOM_METADATA" || (
+      var.subnet_flow_logs_config.metadata_fields != null &&
+      length(var.subnet_flow_logs_config.metadata_fields) > 0
+    )
+    error_message = "`subnet_flow_logs_config.metadata_fields` must contain at least one field when `subnet_flow_logs_config.metadata` is `CUSTOM_METADATA`."
+  }
+
+  validation {
     condition     = var.subnet_flow_logs_config == null || var.subnet_flow_logs_config.filter_expr == null || trimspace(var.subnet_flow_logs_config.filter_expr) != ""
     error_message = "`subnet_flow_logs_config.filter_expr` must be a non-empty string when provided."
   }
