@@ -60,7 +60,7 @@ variable "gcs_brainstore_logging_config" {
   default = null
 
   validation {
-    condition     = var.gcs_brainstore_logging_config == null || trimspace(var.gcs_brainstore_logging_config.log_bucket) != ""
+    condition     = var.gcs_brainstore_logging_config == null || try(trimspace(var.gcs_brainstore_logging_config.log_bucket), "") != ""
     error_message = "`gcs_brainstore_logging_config.log_bucket` must be a non-empty bucket name."
   }
 }
@@ -74,7 +74,7 @@ variable "gcs_api_logging_config" {
   default = null
 
   validation {
-    condition     = var.gcs_api_logging_config == null || trimspace(var.gcs_api_logging_config.log_bucket) != ""
+    condition     = var.gcs_api_logging_config == null || try(trimspace(var.gcs_api_logging_config.log_bucket), "") != ""
     error_message = "`gcs_api_logging_config.log_bucket` must be a non-empty bucket name."
   }
 }
