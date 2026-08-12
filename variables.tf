@@ -79,23 +79,23 @@ variable "subnet_flow_logs_config" {
 
   validation {
     condition = var.subnet_flow_logs_config == null ? true : (
-      try(var.subnet_flow_logs_config.aggregation_interval, null) == null ? true : contains([
+      var.subnet_flow_logs_config.aggregation_interval == null ? true : contains([
         "INTERVAL_5_SEC",
         "INTERVAL_30_SEC",
         "INTERVAL_1_MIN",
         "INTERVAL_5_MIN",
         "INTERVAL_10_MIN",
         "INTERVAL_15_MIN",
-      ], try(var.subnet_flow_logs_config.aggregation_interval, ""))
+      ], var.subnet_flow_logs_config.aggregation_interval)
     )
     error_message = "`subnet_flow_logs_config.aggregation_interval` must be one of INTERVAL_5_SEC, INTERVAL_30_SEC, INTERVAL_1_MIN, INTERVAL_5_MIN, INTERVAL_10_MIN, or INTERVAL_15_MIN."
   }
 
   validation {
     condition = var.subnet_flow_logs_config == null ? true : (
-      try(var.subnet_flow_logs_config.flow_sampling, null) == null ? true : (
-        try(var.subnet_flow_logs_config.flow_sampling, 0) >= 0 &&
-        try(var.subnet_flow_logs_config.flow_sampling, 0) <= 1
+      var.subnet_flow_logs_config.flow_sampling == null ? true : (
+        var.subnet_flow_logs_config.flow_sampling >= 0 &&
+        var.subnet_flow_logs_config.flow_sampling <= 1
       )
     )
     error_message = "`subnet_flow_logs_config.flow_sampling` must be between 0 and 1 inclusive."
@@ -103,32 +103,34 @@ variable "subnet_flow_logs_config" {
 
   validation {
     condition = var.subnet_flow_logs_config == null ? true : (
-      try(var.subnet_flow_logs_config.metadata, null) == null ? true : contains([
+      var.subnet_flow_logs_config.metadata == null ? true : contains([
         "EXCLUDE_ALL_METADATA",
         "INCLUDE_ALL_METADATA",
         "CUSTOM_METADATA",
-      ], try(var.subnet_flow_logs_config.metadata, ""))
+      ], var.subnet_flow_logs_config.metadata)
     )
     error_message = "`subnet_flow_logs_config.metadata` must be one of EXCLUDE_ALL_METADATA, INCLUDE_ALL_METADATA, or CUSTOM_METADATA."
   }
 
   validation {
     condition = var.subnet_flow_logs_config == null ? true : (
-      try(var.subnet_flow_logs_config.metadata_fields, null) == null ? true : try(var.subnet_flow_logs_config.metadata, "") == "CUSTOM_METADATA"
+      var.subnet_flow_logs_config.metadata_fields == null ? true : var.subnet_flow_logs_config.metadata == "CUSTOM_METADATA"
     )
     error_message = "`subnet_flow_logs_config.metadata_fields` can only be set when `subnet_flow_logs_config.metadata` is `CUSTOM_METADATA`."
   }
 
   validation {
     condition = var.subnet_flow_logs_config == null ? true : (
-      try(var.subnet_flow_logs_config.metadata, "") != "CUSTOM_METADATA" ? true : try(length(var.subnet_flow_logs_config.metadata_fields), 0) > 0
+      var.subnet_flow_logs_config.metadata != "CUSTOM_METADATA" ? true : (
+        var.subnet_flow_logs_config.metadata_fields == null ? false : length(var.subnet_flow_logs_config.metadata_fields) > 0
+      )
     )
     error_message = "`subnet_flow_logs_config.metadata_fields` must contain at least one field when `subnet_flow_logs_config.metadata` is `CUSTOM_METADATA`."
   }
 
   validation {
     condition = var.subnet_flow_logs_config == null ? true : (
-      try(var.subnet_flow_logs_config.filter_expr, null) == null ? true : trimspace(try(var.subnet_flow_logs_config.filter_expr, "")) != ""
+      var.subnet_flow_logs_config.filter_expr == null ? true : trimspace(var.subnet_flow_logs_config.filter_expr) != ""
     )
     error_message = "`subnet_flow_logs_config.filter_expr` must be a non-empty string when provided."
   }
@@ -280,7 +282,7 @@ variable "gcs_brainstore_logging_config" {
   default = null
 
   validation {
-    condition     = var.gcs_brainstore_logging_config == null || try(trimspace(var.gcs_brainstore_logging_config.log_bucket), "") != ""
+    condition     = var.gcs_brainstore_logging_config == null ? true : trimspace(var.gcs_brainstore_logging_config.log_bucket) != ""
     error_message = "`gcs_brainstore_logging_config.log_bucket` must be a non-empty bucket name."
   }
 }
@@ -294,7 +296,7 @@ variable "gcs_api_logging_config" {
   default = null
 
   validation {
-    condition     = var.gcs_api_logging_config == null || try(trimspace(var.gcs_api_logging_config.log_bucket), "") != ""
+    condition     = var.gcs_api_logging_config == null ? true : trimspace(var.gcs_api_logging_config.log_bucket) != ""
     error_message = "`gcs_api_logging_config.log_bucket` must be a non-empty bucket name."
   }
 }
