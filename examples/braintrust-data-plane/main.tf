@@ -20,6 +20,12 @@ module "braintrust-data-plane" {
 
   # The CIDR range for the subnet to deploy resources to.
   # subnet_cidr_range = "10.0.0.0/24"
+  # Optional VPC flow logs configuration for the created subnet.
+  # subnet_flow_logs_config = {
+  #   aggregation_interval = "INTERVAL_1_MIN"
+  #   flow_sampling        = 0.1
+  #   metadata             = "INCLUDE_ALL_METADATA"
+  # }
   #
   # Private Service Access range for Cloud SQL and Memorystore. Defaults to a Google-selected /16.
   # Set these if you need the private services peering range to avoid overlap with existing networks.
@@ -61,5 +67,14 @@ module "braintrust-data-plane" {
 
   ### Advanced configuration
   # gcs_additional_allowed_origins = []
+  # Optional GCS access logging for the managed buckets. Point these at an existing log bucket.
+  # gcs_brainstore_logging_config = {
+  #   log_bucket        = "my-access-logs-bucket"
+  #   log_object_prefix = "brainstore/"
+  # }
+  # gcs_api_logging_config = {
+  #   log_bucket        = "my-access-logs-bucket"
+  #   log_object_prefix = "api/"
+  # }
 
 }

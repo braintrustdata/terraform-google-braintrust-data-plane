@@ -6,9 +6,10 @@ module "vpc" {
   source = "./modules/vpc"
   count  = var.create_vpc ? 1 : 0
 
-  deployment_name   = var.deployment_name
-  vpc_name          = var.vpc_name
-  subnet_cidr_range = var.subnet_cidr_range
+  deployment_name         = var.deployment_name
+  vpc_name                = var.vpc_name
+  subnet_cidr_range       = var.subnet_cidr_range
+  subnet_flow_logs_config = var.subnet_flow_logs_config
 
   private_service_access_prefix_length = var.private_service_access_prefix_length
   private_service_access_address       = var.private_service_access_address
@@ -66,6 +67,8 @@ module "storage" {
   gcs_uniform_bucket_level_access       = var.gcs_uniform_bucket_level_access
   gcs_force_destroy                     = var.gcs_force_destroy
   gcs_soft_delete_retention_days        = var.gcs_soft_delete_retention_days
+  gcs_brainstore_logging_config         = var.gcs_brainstore_logging_config
+  gcs_api_logging_config                = var.gcs_api_logging_config
   custom_gcs_brainstore_lifecycle_rules = var.custom_gcs_brainstore_lifecycle_rules
   custom_gcs_api_lifecycle_rules        = var.custom_gcs_api_lifecycle_rules
 }

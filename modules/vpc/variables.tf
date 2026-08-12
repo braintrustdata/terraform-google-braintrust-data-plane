@@ -19,6 +19,54 @@ variable "subnet_cidr_range" {
   type        = string
 }
 
+variable "subnet_flow_logs_config" {
+  description = "Optional VPC flow logs configuration for the created subnet. Set to null to disable subnet flow logs."
+  type = object({
+    aggregation_interval = optional(string)
+    flow_sampling        = optional(number)
+    metadata             = optional(string)
+    metadata_fields      = optional(list(string))
+    filter_expr          = optional(string)
+  })
+  default = null
+
+  validation {
+    condition = var.subnet_flow_logs_config == null || var.subnet_flow_logs_config.aggregation_interval == null || contains([
+      "INTERVAL_5_SEC",
+      "INTERVAL_30_SEC",
+      "INTERVAL_1_MIN",
+      "INTERVAL_5_MIN",
+      "INTERVAL_10_MIN",
+      "INTERVAL_15_MIN",
+    ], var.subnet_flow_logs_config.aggregation_interval)
+    error_message = "`subnet_flow_logs_config.aggregation_interval` must be one of INTERVAL_5_SEC, INTERVAL_30_SEC, INTERVAL_1_MIN, INTERVAL_5_MIN, INTERVAL_10_MIN, or INTERVAL_15_MIN."
+  }
+
+  validation {
+    condition     = var.subnet_flow_logs_config == null || var.subnet_flow_logs_config.flow_sampling == null || (var.subnet_flow_logs_config.flow_sampling >= 0 && var.subnet_flow_logs_config.flow_sampling <= 1)
+    error_message = "`subnet_flow_logs_config.flow_sampling` must be between 0 and 1 inclusive."
+  }
+
+  validation {
+    condition = var.subnet_flow_logs_config == null || var.subnet_flow_logs_config.metadata == null || contains([
+      "EXCLUDE_ALL_METADATA",
+      "INCLUDE_ALL_METADATA",
+      "CUSTOM_METADATA",
+    ], var.subnet_flow_logs_config.metadata)
+    error_message = "`subnet_flow_logs_config.metadata` must be one of EXCLUDE_ALL_METADATA, INCLUDE_ALL_METADATA, or CUSTOM_METADATA."
+  }
+
+  validation {
+    condition     = var.subnet_flow_logs_config == null || var.subnet_flow_logs_config.metadata_fields == null || var.subnet_flow_logs_config.metadata == "CUSTOM_METADATA"
+    error_message = "`subnet_flow_logs_config.metadata_fields` can only be set when `subnet_flow_logs_config.metadata` is `CUSTOM_METADATA`."
+  }
+
+  validation {
+    condition     = var.subnet_flow_logs_config == null || var.subnet_flow_logs_config.filter_expr == null || trimspace(var.subnet_flow_logs_config.filter_expr) != ""
+    error_message = "`subnet_flow_logs_config.filter_expr` must be a non-empty string when provided."
+  }
+}
+
 variable "private_service_access_prefix_length" {
   description = "Prefix length for the Private Service Access range used by Cloud SQL and Memorystore. Valid values are 8 through 24: lower prefix lengths create larger ranges, while higher prefix lengths create smaller ranges. Smaller ranges are supported, but choose the size based on the customer's networking requirements because they reduce future expansion headroom. Choose this carefully before first deployment; changing Private Service Access ranges later can require rebuilding dependent resources."
   type        = number

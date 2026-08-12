@@ -102,6 +102,15 @@ resource "google_storage_bucket" "brainstore" {
     }
   }
 
+  dynamic "logging" {
+    for_each = var.gcs_brainstore_logging_config == null ? [] : [var.gcs_brainstore_logging_config]
+
+    content {
+      log_bucket        = logging.value.log_bucket
+      log_object_prefix = logging.value.log_object_prefix
+    }
+  }
+
   labels = local.common_labels
 
   lifecycle {
@@ -207,6 +216,15 @@ resource "google_storage_bucket" "api" {
 
     content {
       default_kms_key_name = var.gcs_kms_cmek_id
+    }
+  }
+
+  dynamic "logging" {
+    for_each = var.gcs_api_logging_config == null ? [] : [var.gcs_api_logging_config]
+
+    content {
+      log_bucket        = logging.value.log_bucket
+      log_object_prefix = logging.value.log_object_prefix
     }
   }
 
