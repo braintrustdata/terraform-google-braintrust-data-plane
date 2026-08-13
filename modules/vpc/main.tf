@@ -13,6 +13,18 @@ resource "google_compute_subnetwork" "subnets" {
   network                  = google_compute_network.vpc.self_link
   ip_cidr_range            = var.subnet_cidr_range
   private_ip_google_access = true
+
+  dynamic "log_config" {
+    for_each = var.subnet_flow_logs_config == null ? [] : [var.subnet_flow_logs_config]
+
+    content {
+      aggregation_interval = log_config.value.aggregation_interval
+      flow_sampling        = log_config.value.flow_sampling
+      metadata             = log_config.value.metadata
+      metadata_fields      = log_config.value.metadata_fields
+      filter_expr          = log_config.value.filter_expr
+    }
+  }
 }
 
 resource "google_compute_router" "router" {

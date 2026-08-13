@@ -61,6 +61,81 @@ variable "subnet_cidr_range" {
   default     = "10.0.0.0/24"
 }
 
+variable "subnet_flow_logs_config" {
+  description = "Optional VPC flow logs configuration for the created subnet (when create_vpc is true). Set to null to disable subnet flow logs."
+  type = object({
+    aggregation_interval = optional(string)
+    flow_sampling        = optional(number)
+    metadata             = optional(string)
+    metadata_fields      = optional(list(string))
+    filter_expr          = optional(string)
+  })
+  default = null
+
+  validation {
+    condition     = var.subnet_flow_logs_config == null || var.create_vpc
+    error_message = "`subnet_flow_logs_config` can only be set when `create_vpc` is true because this module only manages subnet flow logs for subnets it creates."
+  }
+
+  validation {
+    condition = var.subnet_flow_logs_config == null ? true : (
+      var.subnet_flow_logs_config.aggregation_interval == null ? true : contains([
+        "INTERVAL_5_SEC",
+        "INTERVAL_30_SEC",
+        "INTERVAL_1_MIN",
+        "INTERVAL_5_MIN",
+        "INTERVAL_10_MIN",
+        "INTERVAL_15_MIN",
+      ], var.subnet_flow_logs_config.aggregation_interval)
+    )
+    error_message = "`subnet_flow_logs_config.aggregation_interval` must be one of INTERVAL_5_SEC, INTERVAL_30_SEC, INTERVAL_1_MIN, INTERVAL_5_MIN, INTERVAL_10_MIN, or INTERVAL_15_MIN."
+  }
+
+  validation {
+    condition = var.subnet_flow_logs_config == null ? true : (
+      var.subnet_flow_logs_config.flow_sampling == null ? true : (
+        var.subnet_flow_logs_config.flow_sampling >= 0 &&
+        var.subnet_flow_logs_config.flow_sampling <= 1
+      )
+    )
+    error_message = "`subnet_flow_logs_config.flow_sampling` must be between 0 and 1 inclusive."
+  }
+
+  validation {
+    condition = var.subnet_flow_logs_config == null ? true : (
+      var.subnet_flow_logs_config.metadata == null ? true : contains([
+        "EXCLUDE_ALL_METADATA",
+        "INCLUDE_ALL_METADATA",
+        "CUSTOM_METADATA",
+      ], var.subnet_flow_logs_config.metadata)
+    )
+    error_message = "`subnet_flow_logs_config.metadata` must be one of EXCLUDE_ALL_METADATA, INCLUDE_ALL_METADATA, or CUSTOM_METADATA."
+  }
+
+  validation {
+    condition = var.subnet_flow_logs_config == null ? true : (
+      var.subnet_flow_logs_config.metadata_fields == null ? true : var.subnet_flow_logs_config.metadata == "CUSTOM_METADATA"
+    )
+    error_message = "`subnet_flow_logs_config.metadata_fields` can only be set when `subnet_flow_logs_config.metadata` is `CUSTOM_METADATA`."
+  }
+
+  validation {
+    condition = var.subnet_flow_logs_config == null ? true : (
+      var.subnet_flow_logs_config.metadata != "CUSTOM_METADATA" ? true : (
+        var.subnet_flow_logs_config.metadata_fields == null ? false : length(var.subnet_flow_logs_config.metadata_fields) > 0
+      )
+    )
+    error_message = "`subnet_flow_logs_config.metadata_fields` must contain at least one field when `subnet_flow_logs_config.metadata` is `CUSTOM_METADATA`."
+  }
+
+  validation {
+    condition = var.subnet_flow_logs_config == null ? true : (
+      var.subnet_flow_logs_config.filter_expr == null ? true : trimspace(var.subnet_flow_logs_config.filter_expr) != ""
+    )
+    error_message = "`subnet_flow_logs_config.filter_expr` must be a non-empty string when provided."
+  }
+}
+
 variable "private_service_access_prefix_length" {
   description = "Prefix length for the Private Service Access range used by Cloud SQL and Memorystore (when create_vpc is true). Valid values are 8 through 24: lower prefix lengths create larger ranges, while higher prefix lengths create smaller ranges. Smaller ranges are supported, but choose the size based on networking requirements after discussing with your Braintrust architecture team because they reduce future expansion headroom. Choose this carefully before first deployment; changing Private Service Access ranges later can require rebuilding dependent resources."
   type        = number
@@ -196,6 +271,34 @@ variable "gcs_additional_allowed_origins" {
   type        = list(string)
   description = "Additional allowed origins for the Braintrust GCS buckets."
   default     = []
+}
+
+variable "gcs_brainstore_logging_config" {
+  description = "Optional access logging configuration for the Brainstore GCS bucket."
+  type = object({
+    log_bucket        = string
+    log_object_prefix = optional(string)
+  })
+  default = null
+
+  validation {
+    condition     = var.gcs_brainstore_logging_config == null ? true : trimspace(var.gcs_brainstore_logging_config.log_bucket) != ""
+    error_message = "`gcs_brainstore_logging_config.log_bucket` must be a non-empty bucket name."
+  }
+}
+
+variable "gcs_api_logging_config" {
+  description = "Optional access logging configuration for the API GCS bucket."
+  type = object({
+    log_bucket        = string
+    log_object_prefix = optional(string)
+  })
+  default = null
+
+  validation {
+    condition     = var.gcs_api_logging_config == null ? true : trimspace(var.gcs_api_logging_config.log_bucket) != ""
+    error_message = "`gcs_api_logging_config.log_bucket` must be a non-empty bucket name."
+  }
 }
 
 variable "gcs_bucket_retention_days" {

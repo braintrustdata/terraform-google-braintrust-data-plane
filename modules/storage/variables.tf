@@ -51,6 +51,34 @@ variable "gcs_additional_allowed_origins" {
   default     = []
 }
 
+variable "gcs_brainstore_logging_config" {
+  description = "Optional access logging configuration for the Brainstore GCS bucket."
+  type = object({
+    log_bucket        = string
+    log_object_prefix = optional(string)
+  })
+  default = null
+
+  validation {
+    condition     = var.gcs_brainstore_logging_config == null ? true : trimspace(var.gcs_brainstore_logging_config.log_bucket) != ""
+    error_message = "`gcs_brainstore_logging_config.log_bucket` must be a non-empty bucket name."
+  }
+}
+
+variable "gcs_api_logging_config" {
+  description = "Optional access logging configuration for the API GCS bucket."
+  type = object({
+    log_bucket        = string
+    log_object_prefix = optional(string)
+  })
+  default = null
+
+  validation {
+    condition     = var.gcs_api_logging_config == null ? true : trimspace(var.gcs_api_logging_config.log_bucket) != ""
+    error_message = "`gcs_api_logging_config.log_bucket` must be a non-empty bucket name."
+  }
+}
+
 variable "gcs_kms_cmek_id" {
   type        = string
   description = "ID of Cloud KMS customer managed encryption key (CMEK) to use for Braintrust GCS buckets encryption."
@@ -103,4 +131,3 @@ variable "custom_gcs_api_lifecycle_rules" {
   }))
   default = []
 }
-
