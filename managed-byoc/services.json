@@ -10,6 +10,7 @@
   "oslogin.googleapis.com",
   "dns.googleapis.com",
   "cloudresourcemanager.googleapis.com",
+  "cloudsupport.googleapis.com",
   "compute.googleapis.com",
   "cloudkms.googleapis.com",
   "autoscaling.googleapis.com",
