@@ -99,18 +99,30 @@ output "pg_url" {
 #----------------------------------------------------------------------------------------------
 
 output "gke_cluster_name" {
-  value       = var.deploy_gke_cluster ? module.gke-cluster[0].gke_autopilot_cluster_name : null
+  value       = var.deploy_gke_cluster ? module.gke-cluster[0].gke_cluster_name : null
   description = "GKE cluster name. Null when deploy_gke_cluster is false."
 }
 
 output "gke_cluster_endpoint" {
-  value       = var.deploy_gke_cluster ? module.gke-cluster[0].gke_autopilot_cluster_endpoint : null
+  value       = var.deploy_gke_cluster ? module.gke-cluster[0].gke_cluster_endpoint : null
   description = "GKE cluster endpoint. Null when deploy_gke_cluster is false."
 }
 
 output "gke_cluster_master_version" {
-  value       = var.deploy_gke_cluster ? module.gke-cluster[0].gke_autopilot_cluster_master_version : null
+  value       = var.deploy_gke_cluster ? module.gke-cluster[0].gke_cluster_master_version : null
   description = "GKE cluster master version. Null when deploy_gke_cluster is false."
+}
+
+output "gke_cluster_mode" {
+  value       = var.deploy_gke_cluster ? var.gke_cluster_mode : null
+  description = "GKE cluster mode. Null when deploy_gke_cluster is false."
+}
+
+output "gke_node_pool_names" {
+  value = {
+    for name, pool in module.gke-standard-node-pool : name => pool.name
+  }
+  description = "Standard GKE node pool names. The map is empty in Autopilot mode."
 }
 
 #----------------------------------------------------------------------------------------------

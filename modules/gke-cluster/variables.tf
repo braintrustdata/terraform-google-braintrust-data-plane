@@ -15,6 +15,28 @@ variable "custom_labels" {
 #----------------------------------------------------------------------------------------------
 # GKE Cluster
 #----------------------------------------------------------------------------------------------
+variable "gke_cluster_mode" {
+  type        = string
+  description = "GKE cluster mode. This value is immutable after cluster creation. A change replaces the cluster and requires Helm release redeployment."
+  default     = "autopilot"
+
+  validation {
+    condition     = contains(["autopilot", "standard"], var.gke_cluster_mode)
+    error_message = "`gke_cluster_mode` must be `autopilot` or `standard`."
+  }
+}
+
+variable "gke_cluster_name" {
+  type        = string
+  description = "Optional GKE cluster name. The module derives the name from the deployment name and cluster mode when this value is null."
+  default     = null
+
+  validation {
+    condition     = var.gke_cluster_name == null || can(regex("^[a-z]([-a-z0-9]{0,38}[a-z0-9])?$", var.gke_cluster_name))
+    error_message = "`gke_cluster_name` must contain 1 through 40 lowercase letters, numbers, or hyphens."
+  }
+}
+
 variable "gke_network" {
   type        = string
   description = "The network of the GKE cluster."

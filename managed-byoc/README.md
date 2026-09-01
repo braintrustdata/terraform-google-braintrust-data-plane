@@ -109,7 +109,7 @@ the latest version differs from the provided `--license-key` value.
 
 ## Quota Review
 
-New GCP projects may need quota increases for the recommended GKE Autopilot
+New GCP projects can require quota increases for the recommended GKE
 Brainstore machine family and Local SSD. Review quotas before deployment:
 
 ```bash

@@ -9,6 +9,7 @@ This is a Terraform module that provisions GCP infrastructure for the Braintrust
 ├── modules/
 │   ├── database/       # Cloud SQL (PostgreSQL)
 │   ├── gke-cluster/    # GKE cluster (Standard or Autopilot)
+│   ├── gke-node-pool/  # User-managed node pools for GKE Standard
 │   ├── gke-iam/        # IAM, Workload Identity, HMAC keys
 │   ├── kms/            # Cloud KMS encryption keys
 │   ├── redis/          # Memorystore (Redis)
@@ -26,6 +27,13 @@ This is a Terraform module that provisions GCP infrastructure for the Braintrust
 - **Workload Identity** is used to grant GKE pods access to GCP resources. The `gke-iam` module creates GCP service accounts and binds them to Kubernetes service accounts via `roles/iam.workloadIdentityUser`.
 
 ## Critical Safety Constraints
+
+### GKE Cluster Mode
+
+Treat `gke_cluster_mode` as immutable after the initial deployment.
+Do not instruct users to switch between Autopilot and Standard modes.
+State that a mode change replaces the cluster and causes data-plane downtime.
+State that the replacement cluster requires redeployment of the Braintrust Helm release.
 
 ### Workload Identity Bindings
 
@@ -46,6 +54,7 @@ mise install        # Install terraform, tflint
 mise run setup      # Install pre-commit hooks
 mise run lint       # terraform fmt + tflint
 mise run validate   # terraform init + validate
+mise run test       # Run Terraform tests
 ```
 
 Pre-commit hooks run automatically on commit. Run `mise run lint` to check before committing.
