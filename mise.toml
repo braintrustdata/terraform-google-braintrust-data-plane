@@ -7,6 +7,7 @@ uv = "latest"
 [tasks]
 lint = ["terraform fmt -recursive", "tflint --recursive"]
 setup = ["pre-commit install", "tflint --init"]
+test = ["terraform test"]
 precommit = ["pre-commit run --all-files"]
 
 [tasks.validate]
