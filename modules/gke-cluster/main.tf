@@ -5,6 +5,7 @@ locals {
   common_labels = merge(var.custom_labels, {
     braintrustdeploymentname = var.deployment_name
   })
+  cluster_name = coalesce(var.gke_cluster_name, "${var.deployment_name}-gke-${var.gke_cluster_mode}")
 }
 
 data "google_client_config" "current" {}
@@ -12,13 +13,15 @@ data "google_client_config" "current" {}
 data "google_project" "current" {}
 
 #----------------------------------------------------------------------------------------------
-# GKE Autopilot cluster
+# GKE cluster
 #----------------------------------------------------------------------------------------------
-resource "google_container_cluster" "braintrust_autopilot" {
-  name    = "${var.deployment_name}-gke-autopilot"
+resource "google_container_cluster" "braintrust" {
+  name    = local.cluster_name
   project = data.google_project.current.project_id
 
-  enable_autopilot = true
+  enable_autopilot         = var.gke_cluster_mode == "autopilot" ? true : null
+  remove_default_node_pool = var.gke_cluster_mode == "standard" ? true : null
+  initial_node_count       = var.gke_cluster_mode == "standard" ? 1 : null
 
   release_channel {
     channel = var.gke_release_channel
@@ -106,15 +109,14 @@ resource "google_container_cluster" "braintrust_autopilot" {
     }
   }
 
-  # Autopilot-specific configurations
-  cluster_autoscaling {
-    # Autopilot manages autoscaling, but you can set resource limits
-    auto_provisioning_defaults {
-      # Use the same service account as the standard cluster
-      service_account = google_service_account.gke.email
+  dynamic "cluster_autoscaling" {
+    for_each = var.gke_cluster_mode == "autopilot" ? [1] : []
 
-      # Boot disk encryption
-      boot_disk_kms_key = var.gke_kms_cmek_id
+    content {
+      auto_provisioning_defaults {
+        service_account   = google_service_account.gke.email
+        boot_disk_kms_key = var.gke_kms_cmek_id
+      }
     }
   }
 

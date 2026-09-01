@@ -1,0 +1,74 @@
+locals {
+  common_resource_labels = merge(var.custom_labels, {
+    braintrustdeploymentname = var.deployment_name
+  })
+}
+
+resource "google_container_node_pool" "this" {
+  name     = var.name
+  project  = var.project_id
+  location = var.location
+  cluster  = var.cluster_id
+
+  node_locations = var.node_locations
+
+  autoscaling {
+    total_min_node_count = var.total_min_node_count
+    total_max_node_count = var.total_max_node_count
+    location_policy      = var.location_policy
+  }
+
+  management {
+    auto_repair  = var.auto_repair
+    auto_upgrade = var.auto_upgrade
+  }
+
+  upgrade_settings {
+    max_surge       = var.max_surge
+    max_unavailable = var.max_unavailable
+  }
+
+  node_config {
+    machine_type = var.machine_type
+    image_type   = var.image_type
+    disk_type    = var.disk_type
+    disk_size_gb = var.disk_size_gb
+    spot         = var.spot
+
+    service_account = var.service_account_email
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform",
+    ]
+
+    boot_disk_kms_key = var.boot_disk_kms_key
+    labels            = var.labels
+    resource_labels   = local.common_resource_labels
+
+    workload_metadata_config {
+      mode = "GKE_METADATA"
+    }
+
+    shielded_instance_config {
+      enable_secure_boot          = var.enable_secure_boot
+      enable_integrity_monitoring = var.enable_integrity_monitoring
+    }
+
+    dynamic "ephemeral_storage_local_ssd_config" {
+      for_each = var.ephemeral_storage_local_ssd_count == null ? [] : [var.ephemeral_storage_local_ssd_count]
+
+      content {
+        local_ssd_count = ephemeral_storage_local_ssd_config.value
+      }
+    }
+
+    dynamic "taint" {
+      for_each = var.taints
+
+      content {
+        key    = taint.value.key
+        value  = taint.value.value
+        effect = taint.value.effect
+      }
+    }
+  }
+}

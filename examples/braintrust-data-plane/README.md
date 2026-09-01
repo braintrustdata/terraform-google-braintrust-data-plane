@@ -8,6 +8,12 @@ This is an example of a standard **production-sized** Braintrust data plane depl
 * `backend.tf` should be modified to use the remote backend that your company uses. Typically this is a GCP bucket.
 * `main.tf` should be modified to meet your needs for the Braintrust deployment. The defaults are sensible only for a production deployment.
 
+### GKE cluster mode
+
+The deployment must keep its initial `gke_cluster_mode`.
+A mode change replaces the GKE cluster and causes data-plane downtime.
+The replacement cluster requires redeployment of the Braintrust Helm release.
+
 ## Prerequisites
 
 ### Enabling APIs
