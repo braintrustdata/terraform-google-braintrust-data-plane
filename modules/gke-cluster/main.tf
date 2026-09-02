@@ -124,14 +124,6 @@ resource "google_container_cluster" "braintrust" {
     google_kms_crypto_key_iam_member.gke_cluster_cmek,
     google_kms_crypto_key_iam_member.gke_compute_cmek
   ]
-
-  lifecycle {
-    # GKE Autopilot may report ALL_OBJECTS_ENCRYPTION_ENABLED after create, but
-    # the Terraform provider currently accepts only ENCRYPTED/DECRYPTED as input.
-    ignore_changes = [
-      database_encryption[0].state,
-    ]
-  }
 }
 
 #----------------------------------------------------------------------------------------------
