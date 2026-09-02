@@ -90,3 +90,109 @@ run "standard_creates_default_node_pools" {
     error_message = "Standard mode must create the default API and Brainstore node pools."
   }
 }
+
+run "brainstore_requires_a_local_ssd_machine_type" {
+  command = plan
+
+  override_module {
+    target = module.gke-cluster
+    outputs = {
+      gke_cluster_name               = "braintrust-gke-standard"
+      gke_cluster_endpoint           = "https://standard.example.test"
+      gke_cluster_master_version     = "1.33.0"
+      gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
+      gke_cluster_location           = "us-central1"
+      gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
+      workload_identity_pool         = "braintrust-test.svc.id.goog"
+    }
+  }
+
+  variables {
+    deployment_name  = "braintrust"
+    gke_cluster_mode = "standard"
+    gke_standard_node_pools = {
+      api = {
+        machine_type         = "c4a-standard-16"
+        total_min_node_count = 2
+        total_max_node_count = 10
+      }
+      brainstore = {
+        machine_type         = "c4a-standard-48"
+        total_min_node_count = 3
+        total_max_node_count = 10
+      }
+    }
+  }
+
+  expect_failures = [var.gke_standard_node_pools]
+}
+
+run "standard_requires_a_brainstore_pool" {
+  command = plan
+
+  override_module {
+    target = module.gke-cluster
+    outputs = {
+      gke_cluster_name               = "braintrust-gke-standard"
+      gke_cluster_endpoint           = "https://standard.example.test"
+      gke_cluster_master_version     = "1.33.0"
+      gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
+      gke_cluster_location           = "us-central1"
+      gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
+      workload_identity_pool         = "braintrust-test.svc.id.goog"
+    }
+  }
+
+  variables {
+    deployment_name  = "braintrust"
+    gke_cluster_mode = "standard"
+    gke_standard_node_pools = {
+      api = {
+        machine_type         = "c4a-standard-16"
+        total_min_node_count = 2
+        total_max_node_count = 10
+      }
+    }
+  }
+
+  expect_failures = [var.gke_standard_node_pools]
+}
+
+run "brainstore_accepts_x86_local_ssd_machine_types" {
+  command = plan
+
+  override_module {
+    target = module.gke-cluster
+    outputs = {
+      gke_cluster_name               = "braintrust-gke-standard"
+      gke_cluster_endpoint           = "https://standard.example.test"
+      gke_cluster_master_version     = "1.33.0"
+      gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
+      gke_cluster_location           = "us-central1"
+      gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
+      workload_identity_pool         = "braintrust-test.svc.id.goog"
+    }
+  }
+
+  variables {
+    deployment_name  = "braintrust"
+    gke_cluster_mode = "standard"
+    gke_standard_node_pools = {
+      api = {
+        machine_type         = "c4a-standard-16"
+        total_min_node_count = 2
+        total_max_node_count = 10
+      }
+      brainstore = {
+        machine_type         = "c4-standard-48-lssd"
+        total_min_node_count = 3
+        total_max_node_count = 10
+      }
+    }
+  }
+
+  assert {
+    condition     = output.gke_node_pool_names == { api = "api", brainstore = "brainstore" }
+    error_message = "Standard mode must create the configured node pools."
+  }
+}

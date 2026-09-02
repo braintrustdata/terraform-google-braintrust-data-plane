@@ -47,12 +47,15 @@ module "braintrust-data-plane" {
   # Standard mode creates the api and brainstore pools below by default.
   # gke_standard_node_pools = {
   #   api = {
-  #     machine_type         = "c4-standard-16"
+  #     machine_type         = "c4a-standard-16"
   #     total_min_node_count = 2
   #     total_max_node_count = 10
   #   }
+  #   # The brainstore pool requires a machine type with bundled Local SSD, which
+  #   # carries "lssd" in the machine type name. GKE configures those disks as node
+  #   # ephemeral storage automatically, so there is no Local SSD count to set.
   #   brainstore = {
-  #     machine_type         = "c4-standard-48-lssd"
+  #     machine_type         = "c4a-standard-48-lssd"
   #     total_min_node_count = 5
   #     total_max_node_count = 10
   #     # Set node_locations only when the machine type is unavailable in a cluster zone.

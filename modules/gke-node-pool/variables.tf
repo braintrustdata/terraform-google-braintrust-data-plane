@@ -46,7 +46,7 @@ variable "boot_disk_kms_key" {
 
 variable "machine_type" {
   type        = string
-  description = "Compute Engine machine type for each node."
+  description = "Compute Engine machine type for each node. Machine types with bundled Local SSD (`*lssd*` shapes) get their Local SSDs configured as node ephemeral storage by GKE."
 }
 
 variable "image_type" {
@@ -143,26 +143,9 @@ variable "taints" {
   }
 }
 
-variable "ephemeral_storage_local_ssd_count" {
-  type        = number
-  description = "Optional Local SSD count for node ephemeral storage."
-  default     = null
-
-  validation {
-    condition     = var.ephemeral_storage_local_ssd_count == null ? true : var.ephemeral_storage_local_ssd_count >= 1
-    error_message = "`ephemeral_storage_local_ssd_count` must be null or at least one."
-  }
-}
-
 variable "auto_repair" {
   type        = bool
   description = "Whether GKE repairs unhealthy nodes."
-  default     = true
-}
-
-variable "auto_upgrade" {
-  type        = bool
-  description = "Whether GKE upgrades nodes automatically."
   default     = true
 }
 
