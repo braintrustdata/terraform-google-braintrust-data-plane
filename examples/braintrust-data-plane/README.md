@@ -14,6 +14,12 @@ The deployment must keep its initial `gke_cluster_mode`.
 A mode change replaces the GKE cluster and causes data-plane downtime.
 The replacement cluster requires redeployment of the Braintrust Helm release.
 
+### Standard node pools
+
+Standard mode creates separate `api` and `brainstore` node pools. The default pools use Arm C4A machine types.
+
+The x86 machine types remain supported for regions without C4A capacity. The `brainstore` pool always requires a machine type with bundled Local SSD.
+
 ## Prerequisites
 
 ### Enabling APIs

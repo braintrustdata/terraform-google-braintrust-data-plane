@@ -110,24 +110,22 @@ module "gke-standard-node-pool" {
   service_account_email = module.gke-cluster[0].gke_node_service_account_email
   boot_disk_kms_key     = module.kms.kms_key_id
 
-  machine_type                      = each.value.machine_type
-  image_type                        = each.value.image_type
-  disk_type                         = each.value.disk_type
-  disk_size_gb                      = each.value.disk_size_gb
-  spot                              = each.value.spot
-  total_min_node_count              = each.value.total_min_node_count
-  total_max_node_count              = each.value.total_max_node_count
-  location_policy                   = each.value.location_policy
-  node_locations                    = each.value.node_locations
-  labels                            = each.value.labels
-  taints                            = each.value.taints
-  ephemeral_storage_local_ssd_count = each.value.ephemeral_storage_local_ssd_count
-  auto_repair                       = each.value.auto_repair
-  auto_upgrade                      = each.value.auto_upgrade
-  max_surge                         = each.value.max_surge
-  max_unavailable                   = each.value.max_unavailable
-  enable_secure_boot                = each.value.enable_secure_boot
-  enable_integrity_monitoring       = each.value.enable_integrity_monitoring
+  machine_type                = each.value.machine_type
+  image_type                  = each.value.image_type
+  disk_type                   = each.value.disk_type
+  disk_size_gb                = each.value.disk_size_gb
+  spot                        = each.value.spot
+  total_min_node_count        = each.value.total_min_node_count
+  total_max_node_count        = each.value.total_max_node_count
+  location_policy             = each.value.location_policy
+  node_locations              = each.value.node_locations
+  labels                      = each.value.labels
+  taints                      = each.value.taints
+  auto_repair                 = each.value.auto_repair
+  max_surge                   = each.value.max_surge
+  max_unavailable             = each.value.max_unavailable
+  enable_secure_boot          = each.value.enable_secure_boot
+  enable_integrity_monitoring = each.value.enable_integrity_monitoring
 }
 
 module "gke-iam" {

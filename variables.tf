@@ -415,23 +415,21 @@ variable "gke_standard_node_pools" {
       value  = string
       effect = string
     })), [])
-    ephemeral_storage_local_ssd_count = optional(number)
-    auto_repair                       = optional(bool, true)
-    auto_upgrade                      = optional(bool, true)
-    max_surge                         = optional(number, 1)
-    max_unavailable                   = optional(number, 0)
-    enable_secure_boot                = optional(bool, true)
-    enable_integrity_monitoring       = optional(bool, true)
+    auto_repair                 = optional(bool, true)
+    max_surge                   = optional(number, 1)
+    max_unavailable             = optional(number, 0)
+    enable_secure_boot          = optional(bool, true)
+    enable_integrity_monitoring = optional(bool, true)
   }))
-  description = "Node pools for a Standard GKE cluster. This value has no effect in Autopilot mode."
+  description = "Node pools for a Standard GKE cluster. The defaults use the Arm C4A machine series. Standard mode requires a `brainstore` pool that uses a machine type with bundled Local SSD. This value has no effect in Autopilot mode."
   default = {
     api = {
-      machine_type         = "c4-standard-16"
+      machine_type         = "c4a-standard-16"
       total_min_node_count = 2
       total_max_node_count = 10
     }
     brainstore = {
-      machine_type         = "c4-standard-48-lssd"
+      machine_type         = "c4a-standard-48-lssd"
       total_min_node_count = 5
       total_max_node_count = 10
     }
@@ -446,17 +444,32 @@ variable "gke_standard_node_pools" {
       pool.disk_size_gb >= 10 &&
       contains(["BALANCED", "ANY"], pool.location_policy) &&
       (pool.node_locations == null ? true : length(pool.node_locations) > 0 && alltrue([for location in pool.node_locations : trimspace(location) != ""])) &&
-      (pool.ephemeral_storage_local_ssd_count == null ? true : pool.ephemeral_storage_local_ssd_count >= 1) &&
       alltrue([
         for taint in pool.taints : contains(["NO_SCHEDULE", "PREFER_NO_SCHEDULE", "NO_EXECUTE"], taint.effect)
       ])
     ])
-    error_message = "Each Standard node pool must use valid names, sizes, autoscaler limits, Local SSD counts, policies, and taints."
+    error_message = "Each Standard node pool must use valid names, sizes, autoscaler limits, policies, and taints."
   }
 
   validation {
     condition     = var.gke_cluster_mode != "standard" || length(var.gke_standard_node_pools) > 0
     error_message = "`gke_standard_node_pools` must contain at least one pool in Standard mode."
+  }
+
+  validation {
+    condition     = var.gke_cluster_mode != "standard" || contains(keys(var.gke_standard_node_pools), "brainstore")
+    error_message = "`gke_standard_node_pools` must contain a `brainstore` pool in Standard mode."
+  }
+
+  # Brainstore keeps its cache on node ephemeral storage, which must be backed by
+  # Local SSD. Machine types with bundled Local SSD carry `lssd` in the machine
+  # type name, and GKE configures those disks as ephemeral storage automatically.
+  validation {
+    condition = var.gke_cluster_mode != "standard" || alltrue([
+      for name, pool in var.gke_standard_node_pools :
+      can(regex("lssd", pool.machine_type)) if name == "brainstore"
+    ])
+    error_message = "The `brainstore` pool must use a machine type with bundled Local SSD, such as `c4a-standard-48-lssd`, `c4-standard-48-lssd`, or `c4d-standard-48-lssd`."
   }
 }
 

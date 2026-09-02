@@ -35,6 +35,24 @@ Do not instruct users to switch between Autopilot and Standard modes.
 State that a mode change replaces the cluster and causes data-plane downtime.
 State that the replacement cluster requires redeployment of the Braintrust Helm release.
 
+### Node Pool Defaults
+
+The Standard node pool defaults use the Arm C4A machine series (`c4a-standard-16` and `c4a-standard-48-lssd`).
+The node pool module always sets `node_config.taint_config.architecture_taint_behavior` to `NONE`.
+This value disables the `kubernetes.io/arch=arm64:NoSchedule` taint that GKE applies to Arm nodes.
+Braintrust images support Arm and x86, and the cluster is dedicated to Braintrust workloads.
+Do not expose the architecture taint behavior as a module input.
+GKE manages that taint, so it never belongs in the `taints` input.
+Recommend the x86 C4 equivalents only when C4A is unavailable in the deployment region.
+
+### Brainstore Local SSD
+
+The `brainstore` node pool in Standard mode must use a machine type with bundled Local SSD (`lssd` in the machine type name).
+Do not add a Local SSD count input. The count is a fixed property of the machine type, and GKE configures the disks as node ephemeral storage automatically.
+The node pool module ignores changes to `node_config[0].ephemeral_storage_local_ssd_config`, because GKE populates that block server-side and the provider would otherwise replace the node pool on every apply.
+This is still unfixed as of provider 7.46, so do not remove the `ignore_changes` entry.
+Node auto-upgrade is hardcoded to `true`, because clusters enrolled in a release channel reject node pools that disable it.
+
 ### Workload Identity Bindings
 
 The `gke-iam` module uses `google_service_account_iam_binding`, which is **authoritative** - it sets the complete list of members for the given role. If members are added manually outside Terraform for the same role, they will be removed on the next apply.
