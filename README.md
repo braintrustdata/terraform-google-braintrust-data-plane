@@ -11,7 +11,9 @@ outputs are defined in [`outputs.tf`](outputs.tf).
 
 The module supports GKE Autopilot and GKE Standard clusters. Autopilot remains the default and is recommended.
 
-Standard mode creates separate `api` and `brainstore` node pools. The Brainstore pool uses Local SSD storage for Kubernetes ephemeral storage.
+Standard mode creates separate `api` and `brainstore` node pools. The defaults use the Arm C4A (Axion) machine series. The Brainstore pool uses Local SSD storage for Kubernetes ephemeral storage.
+
+Node auto-upgrade is always enabled, because clusters enrolled in a release channel reject node pools that disable it. Node upgrades and repairs recreate node ephemeral storage, so treat Local SSD contents as a cache that Brainstore rebuilds.
 
 > [!WARNING]
 > A deployment must keep its initial `gke_cluster_mode`.
@@ -34,12 +36,12 @@ Leave `node_locations` unset to use the cluster node locations.
 ```hcl
 gke_standard_node_pools = {
   api = {
-    machine_type         = "c4-standard-16"
+    machine_type         = "c4a-standard-16"
     total_min_node_count = 2
     total_max_node_count = 10
   }
   brainstore = {
-    machine_type         = "c4-standard-48-lssd"
+    machine_type         = "c4a-standard-48-lssd"
     total_min_node_count = 3
     total_max_node_count = 10
     node_locations = [
@@ -55,9 +57,44 @@ Set the Helm value `google.mode` to `standard`.
 
 Use the `api` and `brainstore` pool names in the Helm node selectors.
 
-The C4 machine series requires Hyperdisk boot disks. The default node-pool configuration uses `hyperdisk-balanced`.
+The C4A machine series requires Hyperdisk boot disks. The default node-pool configuration uses `hyperdisk-balanced`. Set `disk_type` when a pool uses a machine series that does not support Hyperdisk.
 
-The `c4-standard-48-lssd` machine type includes Local SSD disks. GKE configures those disks as node ephemeral storage.
+### Arm and x86 nodes
+
+The default node pools use the Arm C4A machine series.
+
+GKE applies a `kubernetes.io/arch=arm64:NoSchedule` taint to Arm nodes by default. The module disables this taint for all Standard node pools.
+
+Braintrust images support Arm and x86. The container runtime selects the correct image after the scheduler assigns a node.
+
+The cluster is dedicated to Braintrust, so the architecture taint adds no workload protection. Braintrust workloads need no architecture tolerations.
+
+Customers select only the node pool machine types. The module does not expose architecture taint behavior as an input.
+
+The x86 C4 series is also supported. C4A is available in fewer regions than C4, so use the C4 equivalents when C4A is unavailable in the deployment region.
+
+```hcl
+gke_standard_node_pools = {
+  api = {
+    machine_type         = "c4-standard-16"
+    total_min_node_count = 2
+    total_max_node_count = 10
+  }
+  brainstore = {
+    machine_type         = "c4-standard-48-lssd"
+    total_min_node_count = 5
+    total_max_node_count = 10
+  }
+}
+```
+
+Confirm regional availability for the machine types in use, and set `node_locations` when a machine type is missing from a cluster zone.
+
+### Brainstore Local SSD
+
+The `brainstore` pool must use a machine type with bundled Local SSD. These machine types carry `lssd` in the machine type name, such as `c4a-standard-48-lssd` (Arm), `c4-standard-48-lssd`, `c4d-standard-48-lssd`, or `c3d-standard-30-lssd`. The module validates this in Standard mode.
+
+The number of Local SSD disks is a fixed property of the machine type, and GKE configures those disks as node ephemeral storage automatically. There is no Local SSD count to configure. Choosing a larger `lssd` machine type is how you get more Local SSD capacity per node.
 
 ## How to use this module
 

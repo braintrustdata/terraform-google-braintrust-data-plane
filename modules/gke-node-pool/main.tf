@@ -20,7 +20,7 @@ resource "google_container_node_pool" "this" {
 
   management {
     auto_repair  = var.auto_repair
-    auto_upgrade = var.auto_upgrade
+    auto_upgrade = true
   }
 
   upgrade_settings {
@@ -53,12 +53,8 @@ resource "google_container_node_pool" "this" {
       enable_integrity_monitoring = var.enable_integrity_monitoring
     }
 
-    dynamic "ephemeral_storage_local_ssd_config" {
-      for_each = var.ephemeral_storage_local_ssd_count == null ? [] : [var.ephemeral_storage_local_ssd_count]
-
-      content {
-        local_ssd_count = ephemeral_storage_local_ssd_config.value
-      }
+    taint_config {
+      architecture_taint_behavior = "NONE"
     }
 
     dynamic "taint" {
@@ -70,5 +66,11 @@ resource "google_container_node_pool" "this" {
         effect = taint.value.effect
       }
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      node_config[0].ephemeral_storage_local_ssd_config,
+    ]
   }
 }
