@@ -45,14 +45,17 @@ Do not expose the architecture taint behavior as a module input.
 GKE manages that taint, so it never belongs in the `taints` input.
 Recommend the x86 C4 equivalents only when C4A is unavailable in the deployment region.
 
-### Node Pool Replacement
+### Node Pool Updates
 
-The module tracks every node pool machine type with `terraform_data.machine_type`.
-A machine type change updates that trigger and replaces the node pool.
-All Standard node pools use generated names and `create_before_destroy`.
+Machine type, disk type, and disk size changes use the GKE node upgrade strategy.
+The default surge configuration uses `max_surge = 1` and `max_unavailable = 0`.
+GKE creates a surge node and waits for Ready state before it removes an old node.
+If GCP cannot create the surge node, the update waits or fails without an intentional capacity reduction.
+An Arm-to-x86 architecture change requires a separate node pool migration.
+All Standard node pools use generated names and `create_before_destroy` for resource replacements.
 Each node has a stable `braintrust/node-pool` label for Helm node selectors.
-The replacement pool reaches capacity before Terraform deletes the old pool.
-Affected pods still restart, so a singleton workload can have a brief interruption.
+`create_before_destroy` does not verify the capacity of a replacement resource.
+A resource replacement can interrupt workloads.
 
 ### Brainstore Local SSD
 
