@@ -11,7 +11,7 @@ outputs are defined in [`outputs.tf`](outputs.tf).
 
 The module supports GKE Autopilot and GKE Standard clusters. Autopilot remains the default and is recommended.
 
-Standard mode creates separate `api` and `brainstore` node pools. The defaults use the Arm C4A (Axion) machine series. The Brainstore pool uses Local SSD storage for Kubernetes ephemeral storage.
+Standard mode creates separate `services` and `brainstore` node pools. The defaults use the Arm C4A (Axion) machine series. The Brainstore pool uses Local SSD storage for Kubernetes ephemeral storage.
 
 Node auto-upgrade is always enabled, because clusters enrolled in a release channel reject node pools that disable it. Node upgrades and repairs recreate node ephemeral storage, so treat Local SSD contents as a cache that Brainstore rebuilds.
 
@@ -35,7 +35,7 @@ Leave `node_locations` unset to use the cluster node locations.
 
 ```hcl
 gke_standard_node_pools = {
-  api = {
+  services = {
     machine_type         = "c4a-standard-16"
     total_min_node_count = 2
     total_max_node_count = 10
@@ -55,7 +55,15 @@ gke_standard_node_pools = {
 
 Set the Helm value `google.mode` to `standard`.
 
-Use the `api` and `brainstore` pool names in the Helm node selectors.
+Use `braintrust/node-pool` in the Helm node selectors. Set its value to `services` or `brainstore`.
+
+Standard node pools use generated GKE names. A private Terraform trigger detects a machine type change for each pool.
+
+Terraform creates the replacement pool before it deletes the old pool. The replacement pool reaches capacity before the old pool disappears.
+
+The stable role label does not change with the generated GKE name. Kubernetes can reschedule pods onto the replacement pool.
+
+The replacement restarts affected pods. The project needs enough temporary quota for both versions of the pool.
 
 The C4A machine series requires Hyperdisk boot disks. The default node-pool configuration uses `hyperdisk-balanced`. Set `disk_type` when a pool uses a machine series that does not support Hyperdisk.
 
@@ -75,7 +83,7 @@ The x86 C4 series is also supported. C4A is available in fewer regions than C4, 
 
 ```hcl
 gke_standard_node_pools = {
-  api = {
+  services = {
     machine_type         = "c4-standard-16"
     total_min_node_count = 2
     total_max_node_count = 10
@@ -94,7 +102,15 @@ Confirm regional availability for the machine types in use, and set `node_locati
 
 The `brainstore` pool must use a machine type with bundled Local SSD. These machine types carry `lssd` in the machine type name, such as `c4a-standard-48-lssd` (Arm), `c4-standard-48-lssd`, `c4d-standard-48-lssd`, or `c3d-standard-30-lssd`. The module validates this in Standard mode.
 
-The number of Local SSD disks is a fixed property of the machine type, and GKE configures those disks as node ephemeral storage automatically. There is no Local SSD count to configure. Choosing a larger `lssd` machine type is how you get more Local SSD capacity per node.
+The number of Local SSD disks is a fixed property of the machine type. GKE selects that fixed count when it creates the node pool.
+
+Customers configure only the machine type. The module has no Local SSD count input.
+
+The singleton Brainstore writer can have a brief interruption during a node pool replacement.
+
+The replacement deletes the node ephemeral storage. Brainstore treats that storage as a cache and rebuilds its contents.
+
+If replacement capacity allocation fails, Terraform keeps the old pool.
 
 ## How to use this module
 
