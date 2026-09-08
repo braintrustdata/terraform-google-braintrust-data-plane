@@ -7,10 +7,6 @@ locals {
   })
 }
 
-resource "terraform_data" "machine_type" {
-  input = var.machine_type
-}
-
 resource "google_container_node_pool" "this" {
   name_prefix = "${substr(var.name, 0, 13)}-"
   project     = var.project_id
@@ -77,10 +73,6 @@ resource "google_container_node_pool" "this" {
 
   lifecycle {
     create_before_destroy = true
-
-    replace_triggered_by = [
-      terraform_data.machine_type,
-    ]
 
     ignore_changes = [
       node_config[0].ephemeral_storage_local_ssd_config,
