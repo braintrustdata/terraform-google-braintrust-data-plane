@@ -131,6 +131,10 @@ resource "google_container_cluster" "braintrust" {
     }
   }
 
+  lifecycle {
+    ignore_changes = [node_config]
+  }
+
   depends_on = [
     google_project_iam_member.gke_default_node_sa,
     google_kms_crypto_key_iam_member.gke_cluster_cmek,
