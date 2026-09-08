@@ -57,13 +57,19 @@ Set the Helm value `google.mode` to `standard`.
 
 Use `braintrust/node-pool` in the Helm node selectors. Set its value to `services` or `brainstore`.
 
-Standard node pools use generated GKE names. A private Terraform trigger detects a machine type change for each pool.
+Standard node pools use generated GKE names. Machine type, disk type, and disk size changes use the native GKE upgrade strategy.
 
-Terraform creates the replacement pool before it deletes the old pool. The replacement pool reaches capacity before the old pool disappears.
+The default surge configuration uses `max_surge = 1` and `max_unavailable = 0`. GKE waits for a new node to reach Ready state before it removes an old node.
 
-The stable role label does not change with the generated GKE name. Kubernetes can reschedule pods onto the replacement pool.
+If GCP cannot create a surge node, the update waits or fails without an intentional capacity reduction.
 
-The replacement restarts affected pods. The project needs enough temporary quota for both versions of the pool.
+An Arm-to-x86 architecture change requires a separate node pool migration.
+
+Each node has a stable `braintrust/node-pool` label for Helm node selectors.
+
+For a resource replacement, Terraform creates the new pool before it deletes the old pool. Terraform does not verify replacement capacity.
+
+The project needs temporary quota for surge nodes or both pool versions. A resource replacement can interrupt workloads.
 
 The C4A machine series requires Hyperdisk boot disks. The default node-pool configuration uses `hyperdisk-balanced`. Set `disk_type` when a pool uses a machine series that does not support Hyperdisk.
 
