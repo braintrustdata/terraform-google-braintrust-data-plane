@@ -23,6 +23,17 @@ resource "google_container_cluster" "braintrust" {
   remove_default_node_pool = var.gke_cluster_mode == "standard" ? true : null
   initial_node_count       = var.gke_cluster_mode == "standard" ? 1 : null
 
+  dynamic "node_config" {
+    for_each = var.gke_cluster_mode == "standard" ? [1] : []
+
+    content {
+      service_account = google_service_account.gke.email
+      oauth_scopes = [
+        "https://www.googleapis.com/auth/cloud-platform",
+      ]
+    }
+  }
+
   release_channel {
     channel = var.gke_release_channel
   }
@@ -121,6 +132,7 @@ resource "google_container_cluster" "braintrust" {
   }
 
   depends_on = [
+    google_project_iam_member.gke_default_node_sa,
     google_kms_crypto_key_iam_member.gke_cluster_cmek,
     google_kms_crypto_key_iam_member.gke_compute_cmek
   ]
