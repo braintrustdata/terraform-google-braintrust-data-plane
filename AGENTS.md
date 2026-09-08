@@ -45,12 +45,22 @@ Do not expose the architecture taint behavior as a module input.
 GKE manages that taint, so it never belongs in the `taints` input.
 Recommend the x86 C4 equivalents only when C4A is unavailable in the deployment region.
 
+### Node Pool Replacement
+
+The module tracks every node pool machine type with `terraform_data.machine_type`.
+A machine type change updates that trigger and replaces the node pool.
+All Standard node pools use generated names and `create_before_destroy`.
+Each node has a stable `braintrust/node-pool` label for Helm node selectors.
+The replacement pool reaches capacity before Terraform deletes the old pool.
+Affected pods still restart, so a singleton workload can have a brief interruption.
+
 ### Brainstore Local SSD
 
 The `brainstore` node pool in Standard mode must use a machine type with bundled Local SSD (`lssd` in the machine type name).
-Do not add a Local SSD count input. The count is a fixed property of the machine type, and GKE configures the disks as node ephemeral storage automatically.
-The node pool module ignores changes to `node_config[0].ephemeral_storage_local_ssd_config`, because GKE populates that block server-side and the provider would otherwise replace the node pool on every apply.
-This is still unfixed as of provider 7.46, so do not remove the `ignore_changes` entry.
+Do not add a Local SSD count input. The count is a fixed property of the machine type.
+Do not add a table of machine types and Local SSD counts.
+GKE selects the fixed count when it creates the node pool.
+The module ignores `node_config[0].ephemeral_storage_local_ssd_config` because GKE populates that block.
 Node auto-upgrade is hardcoded to `true`, because clusters enrolled in a release channel reject node pools that disable it.
 
 ### Workload Identity Bindings

@@ -46,7 +46,7 @@ variable "boot_disk_kms_key" {
 
 variable "machine_type" {
   type        = string
-  description = "Compute Engine machine type for each node. Machine types with bundled Local SSD (`*lssd*` shapes) get their Local SSDs configured as node ephemeral storage by GKE."
+  description = "Compute Engine machine type for each node. GKE configures the fixed Local SSD count for `-lssd` machine types."
 }
 
 variable "image_type" {
