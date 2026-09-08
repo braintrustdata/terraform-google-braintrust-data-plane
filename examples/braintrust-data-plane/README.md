@@ -16,9 +16,11 @@ The replacement cluster requires redeployment of the Braintrust Helm release.
 
 ### Standard node pools
 
-Standard mode creates separate `api` and `brainstore` node pools. The default pools use Arm C4A machine types.
+Standard mode creates separate `services` and `brainstore` node pools. The default pools use Arm C4A machine types.
 
 The x86 machine types remain supported for regions without C4A capacity. The `brainstore` pool always requires a machine type with bundled Local SSD.
+Use `braintrust/node-pool: services` and `braintrust/node-pool: brainstore` as Helm node selectors, so a pool replacement does not cause an outage.
+
 
 ## Prerequisites
 

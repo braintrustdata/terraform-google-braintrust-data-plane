@@ -86,8 +86,8 @@ run "standard_creates_default_node_pools" {
   }
 
   assert {
-    condition     = output.gke_node_pool_names == { api = "api", brainstore = "brainstore" }
-    error_message = "Standard mode must create the default API and Brainstore node pools."
+    condition     = toset(keys(output.gke_node_pool_names)) == toset(["brainstore", "services"])
+    error_message = "Standard mode must create the default services and Brainstore node pools."
   }
 }
 
@@ -111,7 +111,7 @@ run "brainstore_requires_a_local_ssd_machine_type" {
     deployment_name  = "braintrust"
     gke_cluster_mode = "standard"
     gke_standard_node_pools = {
-      api = {
+      services = {
         machine_type         = "c4a-standard-16"
         total_min_node_count = 2
         total_max_node_count = 10
@@ -147,7 +147,7 @@ run "standard_requires_a_brainstore_pool" {
     deployment_name  = "braintrust"
     gke_cluster_mode = "standard"
     gke_standard_node_pools = {
-      api = {
+      services = {
         machine_type         = "c4a-standard-16"
         total_min_node_count = 2
         total_max_node_count = 10
@@ -178,7 +178,7 @@ run "brainstore_accepts_x86_local_ssd_machine_types" {
     deployment_name  = "braintrust"
     gke_cluster_mode = "standard"
     gke_standard_node_pools = {
-      api = {
+      services = {
         machine_type         = "c4a-standard-16"
         total_min_node_count = 2
         total_max_node_count = 10
@@ -192,7 +192,7 @@ run "brainstore_accepts_x86_local_ssd_machine_types" {
   }
 
   assert {
-    condition     = output.gke_node_pool_names == { api = "api", brainstore = "brainstore" }
+    condition     = toset(keys(output.gke_node_pool_names)) == toset(["brainstore", "services"])
     error_message = "Standard mode must create the configured node pools."
   }
 }

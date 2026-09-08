@@ -44,16 +44,16 @@ module "braintrust-data-plane" {
   # Set gke_cluster_mode to "standard" to use user-managed node pools.
   # Omit this value to use the "autopilot" default.
   # gke_cluster_mode = "standard"
-  # Standard mode creates the api and brainstore pools below by default.
+  # Standard mode creates the services and brainstore pools below by default.
   # gke_standard_node_pools = {
-  #   api = {
+  #   services = {
   #     machine_type         = "c4a-standard-16"
   #     total_min_node_count = 2
   #     total_max_node_count = 10
   #   }
   #   # The brainstore pool requires a machine type with bundled Local SSD, which
-  #   # carries "lssd" in the machine type name. GKE configures those disks as node
-  #   # ephemeral storage automatically, so there is no Local SSD count to set.
+  #   # carries "-lssd" at the end of the machine type name. GKE configures the
+  #   # fixed disk count as node ephemeral storage.
   #   brainstore = {
   #     machine_type         = "c4a-standard-48-lssd"
   #     total_min_node_count = 5

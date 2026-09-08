@@ -423,7 +423,7 @@ variable "gke_standard_node_pools" {
   }))
   description = "Node pools for a Standard GKE cluster. The defaults use the Arm C4A machine series. Standard mode requires a `brainstore` pool that uses a machine type with bundled Local SSD. This value has no effect in Autopilot mode."
   default = {
-    api = {
+    services = {
       machine_type         = "c4a-standard-16"
       total_min_node_count = 2
       total_max_node_count = 10
@@ -467,7 +467,7 @@ variable "gke_standard_node_pools" {
   validation {
     condition = var.gke_cluster_mode != "standard" || alltrue([
       for name, pool in var.gke_standard_node_pools :
-      can(regex("lssd", pool.machine_type)) if name == "brainstore"
+      endswith(pool.machine_type, "-lssd") if name == "brainstore"
     ])
     error_message = "The `brainstore` pool must use a machine type with bundled Local SSD, such as `c4a-standard-48-lssd`, `c4-standard-48-lssd`, or `c4d-standard-48-lssd`."
   }

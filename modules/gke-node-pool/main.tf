@@ -2,13 +2,20 @@ locals {
   common_resource_labels = merge(var.custom_labels, {
     braintrustdeploymentname = var.deployment_name
   })
+  node_labels = merge(var.labels, {
+    "braintrust/node-pool" = var.name
+  })
+}
+
+resource "terraform_data" "machine_type" {
+  input = var.machine_type
 }
 
 resource "google_container_node_pool" "this" {
-  name     = var.name
-  project  = var.project_id
-  location = var.location
-  cluster  = var.cluster_id
+  name_prefix = "${substr(var.name, 0, 13)}-"
+  project     = var.project_id
+  location    = var.location
+  cluster     = var.cluster_id
 
   node_locations = var.node_locations
 
@@ -41,7 +48,7 @@ resource "google_container_node_pool" "this" {
     ]
 
     boot_disk_kms_key = var.boot_disk_kms_key
-    labels            = var.labels
+    labels            = local.node_labels
     resource_labels   = local.common_resource_labels
 
     workload_metadata_config {
@@ -69,6 +76,12 @@ resource "google_container_node_pool" "this" {
   }
 
   lifecycle {
+    create_before_destroy = true
+
+    replace_triggered_by = [
+      terraform_data.machine_type,
+    ]
+
     ignore_changes = [
       node_config[0].ephemeral_storage_local_ssd_config,
     ]
