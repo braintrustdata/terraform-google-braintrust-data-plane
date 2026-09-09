@@ -28,6 +28,7 @@ run "autopilot_is_the_default" {
       gke_cluster_endpoint           = "https://autopilot.example.test"
       gke_cluster_master_version     = "1.33.0"
       gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-autopilot"
+      gke_node_locations             = ["us-central1-a", "us-central1-b", "us-central1-c"]
       gke_cluster_location           = "us-central1"
       gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
       workload_identity_pool         = "braintrust-test.svc.id.goog"
@@ -64,6 +65,7 @@ run "standard_creates_default_node_pools" {
       gke_cluster_endpoint           = "https://standard.example.test"
       gke_cluster_master_version     = "1.33.0"
       gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
+      gke_node_locations             = ["us-central1-a", "us-central1-b", "us-central1-c"]
       gke_cluster_location           = "us-central1"
       gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
       workload_identity_pool         = "braintrust-test.svc.id.goog"
@@ -101,6 +103,7 @@ run "brainstore_requires_a_local_ssd_machine_type" {
       gke_cluster_endpoint           = "https://standard.example.test"
       gke_cluster_master_version     = "1.33.0"
       gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
+      gke_node_locations             = ["us-central1-a", "us-central1-b", "us-central1-c"]
       gke_cluster_location           = "us-central1"
       gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
       workload_identity_pool         = "braintrust-test.svc.id.goog"
@@ -137,6 +140,7 @@ run "standard_requires_a_brainstore_pool" {
       gke_cluster_endpoint           = "https://standard.example.test"
       gke_cluster_master_version     = "1.33.0"
       gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
+      gke_node_locations             = ["us-central1-a", "us-central1-b", "us-central1-c"]
       gke_cluster_location           = "us-central1"
       gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
       workload_identity_pool         = "braintrust-test.svc.id.goog"
@@ -168,6 +172,7 @@ run "brainstore_accepts_x86_local_ssd_machine_types" {
       gke_cluster_endpoint           = "https://standard.example.test"
       gke_cluster_master_version     = "1.33.0"
       gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
+      gke_node_locations             = ["us-central1-a", "us-central1-b", "us-central1-c"]
       gke_cluster_location           = "us-central1"
       gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
       workload_identity_pool         = "braintrust-test.svc.id.goog"

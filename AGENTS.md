@@ -16,15 +16,38 @@ This is a Terraform module that provisions GCP infrastructure for the Braintrust
 │   ├── storage/        # GCS buckets
 │   └── vpc/            # VPC, subnets, private service connections
 ├── examples/
-│   └── braintrust-data-plane/   # Production example
+│   ├── braintrust-data-plane/                # GKE Autopilot example
+│   └── braintrust-data-plane-gke-standard/   # GKE Standard example
 └── mise.toml                    # Tool versions and tasks (terraform, tflint)
 ```
+
+### Examples
+
+The `braintrust-data-plane` example explicitly uses Autopilot and contains no Standard node pool configuration.
+The `braintrust-data-plane-gke-standard` example explicitly uses Standard with services and Brainstore pools.
+Both examples are independent directories that customers can copy.
+The validation task verifies both examples against the local module.
+
+Keep Standard pool settings and replacement instructions in the Standard example.
+Do not copy Terraform state, `.terraform` directories, or customer values into examples.
 
 ### Key architecture concepts
 
 - **Pure infrastructure module.** This module creates VPC, GKE, Cloud SQL, Redis, GCS, and IAM resources. It does not manage application-level configuration (environment variables, image tags, etc.). All application config lives in the Helm chart deployed on top of this infrastructure.
 - **`deployment_name`** prefixes all resource names and must be unique per deployment in the same GCP project.
 - **Workload Identity** is used to grant GKE pods access to GCP resources. The `gke-iam` module creates GCP service accounts and binds them to Kubernetes service accounts via `roles/iam.workloadIdentityUser`.
+
+## GKE mode recommendation
+
+GKE Autopilot is the preferred solution for new Braintrust deployments.
+Standard is supported when customer requirements prevent Autopilot use.
+The separate Standard example does not change this preference.
+Existing deployments must keep their initial cluster mode.
+A mode change replaces the cluster, causes downtime, and requires Helm release redeployment.
+
+Recommend Autopilot first for new deployments.
+Present Standard as a supported alternative for customer constraints.
+Do not imply that existing Standard customers must switch modes.
 
 ## Critical Safety Constraints
 
@@ -47,14 +70,31 @@ Recommend the x86 C4 equivalents only when C4A is unavailable in the deployment 
 
 ### Node Pool Updates
 
-Machine type, disk type, and disk size changes use the GKE node upgrade strategy.
+Machine type changes replace node pools. Disk type and disk size changes use the GKE node upgrade strategy.
+Bundled Local SSD machine type changes replace the node pool.
+The GKE update API cannot change the fixed Local SSD count with the machine type.
 The default surge configuration uses `max_surge = 1` and `max_unavailable = 0`.
 GKE creates a surge node and waits for Ready state before it removes an old node.
 If GCP cannot create the surge node, the update waits or fails without an intentional capacity reduction.
-An Arm-to-x86 architecture change requires a separate node pool migration.
+Arm and x86 machine changes use create-before-destroy pool replacement.
 All Standard node pools use generated names and `create_before_destroy` for resource replacements.
 Each node has a stable `braintrust/node-pool` label for Helm node selectors.
-`create_before_destroy` does not verify the capacity of a replacement resource.
+The Terraform pool map key sets that label.
+Custom labels cannot override the pool label.
+Automatic replacement preserves the workload label without a Helm change.
+The per-pool `respect_pdb_on_delete` option defaults to `true`.
+When enabled, node pool deletion respects PodDisruptionBudgets for up to one hour.
+The module omits `node_drain_config` when the option is false.
+Do not set custom drain timeout values. GKE requires project enablement for those values.
+Initial capacity derives from the total minimum and effective zones, rounded up per zone.
+Ignore later changes to initial_node_count so autoscaler minimum changes do not replace pools.
+Preserve the legacy Local SSD trigger during upgrades so protection rollout does not replace services pools.
+Existing pools must receive deletion protection before an apply that changes machine types.
+`create_before_destroy` does not verify application capacity or readiness.
+The Helm GKE Standard example enables separate PDBs for the API and each Brainstore role.
+Its maxUnavailable value of one permits a brief single-writer interruption and one unavailable replica for replicated roles.
+Chart budgets remain optional and disabled by default on every cloud.
+GKE PDB protection expires after one hour. A Terraform timeout does not cancel a GKE deletion.
 A resource replacement can interrupt workloads.
 
 ### Brainstore Local SSD

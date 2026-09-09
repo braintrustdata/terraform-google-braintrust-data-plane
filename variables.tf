@@ -416,6 +416,7 @@ variable "gke_standard_node_pools" {
       effect = string
     })), [])
     auto_repair                 = optional(bool, true)
+    respect_pdb_on_delete       = optional(bool, true)
     max_surge                   = optional(number, 1)
     max_unavailable             = optional(number, 0)
     enable_secure_boot          = optional(bool, true)
@@ -458,7 +459,7 @@ variable "gke_standard_node_pools" {
 
   validation {
     condition     = var.gke_cluster_mode != "standard" || contains(keys(var.gke_standard_node_pools), "brainstore")
-    error_message = "`gke_standard_node_pools` must contain a `brainstore` pool in Standard mode."
+    error_message = "`gke_standard_node_pools` must contain a pool named `brainstore` in Standard mode."
   }
 
   # Brainstore keeps its cache on node ephemeral storage, which must be backed by

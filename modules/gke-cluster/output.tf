@@ -49,3 +49,8 @@ output "workload_identity_pool" {
   value       = google_container_cluster.braintrust.workload_identity_config[0].workload_pool
   description = "Workload Identity pool for Kubernetes service account IAM bindings."
 }
+
+output "gke_node_locations" {
+  value       = google_container_cluster.braintrust.node_locations
+  description = "Effective cluster node zones."
+}

@@ -119,9 +119,11 @@ module "gke-standard-node-pool" {
   total_max_node_count        = each.value.total_max_node_count
   location_policy             = each.value.location_policy
   node_locations              = each.value.node_locations
+  cluster_node_locations      = module.gke-cluster[0].gke_node_locations
   labels                      = each.value.labels
   taints                      = each.value.taints
   auto_repair                 = each.value.auto_repair
+  respect_pdb_on_delete       = each.value.respect_pdb_on_delete
   max_surge                   = each.value.max_surge
   max_unavailable             = each.value.max_unavailable
   enable_secure_boot          = each.value.enable_secure_boot

@@ -9,7 +9,8 @@ outputs are defined in [`outputs.tf`](outputs.tf).
 
 ## GKE Cluster Modes
 
-The module supports GKE Autopilot and GKE Standard clusters. Autopilot remains the default and is recommended.
+GKE Autopilot is the preferred solution for new Braintrust deployments. GKE Standard is supported when customer requirements prevent Autopilot use.
+Autopilot remains the module default.
 
 Standard mode creates separate `services` and `brainstore` node pools. The defaults use the Arm C4A (Axion) machine series. The Brainstore pool uses Local SSD storage for Kubernetes ephemeral storage.
 
@@ -42,13 +43,8 @@ gke_standard_node_pools = {
   }
   brainstore = {
     machine_type         = "c4a-standard-48-lssd"
-    total_min_node_count = 3
+    total_min_node_count = 5
     total_max_node_count = 10
-    node_locations = [
-      "us-central1-a",
-      "us-central1-b",
-      "us-central1-c",
-    ]
   }
 }
 ```
@@ -57,17 +53,45 @@ Set the Helm value `google.mode` to `standard`.
 
 Use `braintrust/node-pool` in the Helm node selectors. Set its value to `services` or `brainstore`.
 
-Standard node pools use generated GKE names. Machine type, disk type, and disk size changes use the native GKE upgrade strategy.
+Standard node pools use generated GKE names. Every machine type change replaces the pool. Disk type and disk size changes use GKE surge upgrades.
+
+Bundled Local SSD count changes also require replacement. The module uses one replacement procedure for all machine type changes.
 
 The default surge configuration uses `max_surge = 1` and `max_unavailable = 0`. GKE waits for a new node to reach Ready state before it removes an old node.
 
 If GCP cannot create a surge node, the update waits or fails without an intentional capacity reduction.
-
-An Arm-to-x86 architecture change requires a separate node pool migration.
-
 Each node has a stable `braintrust/node-pool` label for Helm node selectors.
 
-For a resource replacement, Terraform creates the new pool before it deletes the old pool. Terraform does not verify replacement capacity.
+The Terraform map key sets the workload label. The `services` and `brainstore` keys match the Helm example selectors.
+Automatic replacement preserves that label and needs no Helm selector change.
+
+The per-pool `respect_pdb_on_delete` option defaults to `true`. GKE respects Helm-defined PDBs during pool deletion for up to one hour.
+
+Set `respect_pdb_on_delete = false` only to opt out of deletion protection. This option omits `node_drain_config` for new pools.
+
+The module leaves custom drain timeouts unset because those values require project enablement from Google.
+The basic PDB option still requires verification against the target GKE project.
+
+The Helm GKE Standard example enables independent PDBs for the API and each Brainstore role with `maxUnavailable: 1`.
+One writer can stop briefly during eviction. With multiple writers, the budget permits one unavailable replica.
+A writer budget of `minAvailable: 1` blocks voluntary eviction when only one writer exists.
+
+For a resource replacement, Terraform creates the new pool before it deletes the old pool.
+Initial nodes per zone equal the total minimum divided by the effective zone count, rounded up.
+For example, a minimum of five nodes across three zones creates six initial nodes.
+Initial capacity can temporarily exceed the total maximum because of this rounding.
+Later autoscaler minimum changes do not replace the pool.
+A zero minimum provides no initial capacity guarantee.
+The minimum does not represent current load, and smaller nodes must still fit each pod's resource requests.
+Terraform waits for GKE pool creation, but it does not verify application readiness or cache recovery.
+
+### Later machine type changes
+
+Machine type changes replace the node pool. Replacement nodes must fit each pod's resource requests.
+
+GKE respects PDBs for up to one hour. After that period, deletion can interrupt workloads.
+
+A Terraform timeout does not cancel the GKE deletion.
 
 The project needs temporary quota for surge nodes or both pool versions. A resource replacement can interrupt workloads.
 
@@ -102,7 +126,7 @@ gke_standard_node_pools = {
 }
 ```
 
-Confirm regional availability for the machine types in use, and set `node_locations` when a machine type is missing from a cluster zone.
+Verify regional availability for the machine types in use, and set `node_locations` when a machine type is missing from a cluster zone.
 
 ### Brainstore Local SSD
 
@@ -112,7 +136,7 @@ The number of Local SSD disks is a fixed property of the machine type. GKE selec
 
 Customers configure only the machine type. The module has no Local SSD count input.
 
-The singleton Brainstore writer can have a brief interruption during a node pool replacement.
+A single Brainstore writer can have a brief interruption during a node pool replacement.
 
 The replacement deletes the node ephemeral storage. Brainstore treats that storage as a cache and rebuilds its contents.
 
@@ -120,11 +144,18 @@ If replacement capacity allocation fails, Terraform keeps the old pool.
 
 ## How to use this module
 
-To use this module, **copy the [`examples/braintrust-data-plane`](examples/braintrust-data-plane) directory to a new Terraform directory in your own repository**. Follow the instructions in the [README.md](examples/braintrust-data-plane/README.md) file in that directory to configure the module for your environment.
+Choose the example for a new deployment:
 
-Please review the README.md in the examples for all Pre-deployment and Post-Deployment steps in order to deploy Braintrust on Google.
+| GKE mode | Example |
+| --- | --- |
+| Autopilot (preferred) | [braintrust-data-plane](examples/braintrust-data-plane) |
+| Standard (when Autopilot cannot meet customer requirements) | [braintrust-data-plane-gke-standard](examples/braintrust-data-plane-gke-standard) |
 
-The default configuration is a large production-sized deployment. Please consider that when testing and adjust the configuration to use smaller sized resources.
+Copy the selected directory into your repository.
+Follow its README for setup and deployment.
+
+Both examples use production-sized defaults.
+An existing deployment must keep its initial cluster mode.
 
 ## Development Setup
 
