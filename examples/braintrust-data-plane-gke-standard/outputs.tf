@@ -6,10 +6,6 @@ output "brainstore_bucket_name" {
   value = module.braintrust-data-plane.brainstore_bucket_name
 }
 
-output "access_log_bucket_name" {
-  value = module.braintrust-data-plane.access_log_bucket_name
-}
-
 output "braintrust_service_account" {
   value = module.braintrust-data-plane.braintrust_service_account
 }
@@ -34,6 +30,10 @@ output "gke_cluster_name" {
 
 output "gke_cluster_mode" {
   value = module.braintrust-data-plane.gke_cluster_mode
+}
+
+output "gke_node_pool_names" {
+  value = module.braintrust-data-plane.gke_node_pool_names
 }
 
 output "postgres_instance_name" {
