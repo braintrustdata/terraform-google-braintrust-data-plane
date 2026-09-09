@@ -7,6 +7,7 @@ uv = "latest"
 [tasks]
 lint = ["terraform fmt -recursive", "tflint --recursive"]
 setup = ["pre-commit install", "tflint --init"]
+test = ["terraform test"]
 precommit = ["pre-commit run --all-files"]
 
 [tasks.validate]
@@ -18,16 +19,19 @@ echo "Validating module"
 terraform init
 terraform validate
 
-echo "Validating example code"
-cd examples/braintrust-data-plane
-# Override the module source to point to the local module.
-# '*_override.tf' is a lesser known native terraform feature
-trap 'rm -f main_override.tf' EXIT
-cat <<EOF> main_override.tf
+for example_dir in examples/braintrust-data-plane examples/braintrust-data-plane-gke-standard; do
+  (
+    echo "Validating $example_dir"
+    cd "$example_dir"
+    # Use the local module for example validation.
+    trap 'rm -f main_override.tf' EXIT
+    cat <<EOF> main_override.tf
 module "braintrust-data-plane" {
   source = "../../"
 }
 EOF
-terraform init
-terraform validate
+    terraform init -backend=false
+    terraform validate
+  )
+done
 """

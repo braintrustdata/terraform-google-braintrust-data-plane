@@ -26,3 +26,6 @@ jobs:
 
       - name: Run validate task
         run: mise run validate
+
+      - name: Run test task
+        run: mise run test

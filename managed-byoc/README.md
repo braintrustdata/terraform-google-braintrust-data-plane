@@ -109,8 +109,10 @@ the latest version differs from the provided `--license-key` value.
 
 ## Quota Review
 
-New GCP projects may need quota increases for the recommended GKE Autopilot
-Brainstore machine family and Local SSD. Review quotas before deployment:
+New GCP projects can require quota increases for the recommended GKE
+Brainstore machine family and Local SSD. The default config targets the Arm C4A
+machine family, which the data plane module uses for its Standard node pool
+defaults. Review quotas before deployment:
 
 ```bash
 ./request-quotas.sh --project <gcp-project-id> --region <gcp-region> list
@@ -119,7 +121,8 @@ Brainstore machine family and Local SSD. Review quotas before deployment:
 
 Desired values live in `quota-config.json`. The default config follows the
 recommended Braintrust GKE app setting. To review a different machine family,
-create `quota-config.override.json` in this directory.
+such as the x86 C4, C4D or C3D series, create `quota-config.override.json` in this
+directory.
 
 ## App-Root Contract
 

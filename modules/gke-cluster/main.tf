@@ -5,6 +5,7 @@ locals {
   common_labels = merge(var.custom_labels, {
     braintrustdeploymentname = var.deployment_name
   })
+  cluster_name = coalesce(var.gke_cluster_name, "${var.deployment_name}-gke-${var.gke_cluster_mode}")
 }
 
 data "google_client_config" "current" {}
@@ -12,13 +13,26 @@ data "google_client_config" "current" {}
 data "google_project" "current" {}
 
 #----------------------------------------------------------------------------------------------
-# GKE Autopilot cluster
+# GKE cluster
 #----------------------------------------------------------------------------------------------
-resource "google_container_cluster" "braintrust_autopilot" {
-  name    = "${var.deployment_name}-gke-autopilot"
+resource "google_container_cluster" "braintrust" {
+  name    = local.cluster_name
   project = data.google_project.current.project_id
 
-  enable_autopilot = true
+  enable_autopilot         = var.gke_cluster_mode == "autopilot" ? true : null
+  remove_default_node_pool = var.gke_cluster_mode == "standard" ? true : null
+  initial_node_count       = var.gke_cluster_mode == "standard" ? 1 : null
+
+  dynamic "node_config" {
+    for_each = var.gke_cluster_mode == "standard" ? [1] : []
+
+    content {
+      service_account = google_service_account.gke.email
+      oauth_scopes = [
+        "https://www.googleapis.com/auth/cloud-platform",
+      ]
+    }
+  }
 
   release_channel {
     channel = var.gke_release_channel
@@ -106,30 +120,26 @@ resource "google_container_cluster" "braintrust_autopilot" {
     }
   }
 
-  # Autopilot-specific configurations
-  cluster_autoscaling {
-    # Autopilot manages autoscaling, but you can set resource limits
-    auto_provisioning_defaults {
-      # Use the same service account as the standard cluster
-      service_account = google_service_account.gke.email
+  dynamic "cluster_autoscaling" {
+    for_each = var.gke_cluster_mode == "autopilot" ? [1] : []
 
-      # Boot disk encryption
-      boot_disk_kms_key = var.gke_kms_cmek_id
+    content {
+      auto_provisioning_defaults {
+        service_account   = google_service_account.gke.email
+        boot_disk_kms_key = var.gke_kms_cmek_id
+      }
     }
   }
 
+  lifecycle {
+    ignore_changes = [node_config]
+  }
+
   depends_on = [
+    google_project_iam_member.gke_default_node_sa,
     google_kms_crypto_key_iam_member.gke_cluster_cmek,
     google_kms_crypto_key_iam_member.gke_compute_cmek
   ]
-
-  lifecycle {
-    # GKE Autopilot may report ALL_OBJECTS_ENCRYPTION_ENABLED after create, but
-    # the Terraform provider currently accepts only ENCRYPTED/DECRYPTED as input.
-    ignore_changes = [
-      database_encryption[0].state,
-    ]
-  }
 }
 
 #----------------------------------------------------------------------------------------------

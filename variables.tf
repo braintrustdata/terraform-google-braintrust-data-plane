@@ -387,6 +387,93 @@ variable "deploy_gke_cluster" {
   default     = true
 }
 
+variable "gke_cluster_mode" {
+  type        = string
+  description = "GKE cluster mode. This value is immutable after cluster creation. A change replaces the cluster and requires Helm release redeployment."
+  default     = "autopilot"
+
+  validation {
+    condition     = contains(["autopilot", "standard"], var.gke_cluster_mode)
+    error_message = "`gke_cluster_mode` must be `autopilot` or `standard`."
+  }
+}
+
+variable "gke_standard_node_pools" {
+  type = map(object({
+    machine_type         = string
+    total_min_node_count = number
+    total_max_node_count = number
+    image_type           = optional(string, "COS_CONTAINERD")
+    disk_type            = optional(string, "hyperdisk-balanced")
+    disk_size_gb         = optional(number, 100)
+    spot                 = optional(bool, false)
+    location_policy      = optional(string, "BALANCED")
+    node_locations       = optional(list(string))
+    labels               = optional(map(string), {})
+    taints = optional(list(object({
+      key    = string
+      value  = string
+      effect = string
+    })), [])
+    auto_repair                 = optional(bool, true)
+    respect_pdb_on_delete       = optional(bool, true)
+    max_surge                   = optional(number, 1)
+    max_unavailable             = optional(number, 0)
+    enable_secure_boot          = optional(bool, true)
+    enable_integrity_monitoring = optional(bool, true)
+  }))
+  description = "Node pools for a Standard GKE cluster. The defaults use the Arm C4A machine series. Standard mode requires a `brainstore` pool that uses a machine type with bundled Local SSD. This value has no effect in Autopilot mode."
+  default = {
+    services = {
+      machine_type         = "c4a-standard-16"
+      total_min_node_count = 2
+      total_max_node_count = 10
+    }
+    brainstore = {
+      machine_type         = "c4a-standard-48-lssd"
+      total_min_node_count = 5
+      total_max_node_count = 10
+    }
+  }
+
+  validation {
+    condition = alltrue([
+      for name, pool in var.gke_standard_node_pools :
+      can(regex("^[a-z]([-a-z0-9]{0,38}[a-z0-9])?$", name)) &&
+      pool.total_min_node_count >= 0 &&
+      pool.total_max_node_count >= pool.total_min_node_count &&
+      pool.disk_size_gb >= 10 &&
+      contains(["BALANCED", "ANY"], pool.location_policy) &&
+      (pool.node_locations == null ? true : length(pool.node_locations) > 0 && alltrue([for location in pool.node_locations : trimspace(location) != ""])) &&
+      alltrue([
+        for taint in pool.taints : contains(["NO_SCHEDULE", "PREFER_NO_SCHEDULE", "NO_EXECUTE"], taint.effect)
+      ])
+    ])
+    error_message = "Each Standard node pool must use valid names, sizes, autoscaler limits, policies, and taints."
+  }
+
+  validation {
+    condition     = var.gke_cluster_mode != "standard" || length(var.gke_standard_node_pools) > 0
+    error_message = "`gke_standard_node_pools` must contain at least one pool in Standard mode."
+  }
+
+  validation {
+    condition     = var.gke_cluster_mode != "standard" || contains(keys(var.gke_standard_node_pools), "brainstore")
+    error_message = "`gke_standard_node_pools` must contain a pool named `brainstore` in Standard mode."
+  }
+
+  # Brainstore keeps its cache on node ephemeral storage, which must be backed by
+  # Local SSD. Machine types with bundled Local SSD carry `lssd` in the machine
+  # type name, and GKE configures those disks as ephemeral storage automatically.
+  validation {
+    condition = var.gke_cluster_mode != "standard" || alltrue([
+      for name, pool in var.gke_standard_node_pools :
+      endswith(pool.machine_type, "-lssd") if name == "brainstore"
+    ])
+    error_message = "The `brainstore` pool must use a machine type with bundled Local SSD, such as `c4a-standard-48-lssd`, `c4-standard-48-lssd`, or `c4d-standard-48-lssd`."
+  }
+}
+
 variable "gke_cluster_is_private" {
   description = "Whether to deploy the GKE cluster in a private network."
   type        = bool

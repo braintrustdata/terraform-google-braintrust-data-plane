@@ -1,4 +1,6 @@
 # tflint-ignore-file: terraform_module_pinned_source
+# GKE Autopilot is preferred for new deployments.
+# Standard is supported when customer requirements prevent Autopilot use.
 
 module "braintrust-data-plane" {
   source = "github.com/braintrustdata/terraform-google-braintrust-data-plane"
@@ -40,7 +42,32 @@ module "braintrust-data-plane" {
   # Keep the initial cluster mode after deployment.
   # A mode change replaces the cluster and causes data-plane downtime.
   # The replacement cluster requires Helm release redeployment.
-  gke_cluster_mode = "autopilot"
+  gke_cluster_mode = "standard"
+
+  # Machine changes create a replacement pool before source pool deletion.
+  # Deploy Helm PDBs before a replacement.
+  # First apply source pool protection with unchanged machine types and zones.
+  # Verify source pool protection before a later hardware change.
+  # GKE PDB protection expires after one hour.
+  # Initial capacity derives from the total minimum and effective zones, rounded up per zone.
+  gke_standard_node_pools = {
+    services = {
+      machine_type          = "c4a-standard-16"
+      total_min_node_count  = 2
+      total_max_node_count  = 10
+      respect_pdb_on_delete = true
+    }
+    brainstore = {
+      # GKE derives the fixed Local SSD count from the bundled machine type.
+      machine_type          = "c4a-standard-48-lssd"
+      total_min_node_count  = 5
+      total_max_node_count  = 10
+      respect_pdb_on_delete = true
+      # Set zones only when the machine type is unavailable in a cluster zone.
+      # node_locations = ["us-central1-a", "us-central1-b", "us-central1-c"]
+    }
+  }
+
 
   # gke_cluster_is_private = false # Default the cluster will be public and use public IPs addresses for the control plane
   # gke_control_plane_authorized_cidrs = null # Allow all IPs to access the control plane

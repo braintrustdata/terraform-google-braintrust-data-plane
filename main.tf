@@ -79,6 +79,7 @@ module "gke-cluster" {
 
   deployment_name                    = var.deployment_name
   custom_labels                      = var.custom_labels
+  gke_cluster_mode                   = var.gke_cluster_mode
   gke_network                        = var.create_vpc ? module.vpc[0].network_self_link : var.existing_network_self_link
   gke_subnetwork                     = var.create_vpc ? module.vpc[0].subnet_self_link : var.existing_subnet_self_link
   gke_control_plane_cidr             = var.gke_control_plane_cidr
@@ -94,6 +95,39 @@ module "gke-cluster" {
   gke_deletion_protection            = var.gke_deletion_protection
   gke_kms_cmek_id                    = module.kms.kms_key_id
   gke_maintenance_window             = var.gke_maintenance_window
+}
+
+module "gke-standard-node-pool" {
+  source   = "./modules/gke-node-pool"
+  for_each = var.deploy_gke_cluster && var.gke_cluster_mode == "standard" ? var.gke_standard_node_pools : {}
+
+  deployment_name       = var.deployment_name
+  custom_labels         = var.custom_labels
+  name                  = each.key
+  project_id            = data.google_project.current.project_id
+  location              = module.gke-cluster[0].gke_cluster_location
+  cluster_id            = module.gke-cluster[0].gke_cluster_id
+  service_account_email = module.gke-cluster[0].gke_node_service_account_email
+  boot_disk_kms_key     = module.kms.kms_key_id
+
+  machine_type                = each.value.machine_type
+  image_type                  = each.value.image_type
+  disk_type                   = each.value.disk_type
+  disk_size_gb                = each.value.disk_size_gb
+  spot                        = each.value.spot
+  total_min_node_count        = each.value.total_min_node_count
+  total_max_node_count        = each.value.total_max_node_count
+  location_policy             = each.value.location_policy
+  node_locations              = each.value.node_locations
+  cluster_node_locations      = module.gke-cluster[0].gke_node_locations
+  labels                      = each.value.labels
+  taints                      = each.value.taints
+  auto_repair                 = each.value.auto_repair
+  respect_pdb_on_delete       = each.value.respect_pdb_on_delete
+  max_surge                   = each.value.max_surge
+  max_unavailable             = each.value.max_unavailable
+  enable_secure_boot          = each.value.enable_secure_boot
+  enable_integrity_monitoring = each.value.enable_integrity_monitoring
 }
 
 module "gke-iam" {
