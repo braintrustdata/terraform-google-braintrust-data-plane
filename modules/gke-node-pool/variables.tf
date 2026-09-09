@@ -155,6 +155,13 @@ variable "max_surge" {
   default     = 1
 }
 
+variable "respect_pdb_on_delete" {
+  type        = bool
+  description = "Whether GKE respects PodDisruptionBudgets during node pool deletion. Custom drain timeouts remain unset."
+  default     = true
+  nullable    = false
+}
+
 variable "max_unavailable" {
   type        = number
   description = "Maximum unavailable nodes during an upgrade."
@@ -171,4 +178,14 @@ variable "enable_integrity_monitoring" {
   type        = bool
   description = "Whether Shielded GKE Nodes use integrity monitoring."
   default     = true
+}
+
+variable "cluster_node_locations" {
+  type        = list(string)
+  description = "Cluster node zones for the initial capacity calculation when node_locations is unset."
+
+  validation {
+    condition     = length(var.cluster_node_locations) > 0
+    error_message = "`cluster_node_locations` must contain at least one zone."
+  }
 }
