@@ -36,10 +36,6 @@ output "gke_cluster_mode" {
   value = module.braintrust-data-plane.gke_cluster_mode
 }
 
-output "gke_node_pool_names" {
-  value = module.braintrust-data-plane.gke_node_pool_names
-}
-
 output "postgres_instance_name" {
   value = module.braintrust-data-plane.postgres_instance_name
 }

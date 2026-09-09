@@ -1,6 +1,11 @@
-# Example GCP Braintrust data plane
+# Braintrust data plane on GKE Autopilot
 
-This is an example of a standard **production-sized** Braintrust data plane deployment. Copy this directory to a new directory in your own repository and modify the files to match your environment.
+GKE Autopilot is the preferred solution for new Braintrust deployments. GKE Standard is supported when customer requirements prevent Autopilot use.
+
+This example creates a production-sized GKE Autopilot deployment.
+
+Copy this directory into your repository.
+Adjust the configuration for your project and workload.
 
 ## Configure Terraform
 
@@ -13,14 +18,6 @@ This is an example of a standard **production-sized** Braintrust data plane depl
 The deployment must keep its initial `gke_cluster_mode`.
 A mode change replaces the GKE cluster and causes data-plane downtime.
 The replacement cluster requires redeployment of the Braintrust Helm release.
-
-### Standard node pools
-
-Standard mode creates separate `services` and `brainstore` node pools. The default pools use Arm C4A machine types.
-
-The x86 machine types remain supported for regions without C4A capacity. The `brainstore` pool always requires a machine type with bundled Local SSD.
-Use `braintrust/node-pool: services` and `braintrust/node-pool: brainstore` as Helm node selectors, so a pool replacement does not cause an outage.
-
 
 ## Prerequisites
 
