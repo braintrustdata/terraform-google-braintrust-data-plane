@@ -189,3 +189,26 @@ variable "cluster_node_locations" {
     error_message = "`cluster_node_locations` must contain at least one zone."
   }
 }
+
+variable "enable_nested_virtualization" {
+  type        = bool
+  description = "Enable nested virtualization. A change replaces the pool."
+  default     = false
+}
+
+variable "raw_local_ssd" {
+  type        = bool
+  description = "Expose bundled Local SSD as raw block devices. A change replaces the pool."
+  default     = false
+
+  validation {
+    condition     = !var.raw_local_ssd || can(regex("^c[34]-.*-lssd$", var.machine_type))
+    error_message = "Raw Local SSD requires a C3 or C4 machine type with bundled Local SSD."
+  }
+}
+
+variable "network_tags" {
+  type        = list(string)
+  description = "Network tags for node firewall rules."
+  default     = []
+}

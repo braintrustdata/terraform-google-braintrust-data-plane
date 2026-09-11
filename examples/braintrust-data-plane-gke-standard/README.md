@@ -139,3 +139,9 @@ This capacity does not guarantee application readiness or sufficient resources f
 A single writer can stop briefly with `maxUnavailable: 1`.
 Replicated roles require sufficient Ready replicas and capacity for replacement pods.
 Failed readiness or insufficient capacity can outlast the one-hour PDB protection period.
+
+## Optional isolated workers
+
+The module can create a separate Standard cluster for isolated workers in the primary VPC.
+The primary cluster retains its existing mode.
+[Read the isolated worker setup](../../ISOLATED_WORKERS.md) before deployment.

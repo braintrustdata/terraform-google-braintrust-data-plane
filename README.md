@@ -179,3 +179,12 @@ This section is only relevant if you are a contributor who wants to make changes
 - This module will fail the first time it is deployed due to timing issue with the private connection for the VPC. Exploring ways to fix this still without adding a module depends on which causes issues.
 - Explore customer support module like AWS module
 - Explore using Terraform to enable google services instead of CLI/GUI
+
+## Isolated workers
+
+The optional `gke_isolated_workers` configuration creates a dedicated Standard cluster in the same project and VPC.
+It supports either primary cluster mode and uses a separate subnet and the shared deployment KMS key.
+Its services and worker pools use separate node identities.
+The default worker pool uses Intel C4 nodes with nested virtualization and raw local SSD.
+
+[Isolated worker configuration and acceptance procedure](ISOLATED_WORKERS.md)

@@ -605,3 +605,115 @@ variable "brainstore_impersonation_targets" {
   description = "Full resource names of service accounts (same or other projects) that the brainstore service account can impersonate via roles/iam.serviceAccountTokenCreator. Format: projects/{project_id}/serviceAccounts/{email}. Only required if you are not granting IAM access to the brainstore service account yourself. Note: the principal running this Terraform deployment must have permission to manage IAM policies on the target service accounts (e.g. roles/iam.serviceAccountAdmin or roles/resourcemanager.projectIamAdmin)."
   default     = []
 }
+
+variable "gke_isolated_workers" {
+  type = object({
+    discovery = optional(object({
+      dns_name                     = string
+      runtime_source_ranges        = optional(set(string))
+      external_dns_namespace       = optional(string)
+      external_dns_service_account = optional(string, "external-dns")
+    }))
+    network_cidr              = optional(string)
+    node_cidr                 = optional(string)
+    pod_cidr                  = optional(string)
+    service_cidr              = optional(string)
+    control_plane_cidr        = optional(string)
+    existing_subnet_self_link = optional(string)
+    services_pool = optional(object({
+      machine_type         = optional(string, "e2-standard-2")
+      disk_type            = optional(string, "pd-balanced")
+      boot_disk_size_gb    = optional(number, 100)
+      total_min_node_count = optional(number, 2)
+      total_max_node_count = optional(number, 4)
+      node_locations       = optional(list(string))
+
+    }), {})
+    machine_type           = optional(string, "c4-standard-16-lssd")
+    boot_disk_size_gb      = optional(number, 100)
+    total_min_node_count   = optional(number, 2)
+    total_max_node_count   = optional(number, 10)
+    node_locations         = optional(list(string))
+    authorized_cidrs       = optional(list(string))
+    master_global_access   = optional(bool, false)
+    deletion_protection    = optional(bool, true)
+    release_channel        = optional(string, "REGULAR")
+    maintenance_start_time = optional(string, "08:00")
+
+    ingress_rules = optional(map(object({
+      source_ranges = set(string)
+      ports         = set(string)
+    })), {})
+    egress_rules = optional(map(object({
+      destination_ranges = set(string)
+      ports              = set(string)
+    })), {})
+  })
+  default     = null
+  description = "Optional isolated worker cluster in the primary VPC. Null creates no worker infrastructure."
+
+  validation {
+    condition = var.gke_isolated_workers == null ? true : (
+      var.gke_isolated_workers.network_cidr == null ? true :
+      can(regex("/16$", var.gke_isolated_workers.network_cidr)) &&
+      try(cidrhost(var.gke_isolated_workers.network_cidr, 0) == split("/", var.gke_isolated_workers.network_cidr)[0], false)
+    )
+    error_message = "network_cidr must be a canonical IPv4 /16 block reserved for isolated workers."
+  }
+  validation {
+    condition = var.gke_isolated_workers == null ? true : (
+      (var.gke_isolated_workers.existing_subnet_self_link != null || var.gke_isolated_workers.node_cidr != null || var.gke_isolated_workers.network_cidr != null) &&
+      alltrue([for cidr in [var.gke_isolated_workers.pod_cidr, var.gke_isolated_workers.service_cidr, var.gke_isolated_workers.control_plane_cidr] : cidr != null || var.gke_isolated_workers.network_cidr != null])
+    )
+    error_message = "Provide network_cidr or explicit Pod, Service, control-plane, and node ranges. An existing subnet supplies the node range."
+  }
+  validation {
+    condition = var.gke_isolated_workers == null ? true : (
+      var.gke_isolated_workers.discovery == null ? true :
+      var.deploy_gke_cluster || var.gke_isolated_workers.discovery.runtime_source_ranges != null
+    )
+    error_message = "Discovery requires runtime_source_ranges when the module does not create the primary cluster."
+  }
+  validation {
+    condition = var.gke_isolated_workers == null ? true : (var.gke_isolated_workers.discovery == null ? true : alltrue([
+      for name in compact([var.gke_isolated_workers.discovery.external_dns_namespace, var.gke_isolated_workers.discovery.external_dns_service_account]) :
+      length(name) <= 63 && can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", name))
+    ]))
+    error_message = "External-dns namespace and service-account names must be lowercase Kubernetes names with at most 63 characters."
+  }
+
+  validation {
+    condition = var.gke_isolated_workers == null ? true : (
+      var.gke_isolated_workers.services_pool.total_min_node_count >= 1 &&
+      floor(var.gke_isolated_workers.services_pool.total_min_node_count) == var.gke_isolated_workers.services_pool.total_min_node_count &&
+      var.gke_isolated_workers.services_pool.total_max_node_count >= var.gke_isolated_workers.services_pool.total_min_node_count &&
+      floor(var.gke_isolated_workers.services_pool.total_max_node_count) == var.gke_isolated_workers.services_pool.total_max_node_count &&
+      var.gke_isolated_workers.services_pool.boot_disk_size_gb >= 20 &&
+      floor(var.gke_isolated_workers.services_pool.boot_disk_size_gb) == var.gke_isolated_workers.services_pool.boot_disk_size_gb
+    )
+    error_message = "The services pool requires integer capacity limits, a positive minimum, and a boot disk of at least 20 GiB."
+  }
+
+  validation {
+    condition     = var.gke_isolated_workers == null ? true : (var.create_vpc ? var.gke_isolated_workers.existing_subnet_self_link == null : try(basename(var.gke_isolated_workers.existing_subnet_self_link) != basename(var.existing_subnet_self_link), true))
+    error_message = "Module-created VPCs create the worker subnet. Existing VPCs require a worker subnet separate from the primary subnet."
+  }
+
+  validation {
+    condition     = var.gke_isolated_workers == null ? true : (var.create_vpc || var.gke_isolated_workers.existing_subnet_self_link != null)
+    error_message = "An existing VPC requires gke_isolated_workers.existing_subnet_self_link."
+  }
+
+  validation {
+    condition     = var.gke_isolated_workers == null ? true : can(regex("^c[34]-(standard|highcpu|highmem)-[0-9]+-lssd$", var.gke_isolated_workers.machine_type))
+    error_message = "Workers require an Intel C3 or C4 machine type with bundled Local SSD."
+  }
+  validation {
+    condition = var.gke_isolated_workers == null ? true : (
+      var.gke_isolated_workers.total_min_node_count >= 1 && floor(var.gke_isolated_workers.total_min_node_count) == var.gke_isolated_workers.total_min_node_count &&
+      var.gke_isolated_workers.total_max_node_count >= var.gke_isolated_workers.total_min_node_count && floor(var.gke_isolated_workers.total_max_node_count) == var.gke_isolated_workers.total_max_node_count &&
+      var.gke_isolated_workers.boot_disk_size_gb >= 20 && floor(var.gke_isolated_workers.boot_disk_size_gb) == var.gke_isolated_workers.boot_disk_size_gb
+    )
+    error_message = "Workers require integer capacity limits, a positive minimum, and a boot disk of at least 20 GiB."
+  }
+}
