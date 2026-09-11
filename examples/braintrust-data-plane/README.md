@@ -114,3 +114,9 @@ Paste the API URL into the text field, and click Save. Leave the Proxy and Realt
 
 Verify in the UI that the ping to each endpoint is successful.
 ![Verify Successful Ping](../../assets/Braintrust-API-URL-verify.png)
+
+## Optional isolated workers
+
+The module can create a separate Standard cluster for isolated workers in the primary VPC.
+The primary cluster retains its existing mode.
+[Read the isolated worker setup](../../ISOLATED_WORKERS.md) before deployment.

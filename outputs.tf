@@ -156,3 +156,29 @@ output "redis_url" {
   description = "Redis URL consumed by the Braintrust app root."
   sensitive   = true
 }
+
+output "gke_isolated_workers" {
+  description = "Isolated worker infrastructure. Null when isolated workers are absent."
+  value = var.gke_isolated_workers == null ? null : {
+    discovery                     = module.gke_isolated_workers_network[0].discovery
+    name                          = module.gke_isolated_workers_cluster[0].gke_cluster_name
+    id                            = module.gke_isolated_workers_cluster[0].gke_cluster_id
+    location                      = module.gke_isolated_workers_cluster[0].gke_cluster_location
+    project_id                    = data.google_project.current.project_id
+    private_endpoint              = module.gke_isolated_workers_cluster[0].gke_cluster_endpoint
+    node_service_account          = module.gke_isolated_workers_cluster[0].gke_node_service_account_email
+    node_pool_name                = module.gke_isolated_workers_pool[0].name
+    node_selector                 = { "braintrust/node-pool" = "isolated-workers" }
+    worker_tolerations            = [{ key = "braintrust/isolated-worker", operator = "Equal", value = "true", effect = "NoSchedule" }]
+    services_node_pool_name       = module.gke_isolated_services_pool[0].name
+    services_node_selector        = { "braintrust/node-pool" = "services" }
+    services_node_service_account = module.gke_isolated_workers_cluster[0].gke_services_node_service_account_email
+    network                       = module.gke_isolated_workers_network[0].network_self_link
+    subnet                        = module.gke_isolated_workers_network[0].isolated_subnet_self_link
+    kms_key_id                    = module.kms.kms_key_id
+    node_cidr                     = module.gke_isolated_workers_network[0].node_cidr
+    control_plane_cidr            = local.isolated_network_config.control_plane_cidr
+    pod_cidr                      = local.isolated_network_config.pod_cidr
+    service_cidr                  = local.isolated_network_config.service_cidr
+  }
+}

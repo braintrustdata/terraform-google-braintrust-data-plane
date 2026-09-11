@@ -12,6 +12,13 @@ module "braintrust-data-plane" {
   # Do not change this after deployment.
   deployment_name = "braintrust"
 
+  # Optional isolated workers use a separate Standard cluster in the same VPC.
+  # Read ISOLATED_WORKERS.md before deployment.
+  # gke_isolated_workers = {
+  #   network_cidr = "10.64.0.0/16"
+  # }
+
+
   ### Network configuration
   # WARNING: You should choose these values carefully after discussing with your networking team.
   # Changing them after the fact is not possible and will require a complete rebuild of your Braintrust deployment.

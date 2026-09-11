@@ -15,7 +15,7 @@ resource "terraform_data" "lssd_machine_type" {
 }
 
 resource "terraform_data" "machine_type" {
-  triggers_replace = var.machine_type
+  triggers_replace = var.enable_nested_virtualization || var.raw_local_ssd ? jsonencode([var.machine_type, var.enable_nested_virtualization, var.raw_local_ssd]) : var.machine_type
 }
 
 resource "google_container_node_pool" "this" {
@@ -53,6 +53,22 @@ resource "google_container_node_pool" "this" {
   }
 
   node_config {
+    dynamic "advanced_machine_features" {
+      for_each = var.enable_nested_virtualization ? [true] : []
+      content {
+        threads_per_core             = 2
+        enable_nested_virtualization = true
+      }
+    }
+
+    dynamic "local_nvme_ssd_block_config" {
+      for_each = var.raw_local_ssd ? [true] : []
+      content {
+        # Zero is omitted from the API object. GKE derives the bundled count.
+        local_ssd_count = 0
+      }
+    }
+
     machine_type = var.machine_type
     image_type   = var.image_type
     disk_type    = var.disk_type
@@ -67,6 +83,7 @@ resource "google_container_node_pool" "this" {
     boot_disk_kms_key = var.boot_disk_kms_key
     labels            = local.node_labels
     resource_labels   = local.common_resource_labels
+    tags              = var.network_tags
 
     workload_metadata_config {
       mode = "GKE_METADATA"
@@ -103,6 +120,7 @@ resource "google_container_node_pool" "this" {
     ignore_changes = [
       # Autoscaler minimum changes must not replace an existing pool.
       initial_node_count,
+      node_config[0].local_nvme_ssd_block_config[0].local_ssd_count,
       node_config[0].ephemeral_storage_local_ssd_config,
     ]
   }
