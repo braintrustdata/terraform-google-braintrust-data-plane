@@ -171,6 +171,7 @@ module "gke-iam" {
   braintrust_kube_namespace        = var.braintrust_kube_namespace
   braintrust_kube_svc_account      = var.braintrust_kube_svc_account
   brainstore_kube_svc_account      = var.brainstore_kube_svc_account
+  loop_runtime_kube_svc_account    = var.loop_runtime_kube_svc_account
   braintrust_api_bucket_id         = module.storage.api_bucket_name
   brainstore_gcs_bucket_id         = module.storage.brainstore_bucket_name
   braintrust_hmac_key_enabled      = var.braintrust_hmac_key_enabled

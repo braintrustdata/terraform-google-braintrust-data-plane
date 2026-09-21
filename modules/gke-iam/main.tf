@@ -119,3 +119,44 @@ resource "google_service_account_iam_member" "brainstore_impersonation_target" {
   role               = "roles/iam.serviceAccountTokenCreator"
   member             = "serviceAccount:${google_service_account.brainstore.email}"
 }
+
+#----------------------------------------------------------------------------------------------
+# Loop runtime service account
+#----------------------------------------------------------------------------------------------
+resource "google_service_account" "loop_runtime" {
+  account_id   = "${var.deployment_name}-loop"
+  display_name = "${var.deployment_name}-loop-runtime"
+  description  = "Service account for the Braintrust Loop runtime."
+}
+
+resource "google_service_account_iam_binding" "loop_runtime_workload_identity" {
+  service_account_id = google_service_account.loop_runtime.id
+  role               = "roles/iam.workloadIdentityUser"
+  members = [
+    "serviceAccount:${var.workload_identity_pool}[${var.braintrust_kube_namespace}/${var.loop_runtime_kube_svc_account}]"
+  ]
+}
+
+resource "google_storage_bucket_iam_member" "loop_runtime_brainstore_gcs_object_admin" {
+  bucket = var.brainstore_gcs_bucket_id
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.loop_runtime.email}"
+}
+
+resource "google_storage_bucket_iam_member" "loop_runtime_brainstore_gcs_reader" {
+  bucket = var.brainstore_gcs_bucket_id
+  role   = "roles/storage.legacyBucketReader"
+  member = "serviceAccount:${google_service_account.loop_runtime.email}"
+}
+
+resource "google_storage_bucket_iam_member" "loop_runtime_api_bucket_gcs_object_admin" {
+  bucket = var.braintrust_api_bucket_id
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.loop_runtime.email}"
+}
+
+resource "google_storage_bucket_iam_member" "loop_runtime_api_bucket_gcs_reader" {
+  bucket = var.braintrust_api_bucket_id
+  role   = "roles/storage.legacyBucketReader"
+  member = "serviceAccount:${google_service_account.loop_runtime.email}"
+}

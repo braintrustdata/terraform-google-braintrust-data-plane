@@ -652,6 +652,12 @@ variable "brainstore_kube_svc_account" {
   default     = "brainstore"
 }
 
+variable "loop_runtime_kube_svc_account" {
+  type        = string
+  description = "Kubernetes service account name for Loop runtime in braintrust_kube_namespace."
+  default     = "braintrust-loop-runtime"
+}
+
 # With data plane 2.0.0 and later native auth can be used instead of HMAC keys.
 variable "braintrust_hmac_key_enabled" {
   type        = bool

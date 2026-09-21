@@ -54,3 +54,9 @@ variable "brainstore_impersonation_targets" {
   description = "Full resource names of service accounts (same or other projects) that the brainstore service account can impersonate via roles/iam.serviceAccountTokenCreator. Format: projects/{project_id}/serviceAccounts/{email}"
   default     = []
 }
+
+variable "loop_runtime_kube_svc_account" {
+  type        = string
+  description = "Kubernetes service account name for Loop runtime in braintrust_kube_namespace."
+  default     = "braintrust-loop-runtime"
+}
