@@ -160,10 +160,10 @@ resource "google_storage_bucket" "brainstore" {
 
   dynamic "logging" {
     for_each = var.gcs_brainstore_logging_config == null ? [] : [{
-      log_bucket = local.create_access_log_bucket ? (
+      log_bucket = var.gcs_brainstore_logging_config.log_bucket == null ? (
         google_storage_bucket.access_logs[0].name
       ) : var.gcs_brainstore_logging_config.log_bucket
-      log_object_prefix = local.create_access_log_bucket ? (
+      log_object_prefix = var.gcs_brainstore_logging_config.log_bucket == null ? (
         "brainstore"
       ) : var.gcs_brainstore_logging_config.log_object_prefix
     }]
