@@ -103,15 +103,14 @@ module "gke-standard-node-pool" {
   source   = "./modules/gke-node-pool"
   for_each = var.deploy_gke_cluster && var.gke_cluster_mode == "standard" ? var.gke_standard_node_pools : {}
 
-  deployment_name       = var.deployment_name
-  custom_labels         = var.custom_labels
-  name                  = each.key
-  project_id            = data.google_project.current.project_id
-  location              = module.gke-cluster[0].gke_cluster_location
-  cluster_id            = module.gke-cluster[0].gke_cluster_id
-  service_account_email = module.gke-cluster[0].gke_node_service_account_email
-  boot_disk_kms_key     = module.kms.kms_key_id
-
+  deployment_name             = var.deployment_name
+  custom_labels               = var.custom_labels
+  name                        = each.key
+  project_id                  = data.google_project.current.project_id
+  location                    = module.gke-cluster[0].gke_cluster_location
+  cluster_id                  = module.gke-cluster[0].gke_cluster_id
+  service_account_email       = module.gke-cluster[0].gke_node_service_account_email
+  boot_disk_kms_key           = module.kms.kms_key_id
   machine_type                = each.value.machine_type
   image_type                  = each.value.image_type
   disk_type                   = each.value.disk_type
