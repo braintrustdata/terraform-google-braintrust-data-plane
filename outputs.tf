@@ -41,6 +41,11 @@ output "brainstore_bucket_name" {
   value = module.storage.brainstore_bucket_name
 }
 
+output "access_log_bucket_name" {
+  value       = module.storage.access_log_bucket_name
+  description = "Dedicated GCS access log bucket, or null when the module does not manage one."
+}
+
 #----------------------------------------------------------------------------------------------
 # Service account
 #----------------------------------------------------------------------------------------------

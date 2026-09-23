@@ -67,7 +67,11 @@ module "braintrust-data-plane" {
 
   ### Advanced configuration
   # gcs_additional_allowed_origins = []
-  # Optional GCS access logging for the managed buckets. Point these at an existing log bucket.
+  # Create a dedicated GCS access log bucket and send both bucket logs to it.
+  # gcs_brainstore_logging_config = {}
+  # gcs_api_logging_config        = {}
+  #
+  # Optional GCS access logging with existing log buckets.
   # gcs_brainstore_logging_config = {
   #   log_bucket        = "my-access-logs-bucket"
   #   log_object_prefix = "brainstore/"

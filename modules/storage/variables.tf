@@ -52,30 +52,34 @@ variable "gcs_additional_allowed_origins" {
 }
 
 variable "gcs_brainstore_logging_config" {
-  description = "Optional access logging configuration for the Brainstore GCS bucket."
+  description = "Optional Brainstore access log configuration. Omit log_bucket to create a dedicated bucket."
   type = object({
-    log_bucket        = string
+    log_bucket        = optional(string)
     log_object_prefix = optional(string)
   })
   default = null
 
   validation {
-    condition     = var.gcs_brainstore_logging_config == null ? true : trimspace(var.gcs_brainstore_logging_config.log_bucket) != ""
-    error_message = "`gcs_brainstore_logging_config.log_bucket` must be a non-empty bucket name."
+    condition = var.gcs_brainstore_logging_config == null ? true : (
+      var.gcs_brainstore_logging_config.log_bucket == null ? true : trimspace(var.gcs_brainstore_logging_config.log_bucket) != ""
+    )
+    error_message = "`gcs_brainstore_logging_config.log_bucket` must be null or a non-empty bucket name."
   }
 }
 
 variable "gcs_api_logging_config" {
-  description = "Optional access logging configuration for the API GCS bucket."
+  description = "Optional API access log configuration. Omit log_bucket to use the dedicated bucket."
   type = object({
-    log_bucket        = string
+    log_bucket        = optional(string)
     log_object_prefix = optional(string)
   })
   default = null
 
   validation {
-    condition     = var.gcs_api_logging_config == null ? true : trimspace(var.gcs_api_logging_config.log_bucket) != ""
-    error_message = "`gcs_api_logging_config.log_bucket` must be a non-empty bucket name."
+    condition = var.gcs_api_logging_config == null ? true : (
+      var.gcs_api_logging_config.log_bucket == null ? true : trimspace(var.gcs_api_logging_config.log_bucket) != ""
+    )
+    error_message = "`gcs_api_logging_config.log_bucket` must be null or a non-empty bucket name."
   }
 }
 
