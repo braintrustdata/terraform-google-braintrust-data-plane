@@ -27,7 +27,8 @@ resource "google_container_cluster" "braintrust" {
     for_each = var.gke_cluster_mode == "standard" ? [1] : []
 
     content {
-      service_account = google_service_account.gke.email
+      service_account   = google_service_account.gke.email
+      boot_disk_kms_key = var.gke_kms_cmek_id
       oauth_scopes = [
         "https://www.googleapis.com/auth/cloud-platform",
       ]
