@@ -14,6 +14,12 @@ locals {
   common_labels = merge(var.custom_labels, {
     braintrustdeploymentname = var.deployment_name
   })
+
+  create_access_log_bucket = (
+    var.gcs_brainstore_logging_config == null ? false : var.gcs_brainstore_logging_config.log_bucket == null
+    ) || (
+    var.gcs_api_logging_config == null ? false : var.gcs_api_logging_config.log_bucket == null
+  )
 }
 
 data "google_project" "current" {}
@@ -26,6 +32,56 @@ data "google_storage_project_service_account" "gcs" {
 
 resource "random_id" "gcs_suffix" {
   byte_length = 4
+}
+
+#----------------------------------------------------------------------------------------------
+# Google cloud storage (GCS) bucket - access logs
+#----------------------------------------------------------------------------------------------
+resource "google_storage_bucket" "access_logs" {
+  count = local.create_access_log_bucket ? 1 : 0
+
+  name                        = "${var.deployment_name}-access-logs-${random_id.gcs_suffix.hex}"
+  location                    = data.google_client_config.current.region
+  storage_class               = var.gcs_storage_class
+  uniform_bucket_level_access = true
+  force_destroy               = var.gcs_force_destroy
+  public_access_prevention    = "enforced"
+
+  versioning {
+    enabled = var.gcs_versioning_enabled
+  }
+
+  soft_delete_policy {
+    retention_duration_seconds = var.gcs_soft_delete_retention_days * 86400
+  }
+
+  dynamic "encryption" {
+    for_each = var.gcs_kms_cmek_id != null ? ["encryption"] : []
+
+    content {
+      default_kms_key_name = var.gcs_kms_cmek_id
+    }
+  }
+
+  labels = local.common_labels
+
+  lifecycle {
+    ignore_changes = [
+      name,
+    ]
+  }
+
+  depends_on = [
+    google_kms_crypto_key_iam_member.gcp_project_gcs_cmek
+  ]
+}
+
+resource "google_storage_bucket_iam_member" "access_log_writer" {
+  count = local.create_access_log_bucket ? 1 : 0
+
+  bucket = google_storage_bucket.access_logs[0].name
+  role   = "roles/storage.objectCreator"
+  member = "group:cloud-storage-analytics@google.com"
 }
 
 #----------------------------------------------------------------------------------------------
@@ -103,7 +159,14 @@ resource "google_storage_bucket" "brainstore" {
   }
 
   dynamic "logging" {
-    for_each = var.gcs_brainstore_logging_config == null ? [] : [var.gcs_brainstore_logging_config]
+    for_each = var.gcs_brainstore_logging_config == null ? [] : [{
+      log_bucket = var.gcs_brainstore_logging_config.log_bucket == null ? (
+        google_storage_bucket.access_logs[0].name
+      ) : var.gcs_brainstore_logging_config.log_bucket
+      log_object_prefix = var.gcs_brainstore_logging_config.log_bucket == null ? (
+        "brainstore"
+      ) : var.gcs_brainstore_logging_config.log_object_prefix
+    }]
 
     content {
       log_bucket        = logging.value.log_bucket
@@ -120,7 +183,8 @@ resource "google_storage_bucket" "brainstore" {
   }
 
   depends_on = [
-    google_kms_crypto_key_iam_member.gcp_project_gcs_cmek
+    google_kms_crypto_key_iam_member.gcp_project_gcs_cmek,
+    google_storage_bucket_iam_member.access_log_writer,
   ]
 }
 
@@ -220,7 +284,14 @@ resource "google_storage_bucket" "api" {
   }
 
   dynamic "logging" {
-    for_each = var.gcs_api_logging_config == null ? [] : [var.gcs_api_logging_config]
+    for_each = var.gcs_api_logging_config == null ? [] : [{
+      log_bucket = var.gcs_api_logging_config.log_bucket == null ? (
+        google_storage_bucket.access_logs[0].name
+      ) : var.gcs_api_logging_config.log_bucket
+      log_object_prefix = var.gcs_api_logging_config.log_bucket == null ? (
+        "api"
+      ) : var.gcs_api_logging_config.log_object_prefix
+    }]
 
     content {
       log_bucket        = logging.value.log_bucket
@@ -237,7 +308,8 @@ resource "google_storage_bucket" "api" {
   }
 
   depends_on = [
-    google_kms_crypto_key_iam_member.gcp_project_gcs_cmek
+    google_kms_crypto_key_iam_member.gcp_project_gcs_cmek,
+    google_storage_bucket_iam_member.access_log_writer,
   ]
 }
 

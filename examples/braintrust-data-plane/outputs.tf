@@ -6,6 +6,10 @@ output "brainstore_bucket_name" {
   value = module.braintrust-data-plane.brainstore_bucket_name
 }
 
+output "access_log_bucket_name" {
+  value = module.braintrust-data-plane.access_log_bucket_name
+}
+
 output "braintrust_service_account" {
   value = module.braintrust-data-plane.braintrust_service_account
 }
