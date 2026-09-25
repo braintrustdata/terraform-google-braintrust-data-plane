@@ -51,7 +51,7 @@ gke_standard_node_pools = {
 
 Set the Helm value `google.mode` to `standard`.
 
-Use `braintrust/node-pool` in the Helm node selectors. Set its value to `services` or `brainstore`.
+Use `braintrust/workload` in the Helm node selectors. Set its value to `services` or `brainstore`.
 
 Standard node pools use generated GKE names. Every machine type change replaces the pool. Disk type and disk size changes use GKE surge upgrades.
 
@@ -60,10 +60,26 @@ Bundled Local SSD count changes also require replacement. The module uses one re
 The default surge configuration uses `max_surge = 1` and `max_unavailable = 0`. GKE waits for a new node to reach Ready state before it removes an old node.
 
 If GCP cannot create a surge node, the update waits or fails without an intentional capacity reduction.
-Each node has a stable `braintrust/node-pool` label for Helm node selectors.
+Each node has a unique `braintrust/node-pool` label and a stable `braintrust/workload` label.
 
-The Terraform map key sets the workload label. The `services` and `brainstore` keys match the Helm example selectors.
-Automatic replacement preserves that label and needs no Helm selector change.
+The Terraform map key sets both labels by default. Set `workload` to let multiple pools serve one Helm workload.
+Automatic replacement preserves the workload label and needs no Helm selector change.
+
+Add a temporary Brainstore pool before a manual pool replacement when extra capacity is required.
+
+```hcl
+brainstore-replacement = {
+  workload             = "brainstore"
+  machine_type         = "c4a-standard-48-lssd"
+  total_min_node_count = 6
+  total_max_node_count = 10
+}
+```
+
+The Helm selector `braintrust/workload: brainstore` schedules Brainstore pods on both pools.
+Every pool for the Brainstore workload requires a machine type with bundled Local SSD.
+Verify quota, pod readiness, and PDB behavior before deleting the source pool.
+The default single writer can restart during replacement without causing an outage.
 
 The per-pool `respect_pdb_on_delete` option defaults to `true`. GKE respects Helm-defined PDBs during pool deletion for up to one hour.
 

@@ -6,6 +6,7 @@ locals {
 
   node_labels = merge(var.labels, {
     "braintrust/node-pool" = var.name
+    "braintrust/workload"  = coalesce(var.workload, var.name)
   })
 }
 
