@@ -161,3 +161,49 @@ variable "gke_maintenance_window" {
     error_message = "`start_time` must be in HH:MM format (24-hour), e.g., '08:00'."
   }
 }
+
+variable "gke_node_service_account_id" {
+  type        = string
+  description = "Optional node service account ID. Null preserves the deployment-derived ID."
+  default     = null
+}
+
+variable "gke_node_project_storage_access" {
+  type        = bool
+  description = "Grant legacy project-wide storage and registry read access to nodes."
+  default     = true
+}
+
+variable "gke_dns_endpoint_enabled" {
+  type        = bool
+  description = "Allow IAM-authenticated DNS endpoint access. Null preserves existing endpoint configuration."
+  default     = null
+}
+
+variable "gke_private_endpoint_enforcement" {
+  type        = bool
+  description = "Enforce authorized networks on the private endpoint."
+  default     = false
+}
+
+variable "gke_node_network_tags" {
+  type        = list(string)
+  description = "Network tags for bootstrap nodes."
+  default     = []
+}
+
+variable "project_id" {
+  type        = string
+  description = "Project ID supplied by the root module."
+}
+
+variable "region" {
+  type        = string
+  description = "Cluster region supplied by the root module."
+}
+
+variable "gke_services_node_service_account_id" {
+  type        = string
+  default     = null
+  description = "Optional separate services-pool node identity. Null creates no additional service account."
+}
