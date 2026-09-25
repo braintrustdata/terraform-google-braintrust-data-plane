@@ -42,6 +42,11 @@ variable "postgres_machine_type" {
     condition     = can(regex("^db-(perf-optimized-(N|C4)|c4a-highmem)-[0-9]+$", var.postgres_machine_type))
     error_message = "Use an Enterprise Plus machine type from the N2, C4A, or C4 series."
   }
+
+  validation {
+    condition     = !contains(["db-c4a-highmem-2", "db-perf-optimized-C4-2"], var.postgres_machine_type)
+    error_message = "C4A and C4 machine types require at least four vCPUs."
+  }
 }
 
 variable "postgres_disk_provisioned_iops" {
