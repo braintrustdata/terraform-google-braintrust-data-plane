@@ -60,7 +60,7 @@ module "braintrust-data-plane" {
     brainstore = {
       # GKE derives the fixed Local SSD count from the bundled machine type.
       machine_type          = "c4a-standard-48-lssd"
-      total_min_node_count  = 5
+      total_min_node_count  = 6
       total_max_node_count  = 10
       respect_pdb_on_delete = true
       # Set zones only when the machine type is unavailable in a cluster zone.

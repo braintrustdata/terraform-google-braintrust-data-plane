@@ -62,6 +62,16 @@ run "initial_capacity_rounds_up_across_cluster_zones" {
   }
 }
 
+run "reject_rounded_initial_capacity_above_maximum" {
+  command = plan
+  module { source = "./modules/gke-node-pool" }
+  variables {
+    total_min_node_count = 5
+    total_max_node_count = 5
+  }
+  expect_failures = [var.total_max_node_count]
+}
+
 run "explicit_zones_control_initial_capacity" {
   command = plan
   module { source = "./modules/gke-node-pool" }

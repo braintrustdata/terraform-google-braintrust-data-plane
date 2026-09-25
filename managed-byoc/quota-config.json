@@ -6,7 +6,7 @@
     "dimensions": {
       "vm_family": "c4a"
     },
-    "desired_value": 700
+    "desired_value": 1000
   },
   {
     "name": "C4A Local SSD (GB)",
@@ -15,7 +15,7 @@
     "dimensions": {
       "vm_family": "c4a"
     },
-    "desired_value": 37500
+    "desired_value": 60000
   },
   {
     "name": "C4 vCPUs",
@@ -24,7 +24,7 @@
     "dimensions": {
       "vm_family": "c4"
     },
-    "desired_value": 700
+    "desired_value": 1000
   },
   {
     "name": "C4 Local SSD (GB)",
@@ -33,7 +33,7 @@
     "dimensions": {
       "vm_family": "c4"
     },
-    "desired_value": 30000
+    "desired_value": 48000
   },
   {
     "name": "C4D vCPUs",
@@ -42,7 +42,7 @@
     "dimensions": {
       "vm_family": "c4d"
     },
-    "desired_value": 700
+    "desired_value": 1000
   },
   {
     "name": "C4D Local SSD (GB)",
@@ -51,7 +51,7 @@
     "dimensions": {
       "vm_family": "c4d"
     },
-    "desired_value": 15000
+    "desired_value": 24000
   },
   {
     "name": "C3 vCPUs",
@@ -60,7 +60,7 @@
     "dimensions": {
       "vm_family": "c3"
     },
-    "desired_value": 700
+    "desired_value": 1000
   },
   {
     "name": "C3 Local SSD (GB)",
@@ -69,7 +69,7 @@
     "dimensions": {
       "vm_family": "c3"
     },
-    "desired_value": 30000
+    "desired_value": 48000
   },
   {
     "name": "C3D vCPUs",
@@ -78,7 +78,7 @@
     "dimensions": {
       "vm_family": "c3d"
     },
-    "desired_value": 700
+    "desired_value": 1000
   },
   {
     "name": "C3D Local SSD (GB)",
@@ -87,6 +87,6 @@
     "dimensions": {
       "vm_family": "c3d"
     },
-    "desired_value": 7500
+    "desired_value": 12000
   }
 ]

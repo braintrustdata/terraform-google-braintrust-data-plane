@@ -43,7 +43,7 @@ gke_standard_node_pools = {
   }
   brainstore = {
     machine_type         = "c4a-standard-48-lssd"
-    total_min_node_count = 5
+    total_min_node_count = 6
     total_max_node_count = 10
   }
 }
@@ -78,8 +78,8 @@ A writer budget of `minAvailable: 1` blocks voluntary eviction when only one wri
 
 For a resource replacement, Terraform creates the new pool before it deletes the old pool.
 Initial nodes per zone equal the total minimum divided by the effective zone count, rounded up.
-For example, a minimum of five nodes across three zones creates six initial nodes.
-Initial capacity can temporarily exceed the total maximum because of this rounding.
+The default Brainstore minimum creates two nodes in each of three zones.
+The module rejects a maximum below the rounded initial capacity.
 Later autoscaler minimum changes do not replace the pool.
 A zero minimum provides no initial capacity guarantee.
 The minimum does not represent current load, and smaller nodes must still fit each pod's resource requests.
@@ -120,7 +120,7 @@ gke_standard_node_pools = {
   }
   brainstore = {
     machine_type         = "c4-standard-48-lssd"
-    total_min_node_count = 5
+    total_min_node_count = 6
     total_max_node_count = 10
   }
 }
