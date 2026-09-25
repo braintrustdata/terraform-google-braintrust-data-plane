@@ -466,6 +466,7 @@ variable "gke_standard_node_pools" {
     spot                 = optional(bool, false)
     location_policy      = optional(string, "BALANCED")
     node_locations       = optional(list(string))
+    workload             = optional(string)
     labels               = optional(map(string), {})
     taints = optional(list(object({
       key    = string
@@ -479,7 +480,7 @@ variable "gke_standard_node_pools" {
     enable_secure_boot          = optional(bool, true)
     enable_integrity_monitoring = optional(bool, true)
   }))
-  description = "Node pools for a Standard GKE cluster. The defaults use the Arm C4A machine series. Standard mode requires a `brainstore` pool that uses a machine type with bundled Local SSD. This value has no effect in Autopilot mode."
+  description = "Node pools for a Standard GKE cluster. The optional workload value lets multiple pools serve one Helm workload. The defaults use the Arm C4A machine series. Standard mode requires a `brainstore` pool that uses a machine type with bundled Local SSD. This value has no effect in Autopilot mode."
   default = {
     services = {
       machine_type         = "c4a-standard-16"
@@ -501,6 +502,7 @@ variable "gke_standard_node_pools" {
       pool.total_max_node_count >= pool.total_min_node_count &&
       pool.disk_size_gb >= 10 &&
       contains(["BALANCED", "ANY"], pool.location_policy) &&
+      (pool.workload == null ? true : can(regex("^[a-z]([-a-z0-9]{0,61}[a-z0-9])?$", pool.workload))) &&
       (pool.node_locations == null ? true : length(pool.node_locations) > 0 && alltrue([for location in pool.node_locations : trimspace(location) != ""])) &&
       alltrue([
         for taint in pool.taints : contains(["NO_SCHEDULE", "PREFER_NO_SCHEDULE", "NO_EXECUTE"], taint.effect)
@@ -525,9 +527,9 @@ variable "gke_standard_node_pools" {
   validation {
     condition = var.gke_cluster_mode != "standard" || alltrue([
       for name, pool in var.gke_standard_node_pools :
-      endswith(pool.machine_type, "-lssd") if name == "brainstore"
+      endswith(pool.machine_type, "-lssd") if coalesce(pool.workload, name) == "brainstore"
     ])
-    error_message = "The `brainstore` pool must use a machine type with bundled Local SSD, such as `c4a-standard-48-lssd`, `c4-standard-48-lssd`, or `c4d-standard-48-lssd`."
+    error_message = "Every pool for the `brainstore` workload must use a machine type with bundled Local SSD, such as `c4a-standard-48-lssd`, `c4-standard-48-lssd`, or `c4d-standard-48-lssd`."
   }
 }
 

@@ -24,8 +24,14 @@ The replacement cluster requires redeployment of the Braintrust Helm release.
 Standard mode creates separate `services` and `brainstore` node pools. The default pools use Arm C4A machine types.
 
 The x86 machine types remain supported for regions without C4A capacity. The `brainstore` pool always requires a machine type with bundled Local SSD.
-Use `braintrust/node-pool: services` and `braintrust/node-pool: brainstore` as Helm node selectors.
-The pool keys set the stable workload labels. Automatic replacement preserves those labels without a Helm selector change.
+Use `braintrust/workload: services` and `braintrust/workload: brainstore` as Helm node selectors.
+The pool keys set the workload labels by default. Automatic replacement preserves those labels without a Helm selector change.
+
+Set `workload = "brainstore"` on an additional pool to provide temporary capacity for a manual pool replacement.
+Both pools then accept Brainstore pods without a Helm selector change.
+Every pool for the Brainstore workload requires a machine type with bundled Local SSD.
+Verify quota, pod readiness, and PDB behavior before deleting the source pool.
+The default single writer can restart during replacement without causing an outage.
 
 
 ## Prerequisites

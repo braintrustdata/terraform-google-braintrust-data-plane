@@ -78,9 +78,11 @@ GKE creates a surge node and waits for Ready state before it removes an old node
 If GCP cannot create the surge node, the update waits or fails without an intentional capacity reduction.
 Arm and x86 machine changes use create-before-destroy pool replacement.
 All Standard node pools use generated names and `create_before_destroy` for resource replacements.
-Each node has a stable `braintrust/node-pool` label for Helm node selectors.
-The Terraform pool map key sets that label.
-Custom labels cannot override the pool label.
+Each node has a unique `braintrust/node-pool` label for pool identity.
+Each node also has a stable `braintrust/workload` label for Helm node selectors.
+The Terraform pool map key sets both labels by default.
+The optional workload value lets multiple pools serve one Helm workload.
+Custom labels cannot override either reserved label.
 Automatic replacement preserves the workload label without a Helm change.
 The per-pool `respect_pdb_on_delete` option defaults to `true`.
 When enabled, node pool deletion respects PodDisruptionBudgets for up to one hour.

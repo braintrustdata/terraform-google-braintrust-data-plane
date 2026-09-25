@@ -121,6 +121,7 @@ module "gke-standard-node-pool" {
   location_policy             = each.value.location_policy
   node_locations              = each.value.node_locations
   cluster_node_locations      = module.gke-cluster[0].gke_node_locations
+  workload                    = each.value.workload
   labels                      = each.value.labels
   taints                      = each.value.taints
   auto_repair                 = each.value.auto_repair

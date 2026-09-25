@@ -110,16 +110,24 @@ run "architecture_change_replaces_services_pool" {
   }
 }
 
-run "pool_key_controls_workload_label" {
+run "pool_identity_and_workload_labels_are_reserved" {
   command = plan
   module { source = "./modules/gke-node-pool" }
   variables {
-    name         = "brainstore"
+    name         = "brainstore-replacement"
+    workload     = "brainstore"
     machine_type = "c4-standard-48-lssd"
-    labels       = { "braintrust/node-pool" = "incorrect" }
+    labels = {
+      "braintrust/node-pool" = "incorrect"
+      "braintrust/workload"  = "incorrect"
+    }
   }
   assert {
-    condition     = google_container_node_pool.this.node_config[0].labels["braintrust/node-pool"] == "brainstore"
-    error_message = "The pool key must determine the workload label, even with custom labels."
+    condition     = google_container_node_pool.this.node_config[0].labels["braintrust/node-pool"] == "brainstore-replacement"
+    error_message = "The pool key must determine the pool identity label."
+  }
+  assert {
+    condition     = google_container_node_pool.this.node_config[0].labels["braintrust/workload"] == "brainstore"
+    error_message = "The workload input must determine the workload label."
   }
 }

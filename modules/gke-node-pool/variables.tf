@@ -19,6 +19,17 @@ variable "name" {
   }
 }
 
+variable "workload" {
+  type        = string
+  description = "Workload value for the `braintrust/workload` Kubernetes node label. Null uses the pool name."
+  default     = null
+
+  validation {
+    condition     = var.workload == null || can(regex("^[a-z]([-a-z0-9]{0,61}[a-z0-9])?$", var.workload))
+    error_message = "`workload` must be null or contain 1 through 63 lowercase letters, numbers, or hyphens."
+  }
+}
+
 variable "project_id" {
   type        = string
   description = "GCP project ID for the GKE node pool."
