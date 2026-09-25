@@ -1,8 +1,8 @@
-# Braintrust data plane on GKE Autopilot
+# Braintrust data plane on GKE Standard
 
 GKE Autopilot is the preferred solution for new Braintrust deployments. GKE Standard is supported when customer requirements prevent Autopilot use.
 
-This example creates a production-sized GKE Autopilot deployment.
+This example creates a production-sized GKE Standard deployment with separate services and Brainstore node pools.
 
 Copy this directory into your repository.
 Adjust the configuration for your project and workload.
@@ -18,6 +18,21 @@ Adjust the configuration for your project and workload.
 The deployment must keep its initial `gke_cluster_mode`.
 A mode change replaces the GKE cluster and causes data-plane downtime.
 The replacement cluster requires redeployment of the Braintrust Helm release.
+
+### Standard node pools
+
+Standard mode creates separate `services` and `brainstore` node pools. The default pools use Arm C4A machine types.
+
+The x86 machine types remain supported for regions without C4A capacity. The `brainstore` pool always requires a machine type with bundled Local SSD.
+Use `braintrust/workload: services` and `braintrust/workload: brainstore` as Helm node selectors.
+The pool keys set the workload labels by default. Automatic replacement preserves those labels without a Helm selector change.
+
+Set `workload = "brainstore"` on an additional pool to provide temporary capacity for a manual pool replacement.
+Both pools then accept Brainstore pods without a Helm selector change.
+Every pool for the Brainstore workload requires a machine type with bundled Local SSD.
+Verify quota, pod readiness, and PDB behavior before deleting the source pool.
+The default single writer can restart during replacement without causing an outage.
+
 
 ## Prerequisites
 
@@ -82,9 +97,9 @@ Once the Terraform has been deployed, there are several steps that will need to 
       --namespace=braintrust
     ```
 
-1. Deploy Helm Chart
+1. Deploy the Helm chart with the [GKE Standard values](https://github.com/braintrustdata/helm/blob/main/braintrust/examples/google-standard/values.yaml).
 
-    Review the [helm chart](https://github.com/braintrustdata/helm) to deploy Braintrust on the newly deployed GKE cluster.
+    This configuration uses stable workload selectors and enables optional API and Brainstore PDBs.
 
 1. Accessing the API
 
@@ -114,3 +129,17 @@ Paste the API URL into the text field, and click Save. Leave the Proxy and Realt
 
 Verify in the UI that the ping to each endpoint is successful.
 ![Verify Successful Ping](../../assets/Braintrust-API-URL-verify.png)
+
+## Standard node pool replacement
+
+Machine type changes create a replacement pool before GKE deletes the source pool.
+Deletion respects Helm-defined PDBs for up to one hour by default.
+Initial capacity derives from the total minimum and effective zones, rounded up per zone.
+This capacity does not guarantee application readiness or sufficient resources for current load.
+
+1. Deploy the optional PDBs from the Helm GKE Standard example.
+2. Verify that the target project accepts the drain option.
+
+A single writer can stop briefly with `maxUnavailable: 1`.
+Replicated roles require sufficient Ready replicas and capacity for replacement pods.
+Failed readiness or insufficient capacity can outlast the one-hour PDB protection period.

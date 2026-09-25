@@ -1,4 +1,6 @@
 # tflint-ignore-file: terraform_module_pinned_source
+# GKE Autopilot is preferred for new deployments.
+# Standard is supported when customer requirements prevent Autopilot use.
 
 module "braintrust-data-plane" {
   source = "github.com/braintrustdata/terraform-google-braintrust-data-plane"
@@ -40,7 +42,30 @@ module "braintrust-data-plane" {
   # Keep the initial cluster mode after deployment.
   # A mode change replaces the cluster and causes data-plane downtime.
   # The replacement cluster requires Helm release redeployment.
-  gke_cluster_mode = "autopilot"
+  gke_cluster_mode = "standard"
+
+  # Machine changes create a replacement pool before source pool deletion.
+  # Deploy Helm PDBs before a replacement.
+  # GKE PDB protection expires after one hour.
+  # Initial capacity derives from the total minimum and effective zones, rounded up per zone.
+  gke_standard_node_pools = {
+    services = {
+      machine_type          = "c4a-standard-16"
+      total_min_node_count  = 2
+      total_max_node_count  = 10
+      respect_pdb_on_delete = true
+    }
+    brainstore = {
+      # GKE derives the fixed Local SSD count from the bundled machine type.
+      machine_type          = "c4a-standard-48-lssd"
+      total_min_node_count  = 6
+      total_max_node_count  = 10
+      respect_pdb_on_delete = true
+      # Set zones only when the machine type is unavailable in a cluster zone.
+      # node_locations = ["us-central1-a", "us-central1-b", "us-central1-c"]
+    }
+  }
+
 
   # gke_cluster_is_private = false # Default the cluster will be public and use public IPs addresses for the control plane
   # gke_control_plane_authorized_cidrs = null # Allow all IPs to access the control plane
@@ -62,9 +87,8 @@ module "braintrust-data-plane" {
   # postgres_machine_type = "db-perf-optimized-N-8"
   # postgres_availability_type = "REGIONAL"
   # postgres_disk_size = 1000
-  # Optional Hyperdisk performance values when using C4A or C4 machine types. Null uses Cloud SQL defaults.
-  # postgres_disk_provisioned_iops       = 12000
-  # postgres_disk_provisioned_throughput = 500
+  # Does this auto expand? how do we handle that?
+  # How do we control disk perf IOPS/etc
 
   ### Redis configuration
   # redis_version = "REDIS_7_2"
@@ -73,11 +97,7 @@ module "braintrust-data-plane" {
 
   ### Advanced configuration
   # gcs_additional_allowed_origins = []
-  # Create a dedicated GCS access log bucket and send both bucket logs to it.
-  # gcs_brainstore_logging_config = {}
-  # gcs_api_logging_config        = {}
-  #
-  # Optional GCS access logging with existing log buckets.
+  # Optional GCS access logging for the managed buckets. Point these at an existing log bucket.
   # gcs_brainstore_logging_config = {
   #   log_bucket        = "my-access-logs-bucket"
   #   log_object_prefix = "brainstore/"
