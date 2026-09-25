@@ -130,7 +130,11 @@ Verify regional availability for the machine types in use, and set `node_locatio
 
 ### Brainstore Local SSD
 
-The `brainstore` pool must use a machine type with bundled Local SSD. These machine types carry `lssd` in the machine type name, such as `c4a-standard-48-lssd` (Arm), `c4-standard-48-lssd`, `c4d-standard-48-lssd`, or `c3d-standard-30-lssd`. The module validates this in Standard mode.
+The `brainstore` pool must use a machine type with bundled Local SSD. These machine types carry `lssd` in the machine type name.
+
+Examples include `c4a-standard-48-lssd`, `c4-standard-48-lssd`, `c4d-standard-48-lssd`, `c3-standard-44-lssd`, and `c3d-standard-30-lssd`.
+
+The module validates this requirement in Standard mode.
 
 The number of Local SSD disks is a fixed property of the machine type. GKE selects that fixed count when it creates the node pool.
 
