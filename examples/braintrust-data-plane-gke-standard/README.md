@@ -132,9 +132,7 @@ Initial capacity derives from the total minimum and effective zones, rounded up 
 This capacity does not guarantee application readiness or sufficient resources for current load.
 
 1. Deploy the optional PDBs from the Helm GKE Standard example.
-2. Apply the module with unchanged machine types to protect existing source pools.
-3. Verify that the target project accepts the drain option.
-4. Change machine types in a later apply.
+2. Verify that the target project accepts the drain option.
 
 A single writer can stop briefly with `maxUnavailable: 1`.
 Replicated roles require sufficient Ready replicas and capacity for replacement pods.

@@ -9,11 +9,6 @@ locals {
   })
 }
 
-# Preserve the existing trigger state during the protection rollout.
-resource "terraform_data" "lssd_machine_type" {
-  triggers_replace = endswith(var.machine_type, "-lssd") ? var.machine_type : null
-}
-
 resource "terraform_data" "machine_type" {
   triggers_replace = var.machine_type
 }
@@ -96,7 +91,6 @@ resource "google_container_node_pool" "this" {
     create_before_destroy = true
 
     replace_triggered_by = [
-      terraform_data.lssd_machine_type,
       terraform_data.machine_type,
     ]
 
