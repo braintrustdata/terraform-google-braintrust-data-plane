@@ -25,18 +25,20 @@ module "kms" {
 module "database" {
   source = "./modules/database"
 
-  deployment_name              = var.deployment_name
-  custom_labels                = var.custom_labels
-  postgres_network             = var.create_vpc ? module.vpc[0].network_self_link : var.existing_network_self_link
-  postgres_kms_cmek_id         = module.kms.kms_key_id
-  postgres_version             = var.postgres_version
-  postgres_availability_type   = var.postgres_availability_type
-  postgres_machine_type        = var.postgres_machine_type
-  postgres_disk_size           = var.postgres_disk_size
-  postgres_enable_seqscan      = var.postgres_enable_seqscan
-  postgres_backup_start_time   = var.postgres_backup_start_time
-  postgres_maintenance_window  = var.postgres_maintenance_window
-  postgres_deletion_protection = var.postgres_deletion_protection
+  deployment_name                      = var.deployment_name
+  custom_labels                        = var.custom_labels
+  postgres_network                     = var.create_vpc ? module.vpc[0].network_self_link : var.existing_network_self_link
+  postgres_kms_cmek_id                 = module.kms.kms_key_id
+  postgres_version                     = var.postgres_version
+  postgres_availability_type           = var.postgres_availability_type
+  postgres_machine_type                = var.postgres_machine_type
+  postgres_disk_provisioned_iops       = var.postgres_disk_provisioned_iops
+  postgres_disk_provisioned_throughput = var.postgres_disk_provisioned_throughput
+  postgres_disk_size                   = var.postgres_disk_size
+  postgres_enable_seqscan              = var.postgres_enable_seqscan
+  postgres_backup_start_time           = var.postgres_backup_start_time
+  postgres_maintenance_window          = var.postgres_maintenance_window
+  postgres_deletion_protection         = var.postgres_deletion_protection
 
   depends_on = [module.vpc]
 }

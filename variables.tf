@@ -186,8 +186,18 @@ variable "postgres_version" {
 
 variable "postgres_machine_type" {
   type        = string
-  description = "Machine size of Cloud SQL for PostgreSQL instance."
+  description = "Enterprise Plus machine type from the N2, C4A, or C4 series. The machine type selects compatible storage settings."
   default     = "db-perf-optimized-N-8"
+
+  validation {
+    condition     = can(regex("^db-(perf-optimized-(N|C4)|c4a-highmem)-[0-9]+$", var.postgres_machine_type))
+    error_message = "Use an Enterprise Plus machine type from the N2, C4A, or C4 series."
+  }
+
+  validation {
+    condition     = !contains(["db-c4a-highmem-2", "db-perf-optimized-C4-2"], var.postgres_machine_type)
+    error_message = "C4A and C4 machine types require at least four vCPUs."
+  }
 }
 
 variable "postgres_availability_type" {
@@ -196,10 +206,53 @@ variable "postgres_availability_type" {
   default     = "REGIONAL"
 }
 
+variable "postgres_disk_provisioned_iops" {
+  type        = number
+  description = "Hyperdisk IOPS. Null uses the Cloud SQL default for the disk size and machine type."
+  default     = null
+
+  validation {
+    condition     = var.postgres_disk_provisioned_iops == null ? true : var.postgres_disk_provisioned_iops >= 3000 && floor(var.postgres_disk_provisioned_iops) == var.postgres_disk_provisioned_iops
+    error_message = "Hyperdisk IOPS must be an integer of at least 3000."
+  }
+
+  validation {
+    condition     = var.postgres_disk_provisioned_iops == null || can(regex("^db-(c4a-highmem|perf-optimized-C4)-[0-9]+$", var.postgres_machine_type))
+    error_message = "Custom IOPS require a C4A or C4 machine type with Hyperdisk Balanced."
+  }
+}
+
+variable "postgres_disk_provisioned_throughput" {
+  type        = number
+  description = "Hyperdisk throughput in MiB/s. Null uses the Cloud SQL default for the disk size and machine type."
+  default     = null
+
+  validation {
+    condition     = var.postgres_disk_provisioned_throughput == null ? true : var.postgres_disk_provisioned_throughput >= 140 && floor(var.postgres_disk_provisioned_throughput) == var.postgres_disk_provisioned_throughput
+    error_message = "Hyperdisk throughput must be an integer of at least 140 MiB/s."
+  }
+
+  validation {
+    condition     = var.postgres_disk_provisioned_throughput == null || can(regex("^db-(c4a-highmem|perf-optimized-C4)-[0-9]+$", var.postgres_machine_type))
+    error_message = "Custom throughput requires a C4A or C4 machine type with Hyperdisk Balanced."
+  }
+}
+
 variable "postgres_disk_size" {
   type        = number
-  description = "Size in GB of PostgreSQL disk."
+  description = "Initial PostgreSQL disk size in GB. Terraform ignores later changes to this value."
   default     = 1000
+  nullable    = false
+
+  validation {
+    condition     = var.postgres_disk_size >= 10 && floor(var.postgres_disk_size) == var.postgres_disk_size
+    error_message = "The initial disk size must be an integer of at least 10 GB."
+  }
+
+  validation {
+    condition     = !can(regex("^db-(c4a-highmem|perf-optimized-C4)-[0-9]+$", var.postgres_machine_type)) || var.postgres_disk_size >= 20
+    error_message = "Hyperdisk Balanced requires a disk size of at least 20 GB."
+  }
 }
 
 variable "postgres_enable_seqscan" {

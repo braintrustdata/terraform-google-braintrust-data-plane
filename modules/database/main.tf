@@ -1,4 +1,6 @@
 locals {
+  postgres_uses_hyperdisk = can(regex("^db-(c4a-highmem|perf-optimized-C4)-[0-9]+$", var.postgres_machine_type))
+
   common_labels = merge(var.custom_labels, {
     braintrustdeploymentname = var.deployment_name
   })
@@ -53,11 +55,15 @@ resource "google_sql_database_instance" "braintrust" {
   deletion_protection = var.postgres_deletion_protection
 
   settings {
-    availability_type = var.postgres_availability_type
-    tier              = var.postgres_machine_type
-    disk_type         = "PD_SSD"
-    disk_size         = var.postgres_disk_size
-    disk_autoresize   = true
+    availability_type                = var.postgres_availability_type
+    tier                             = var.postgres_machine_type
+    edition                          = "ENTERPRISE_PLUS"
+    disk_type                        = local.postgres_uses_hyperdisk ? "HYPERDISK_BALANCED" : "PD_SSD"
+    data_disk_provisioned_iops       = var.postgres_disk_provisioned_iops
+    data_disk_provisioned_throughput = var.postgres_disk_provisioned_throughput
+    disk_size                        = var.postgres_disk_size
+    disk_autoresize                  = true
+    disk_autoresize_limit            = 0
 
     # Braintrust will create a high number of connections to the database. Setting this to an extremely high amount of connections as changing this requires a DB restart.
     database_flags {

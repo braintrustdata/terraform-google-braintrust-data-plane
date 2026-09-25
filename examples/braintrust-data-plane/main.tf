@@ -57,8 +57,9 @@ module "braintrust-data-plane" {
   # postgres_machine_type = "db-perf-optimized-N-8"
   # postgres_availability_type = "REGIONAL"
   # postgres_disk_size = 1000
-  # Does this auto expand? how do we handle that?
-  # How do we control disk perf IOPS/etc
+  # Optional Hyperdisk performance values when using C4A or C4 machine types. Null uses Cloud SQL defaults.
+  # postgres_disk_provisioned_iops       = 12000
+  # postgres_disk_provisioned_throughput = 500
 
   ### Redis configuration
   # redis_version = "REDIS_7_2"

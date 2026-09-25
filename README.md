@@ -15,6 +15,20 @@ Please review the README.md in the examples for all Pre-deployment and Post-Depl
 
 The default configuration is a large production-sized deployment. Please consider that when testing and adjust the configuration to use smaller sized resources.
 
+## Cloud SQL machine types
+
+The module supports only Cloud SQL Enterprise Plus.
+It selects the disk type from `postgres_machine_type`.
+The default remains `db-perf-optimized-N-8`
+A change to the database machine type causes downtime.
+
+| Machine type | Disk |
+| --- | --- |
+| `db-perf-optimized-N-*` | SSD |
+| `db-c4a-highmem-*` | Hyperdisk Balanced |
+| `db-perf-optimized-C4-*` | Hyperdisk Balanced |
+
+
 ## Development Setup
 
 This section is only relevant if you are a contributor who wants to make changes to this module. All others can skip this section.
