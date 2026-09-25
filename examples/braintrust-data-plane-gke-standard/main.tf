@@ -46,8 +46,6 @@ module "braintrust-data-plane" {
 
   # Machine changes create a replacement pool before source pool deletion.
   # Deploy Helm PDBs before a replacement.
-  # First apply source pool protection with unchanged machine types and zones.
-  # Verify source pool protection before a later hardware change.
   # GKE PDB protection expires after one hour.
   # Initial capacity derives from the total minimum and effective zones, rounded up per zone.
   gke_standard_node_pools = {

@@ -88,8 +88,6 @@ The module omits `node_drain_config` when the option is false.
 Do not set custom drain timeout values. GKE requires project enablement for those values.
 Initial capacity derives from the total minimum and effective zones, rounded up per zone.
 Ignore later changes to initial_node_count so autoscaler minimum changes do not replace pools.
-Preserve the legacy Local SSD trigger during upgrades so protection rollout does not replace services pools.
-Existing pools must receive deletion protection before an apply that changes machine types.
 `create_before_destroy` does not verify application capacity or readiness.
 The Helm GKE Standard example enables separate PDBs for the API and each Brainstore role.
 Its maxUnavailable value of one permits a brief single-writer interruption and one unavailable replica for replicated roles.
