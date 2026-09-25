@@ -96,6 +96,14 @@ variable "total_max_node_count" {
     condition     = var.total_max_node_count >= var.total_min_node_count
     error_message = "`total_max_node_count` must equal or exceed `total_min_node_count`."
   }
+
+  validation {
+    condition = (
+      ceil(var.total_min_node_count / length(coalesce(var.node_locations, var.cluster_node_locations))) *
+      length(coalesce(var.node_locations, var.cluster_node_locations)) <= var.total_max_node_count
+    )
+    error_message = "`total_max_node_count` must equal or exceed the rounded initial capacity across all node zones."
+  }
 }
 
 variable "location_policy" {

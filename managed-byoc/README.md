@@ -118,9 +118,9 @@ Review quotas before deployment:
 ./request-quotas.sh --project <gcp-project-id> --region <gcp-region> request
 ```
 
-Desired values live in `quota-config.json`. The CPU values support the maximum
-node counts in the Standard defaults. Each Local SSD value supports ten
-Brainstore nodes for the documented family example. Create
+Desired values live in `quota-config.json`. The CPU values support replacement
+of the default pools at the autoscaler maximum. Each Local SSD value supports
+ten source Brainstore nodes and six replacement nodes. Create
 `quota-config.override.json` in this directory to use different values.
 
 ## App-Root Contract

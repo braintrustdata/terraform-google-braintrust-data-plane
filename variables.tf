@@ -488,7 +488,7 @@ variable "gke_standard_node_pools" {
     }
     brainstore = {
       machine_type         = "c4a-standard-48-lssd"
-      total_min_node_count = 5
+      total_min_node_count = 6
       total_max_node_count = 10
     }
   }
