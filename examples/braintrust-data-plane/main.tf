@@ -57,6 +57,7 @@ module "braintrust-data-plane" {
   # postgres_machine_type = "db-perf-optimized-N-8"
   # postgres_availability_type = "REGIONAL"
   # postgres_disk_size = 1000
+  # postgres_max_connections = 8000
   # Does this auto expand? how do we handle that?
   # How do we control disk perf IOPS/etc
 

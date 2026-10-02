@@ -33,6 +33,7 @@ module "database" {
   postgres_availability_type   = var.postgres_availability_type
   postgres_machine_type        = var.postgres_machine_type
   postgres_disk_size           = var.postgres_disk_size
+  postgres_max_connections     = var.postgres_max_connections
   postgres_enable_seqscan      = var.postgres_enable_seqscan
   postgres_backup_start_time   = var.postgres_backup_start_time
   postgres_maintenance_window  = var.postgres_maintenance_window

@@ -202,6 +202,12 @@ variable "postgres_disk_size" {
   default     = 1000
 }
 
+variable "postgres_max_connections" {
+  type        = number
+  description = "Maximum number of connections for the Cloud SQL for PostgreSQL instance. Braintrust creates a high number of connections to the database. Changing this requires a DB restart."
+  default     = 8000
+}
+
 variable "postgres_enable_seqscan" {
   type        = bool
   description = "Whether to enable seqscan. Setting this to true requires a DB restart. Should only be enabled if directed by Braintrust support team."
