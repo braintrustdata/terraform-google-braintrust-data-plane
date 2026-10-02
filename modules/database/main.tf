@@ -62,7 +62,7 @@ resource "google_sql_database_instance" "braintrust" {
     # Braintrust will create a high number of connections to the database. Setting this to an extremely high amount of connections as changing this requires a DB restart.
     database_flags {
       name  = "max_connections"
-      value = "8000"
+      value = tostring(var.postgres_max_connections)
     }
 
     database_flags {
