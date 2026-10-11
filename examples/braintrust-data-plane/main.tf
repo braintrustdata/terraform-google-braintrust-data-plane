@@ -66,6 +66,12 @@ module "braintrust-data-plane" {
   # redis_memory_size_gb = 3
 
 
+  ### GCS authentication
+  # HMAC keys are used by the API for S3-compatible GCS access. With data plane 2.0.0 and later you can
+  # instead set `api.enableGcsAuth: true` in the Helm chart to use Workload Identity and disable HMAC keys.
+  # Switch the API to native auth before setting this to false on an existing deployment.
+  # braintrust_hmac_key_enabled = true
+
   ### Advanced configuration
   # gcs_additional_allowed_origins = []
   # Create a dedicated GCS access log bucket and send both bucket logs to it.

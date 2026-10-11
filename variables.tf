@@ -519,7 +519,7 @@ variable "brainstore_kube_svc_account" {
 # With data plane 2.0.0 and later native auth can be used instead of HMAC keys.
 variable "braintrust_hmac_key_enabled" {
   type        = bool
-  description = "Whether to enable HMAC keys for Braintrust API."
+  description = "Whether to create an HMAC key for the Braintrust API service account. Set to false when using GCS native auth (data plane 2.0.0+). When false, the braintrust_hmac_access_id and braintrust_hmac_secret outputs are null. Disabling this on an existing deployment deletes the HMAC key, so switch the API to native auth first."
   default     = true
 }
 

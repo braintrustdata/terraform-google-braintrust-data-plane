@@ -71,6 +71,8 @@ Once the Terraform has been deployed, there are several steps that will need to 
       --namespace=braintrust
     ```
 
+    If you set `braintrust_hmac_key_enabled = false` and use native GCS auth (`api.enableGcsAuth: true` in the Helm chart, data plane 2.0.0+), omit `GCS_ACCESS_KEY_ID` and `GCS_SECRET_ACCESS_KEY`. The HMAC outputs are null in that case.
+
 1. Deploy Helm Chart
 
     Review the [helm chart](https://github.com/braintrustdata/helm) to deploy Braintrust on the newly deployed GKE cluster.

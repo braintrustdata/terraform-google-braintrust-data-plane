@@ -7,7 +7,7 @@ resource "google_service_account" "braintrust" {
   description  = "Service account for Braintrust for GCP GKE workload identity."
 }
 
-# API container doesn't support GCS native storage integration yet, so we use HMAC keys instead. 
+# Data plane versions before 2.0.0 require HMAC keys for API GCS access. 2.0.0+ can use native auth.
 resource "google_storage_hmac_key" "braintrust" {
   count = var.braintrust_hmac_key_enabled ? 1 : 0
 

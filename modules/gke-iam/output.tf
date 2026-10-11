@@ -7,11 +7,13 @@ output "brainstore_service_account" {
 }
 
 output "braintrust_hmac_access_id" {
-  value     = google_storage_hmac_key.braintrust[0].access_id
-  sensitive = true
+  description = "HMAC access ID for the Braintrust service account. Null when braintrust_hmac_key_enabled is false."
+  value       = one(google_storage_hmac_key.braintrust[*].access_id)
+  sensitive   = true
 }
 
 output "braintrust_hmac_secret" {
-  value     = google_storage_hmac_key.braintrust[0].secret
-  sensitive = true
+  description = "HMAC secret for the Braintrust service account. Null when braintrust_hmac_key_enabled is false."
+  value       = one(google_storage_hmac_key.braintrust[*].secret)
+  sensitive   = true
 }
