@@ -58,13 +58,15 @@ output "brainstore_service_account" {
 }
 
 output "braintrust_hmac_access_id" {
-  value     = module.gke-iam.braintrust_hmac_access_id
-  sensitive = true
+  description = "HMAC access ID for the Braintrust service account. Null when braintrust_hmac_key_enabled is false."
+  value       = module.gke-iam.braintrust_hmac_access_id
+  sensitive   = true
 }
 
 output "braintrust_hmac_secret" {
-  value     = module.gke-iam.braintrust_hmac_secret
-  sensitive = true
+  description = "HMAC secret for the Braintrust service account. Null when braintrust_hmac_key_enabled is false."
+  value       = module.gke-iam.braintrust_hmac_secret
+  sensitive   = true
 }
 
 #----------------------------------------------------------------------------------------------
