@@ -57,6 +57,7 @@ module "braintrust-data-plane" {
   # postgres_machine_type = "db-perf-optimized-N-8"
   # postgres_availability_type = "REGIONAL"
   # postgres_disk_size = 1000
+  # postgres_max_connections = 8000
   # Optional Hyperdisk performance values when using C4A or C4 machine types. Null uses Cloud SQL defaults.
   # postgres_disk_provisioned_iops       = 12000
   # postgres_disk_provisioned_throughput = 500
@@ -65,6 +66,12 @@ module "braintrust-data-plane" {
   # redis_version = "REDIS_7_2"
   # redis_memory_size_gb = 3
 
+
+  ### GCS authentication
+  # HMAC keys are used by the API for S3-compatible GCS access. With data plane 2.0.0 and later you can
+  # instead set `api.enableGcsAuth: true` in the Helm chart to use Workload Identity and disable HMAC keys.
+  # Switch the API to native auth before setting this to false on an existing deployment.
+  # braintrust_hmac_key_enabled = true
 
   ### Advanced configuration
   # gcs_additional_allowed_origins = []

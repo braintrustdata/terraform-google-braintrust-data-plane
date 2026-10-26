@@ -35,6 +35,7 @@ module "database" {
   postgres_disk_provisioned_iops       = var.postgres_disk_provisioned_iops
   postgres_disk_provisioned_throughput = var.postgres_disk_provisioned_throughput
   postgres_disk_size                   = var.postgres_disk_size
+  postgres_max_connections             = var.postgres_max_connections
   postgres_enable_seqscan              = var.postgres_enable_seqscan
   postgres_backup_start_time           = var.postgres_backup_start_time
   postgres_maintenance_window          = var.postgres_maintenance_window
