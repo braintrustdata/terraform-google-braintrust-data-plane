@@ -18,6 +18,24 @@ mock_provider "google" {
 mock_provider "google-beta" {}
 mock_provider "random" {}
 
+variables {
+  deployment_name = "braintrust"
+}
+
+override_module {
+  target = module.gke-cluster
+  outputs = {
+    gke_cluster_name               = "braintrust-gke-standard"
+    gke_cluster_endpoint           = "https://standard.example.test"
+    gke_cluster_master_version     = "1.33.0"
+    gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
+    gke_node_locations             = ["us-central1-a", "us-central1-b", "us-central1-c"]
+    gke_cluster_location           = "us-central1"
+    gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
+    workload_identity_pool         = "braintrust-test.svc.id.goog"
+  }
+}
+
 run "autopilot_is_the_default" {
   command = plan
 
@@ -33,10 +51,6 @@ run "autopilot_is_the_default" {
       gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
       workload_identity_pool         = "braintrust-test.svc.id.goog"
     }
-  }
-
-  variables {
-    deployment_name = "braintrust"
   }
 
   assert {
@@ -58,22 +72,7 @@ run "autopilot_is_the_default" {
 run "standard_creates_default_node_pools" {
   command = plan
 
-  override_module {
-    target = module.gke-cluster
-    outputs = {
-      gke_cluster_name               = "braintrust-gke-standard"
-      gke_cluster_endpoint           = "https://standard.example.test"
-      gke_cluster_master_version     = "1.33.0"
-      gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
-      gke_node_locations             = ["us-central1-a", "us-central1-b", "us-central1-c"]
-      gke_cluster_location           = "us-central1"
-      gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
-      workload_identity_pool         = "braintrust-test.svc.id.goog"
-    }
-  }
-
   variables {
-    deployment_name  = "braintrust"
     gke_cluster_mode = "standard"
   }
 
@@ -96,22 +95,7 @@ run "standard_creates_default_node_pools" {
 run "brainstore_requires_a_local_ssd_machine_type" {
   command = plan
 
-  override_module {
-    target = module.gke-cluster
-    outputs = {
-      gke_cluster_name               = "braintrust-gke-standard"
-      gke_cluster_endpoint           = "https://standard.example.test"
-      gke_cluster_master_version     = "1.33.0"
-      gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
-      gke_node_locations             = ["us-central1-a", "us-central1-b", "us-central1-c"]
-      gke_cluster_location           = "us-central1"
-      gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
-      workload_identity_pool         = "braintrust-test.svc.id.goog"
-    }
-  }
-
   variables {
-    deployment_name  = "braintrust"
     gke_cluster_mode = "standard"
     gke_standard_node_pools = {
       services = {
@@ -133,22 +117,7 @@ run "brainstore_requires_a_local_ssd_machine_type" {
 run "additional_brainstore_workload_accepts_local_ssd" {
   command = plan
 
-  override_module {
-    target = module.gke-cluster
-    outputs = {
-      gke_cluster_name               = "braintrust-gke-standard"
-      gke_cluster_endpoint           = "https://standard.example.test"
-      gke_cluster_master_version     = "1.33.0"
-      gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
-      gke_node_locations             = ["us-central1-a", "us-central1-b", "us-central1-c"]
-      gke_cluster_location           = "us-central1"
-      gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
-      workload_identity_pool         = "braintrust-test.svc.id.goog"
-    }
-  }
-
   variables {
-    deployment_name  = "braintrust"
     gke_cluster_mode = "standard"
     gke_standard_node_pools = {
       services = {
@@ -179,22 +148,7 @@ run "additional_brainstore_workload_accepts_local_ssd" {
 run "additional_brainstore_workload_requires_local_ssd" {
   command = plan
 
-  override_module {
-    target = module.gke-cluster
-    outputs = {
-      gke_cluster_name               = "braintrust-gke-standard"
-      gke_cluster_endpoint           = "https://standard.example.test"
-      gke_cluster_master_version     = "1.33.0"
-      gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
-      gke_node_locations             = ["us-central1-a", "us-central1-b", "us-central1-c"]
-      gke_cluster_location           = "us-central1"
-      gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
-      workload_identity_pool         = "braintrust-test.svc.id.goog"
-    }
-  }
-
   variables {
-    deployment_name  = "braintrust"
     gke_cluster_mode = "standard"
     gke_standard_node_pools = {
       services = {
@@ -222,22 +176,7 @@ run "additional_brainstore_workload_requires_local_ssd" {
 run "standard_requires_a_brainstore_workload" {
   command = plan
 
-  override_module {
-    target = module.gke-cluster
-    outputs = {
-      gke_cluster_name               = "braintrust-gke-standard"
-      gke_cluster_endpoint           = "https://standard.example.test"
-      gke_cluster_master_version     = "1.33.0"
-      gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
-      gke_node_locations             = ["us-central1-a", "us-central1-b", "us-central1-c"]
-      gke_cluster_location           = "us-central1"
-      gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
-      workload_identity_pool         = "braintrust-test.svc.id.goog"
-    }
-  }
-
   variables {
-    deployment_name  = "braintrust"
     gke_cluster_mode = "standard"
     gke_standard_node_pools = {
       services = {
@@ -260,22 +199,7 @@ run "standard_requires_a_brainstore_workload" {
 run "brainstore_replacement_can_outlive_the_original_pool" {
   command = plan
 
-  override_module {
-    target = module.gke-cluster
-    outputs = {
-      gke_cluster_name               = "braintrust-gke-standard"
-      gke_cluster_endpoint           = "https://standard.example.test"
-      gke_cluster_master_version     = "1.33.0"
-      gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
-      gke_node_locations             = ["us-central1-a", "us-central1-b", "us-central1-c"]
-      gke_cluster_location           = "us-central1"
-      gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
-      workload_identity_pool         = "braintrust-test.svc.id.goog"
-    }
-  }
-
   variables {
-    deployment_name  = "braintrust"
     gke_cluster_mode = "standard"
     gke_standard_node_pools = {
       services = {
