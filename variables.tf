@@ -486,7 +486,7 @@ variable "gke_standard_node_pools" {
     enable_secure_boot          = optional(bool, true)
     enable_integrity_monitoring = optional(bool, true)
   }))
-  description = "Node pools for a Standard GKE cluster. The optional workload value lets multiple pools serve one Helm workload. The defaults use the Arm C4A machine series. Standard mode requires a `brainstore` pool that uses a machine type with bundled Local SSD. This value has no effect in Autopilot mode."
+  description = "Node pools for a Standard GKE cluster. The optional workload value lets multiple pools serve one Helm workload. The defaults use the Arm C4A machine series. Standard mode requires at least one pool for the `brainstore` workload using a machine type with bundled Local SSD. This value has no effect in Autopilot mode."
   default = {
     services = {
       machine_type         = "c4a-standard-16"
@@ -523,8 +523,11 @@ variable "gke_standard_node_pools" {
   }
 
   validation {
-    condition     = var.gke_cluster_mode != "standard" || contains(keys(var.gke_standard_node_pools), "brainstore")
-    error_message = "`gke_standard_node_pools` must contain a pool named `brainstore` in Standard mode."
+    condition = var.gke_cluster_mode != "standard" || anytrue([
+      for name, pool in var.gke_standard_node_pools :
+      coalesce(pool.workload, name) == "brainstore"
+    ])
+    error_message = "`gke_standard_node_pools` must contain at least one pool for the `brainstore` workload in Standard mode."
   }
 
   # Brainstore keeps its cache on node ephemeral storage, which must be backed by

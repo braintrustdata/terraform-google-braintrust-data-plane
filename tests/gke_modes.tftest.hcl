@@ -219,39 +219,7 @@ run "additional_brainstore_workload_requires_local_ssd" {
   expect_failures = [var.gke_standard_node_pools]
 }
 
-run "standard_requires_a_brainstore_pool" {
-  command = plan
-
-  override_module {
-    target = module.gke-cluster
-    outputs = {
-      gke_cluster_name               = "braintrust-gke-standard"
-      gke_cluster_endpoint           = "https://standard.example.test"
-      gke_cluster_master_version     = "1.33.0"
-      gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
-      gke_node_locations             = ["us-central1-a", "us-central1-b", "us-central1-c"]
-      gke_cluster_location           = "us-central1"
-      gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
-      workload_identity_pool         = "braintrust-test.svc.id.goog"
-    }
-  }
-
-  variables {
-    deployment_name  = "braintrust"
-    gke_cluster_mode = "standard"
-    gke_standard_node_pools = {
-      services = {
-        machine_type         = "c4a-standard-16"
-        total_min_node_count = 2
-        total_max_node_count = 10
-      }
-    }
-  }
-
-  expect_failures = [var.gke_standard_node_pools]
-}
-
-run "brainstore_accepts_x86_local_ssd_machine_types" {
+run "standard_requires_a_brainstore_workload" {
   command = plan
 
   override_module {
@@ -278,6 +246,45 @@ run "brainstore_accepts_x86_local_ssd_machine_types" {
         total_max_node_count = 10
       }
       brainstore = {
+        workload             = "services"
+        machine_type         = "c4a-standard-48-lssd"
+        total_min_node_count = 6
+        total_max_node_count = 10
+      }
+    }
+  }
+
+  expect_failures = [var.gke_standard_node_pools]
+}
+
+run "brainstore_replacement_can_outlive_the_original_pool" {
+  command = plan
+
+  override_module {
+    target = module.gke-cluster
+    outputs = {
+      gke_cluster_name               = "braintrust-gke-standard"
+      gke_cluster_endpoint           = "https://standard.example.test"
+      gke_cluster_master_version     = "1.33.0"
+      gke_cluster_id                 = "projects/braintrust-test/locations/us-central1/clusters/braintrust-gke-standard"
+      gke_node_locations             = ["us-central1-a", "us-central1-b", "us-central1-c"]
+      gke_cluster_location           = "us-central1"
+      gke_node_service_account_email = "braintrust-gke-cluster@braintrust-test.iam.gserviceaccount.com"
+      workload_identity_pool         = "braintrust-test.svc.id.goog"
+    }
+  }
+
+  variables {
+    deployment_name  = "braintrust"
+    gke_cluster_mode = "standard"
+    gke_standard_node_pools = {
+      services = {
+        machine_type         = "c4a-standard-16"
+        total_min_node_count = 2
+        total_max_node_count = 10
+      }
+      brainstore-replacement = {
+        workload             = "brainstore"
         machine_type         = "c4-standard-48-lssd"
         total_min_node_count = 3
         total_max_node_count = 10
@@ -286,7 +293,7 @@ run "brainstore_accepts_x86_local_ssd_machine_types" {
   }
 
   assert {
-    condition     = toset(keys(output.gke_node_pool_names)) == toset(["brainstore", "services"])
-    error_message = "Standard mode must create the configured node pools."
+    condition     = toset(keys(output.gke_node_pool_names)) == toset(["brainstore-replacement", "services"])
+    error_message = "Standard mode must allow the replacement Brainstore workload pool after the original is removed."
   }
 }
