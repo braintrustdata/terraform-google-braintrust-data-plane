@@ -1,12 +1,23 @@
-# Example GCP Braintrust data plane
+# Braintrust data plane on GKE Autopilot
 
-This is an example of a standard **production-sized** Braintrust data plane deployment. Copy this directory to a new directory in your own repository and modify the files to match your environment.
+GKE Autopilot is the preferred solution for new Braintrust deployments. GKE Standard is supported when customer requirements prevent Autopilot use.
+
+This example creates a production-sized GKE Autopilot deployment.
+
+Copy this directory into your repository.
+Adjust the configuration for your project and workload.
 
 ## Configure Terraform
 
 * `provider.tf` should be modified to use your Google project and region.
 * `backend.tf` should be modified to use the remote backend that your company uses. Typically this is a GCP bucket.
 * `main.tf` should be modified to meet your needs for the Braintrust deployment. The defaults are sensible only for a production deployment.
+
+### GKE cluster mode
+
+The deployment must keep its initial `gke_cluster_mode`.
+A mode change replaces the GKE cluster and causes data-plane downtime.
+The replacement cluster requires redeployment of the Braintrust Helm release.
 
 ## Prerequisites
 

@@ -37,6 +37,11 @@ module "braintrust-data-plane" {
   ### GKE Cluster configuration
   # Note: By default we deploy a GKE cluster. You must set deploy_gke_cluster to false to not deploy a GKE cluster, if you will provide your own GKE cluster.
   # deploy_gke_cluster = true
+  # Keep the initial cluster mode after deployment.
+  # A mode change replaces the cluster and causes data-plane downtime.
+  # The replacement cluster requires Helm release redeployment.
+  gke_cluster_mode = "autopilot"
+
   # gke_cluster_is_private = false # Default the cluster will be public and use public IPs addresses for the control plane
   # gke_control_plane_authorized_cidrs = null # Allow all IPs to access the control plane
   # gke_enable_private_endpoint = false # Make sure the control plane endpoint is public
