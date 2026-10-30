@@ -119,3 +119,50 @@ resource "google_service_account_iam_member" "brainstore_impersonation_target" {
   role               = "roles/iam.serviceAccountTokenCreator"
   member             = "serviceAccount:${google_service_account.brainstore.email}"
 }
+
+#----------------------------------------------------------------------------------------------
+# Loop runtime service account
+#----------------------------------------------------------------------------------------------
+resource "google_service_account" "loop_runtime" {
+  count        = var.loop_runtime_enabled ? 1 : 0
+  account_id   = "${var.deployment_name}-loop"
+  display_name = "${var.deployment_name}-loop-runtime"
+  description  = "Service account for the Braintrust Loop runtime."
+}
+
+resource "google_service_account_iam_binding" "loop_runtime_workload_identity" {
+  count              = var.loop_runtime_enabled ? 1 : 0
+  service_account_id = google_service_account.loop_runtime[0].id
+  role               = "roles/iam.workloadIdentityUser"
+  members = [
+    "serviceAccount:${var.workload_identity_pool}[${var.braintrust_kube_namespace}/${var.loop_runtime_kube_svc_account}]"
+  ]
+}
+
+resource "google_storage_bucket_iam_member" "loop_runtime_brainstore_gcs_object_admin" {
+  count  = var.loop_runtime_enabled ? 1 : 0
+  bucket = var.brainstore_gcs_bucket_id
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.loop_runtime[0].email}"
+}
+
+resource "google_storage_bucket_iam_member" "loop_runtime_brainstore_gcs_reader" {
+  count  = var.loop_runtime_enabled ? 1 : 0
+  bucket = var.brainstore_gcs_bucket_id
+  role   = "roles/storage.legacyBucketReader"
+  member = "serviceAccount:${google_service_account.loop_runtime[0].email}"
+}
+
+resource "google_storage_bucket_iam_member" "loop_runtime_api_bucket_gcs_object_admin" {
+  count  = var.loop_runtime_enabled ? 1 : 0
+  bucket = var.braintrust_api_bucket_id
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.loop_runtime[0].email}"
+}
+
+resource "google_storage_bucket_iam_member" "loop_runtime_api_bucket_gcs_reader" {
+  count  = var.loop_runtime_enabled ? 1 : 0
+  bucket = var.braintrust_api_bucket_id
+  role   = "roles/storage.legacyBucketReader"
+  member = "serviceAccount:${google_service_account.loop_runtime[0].email}"
+}

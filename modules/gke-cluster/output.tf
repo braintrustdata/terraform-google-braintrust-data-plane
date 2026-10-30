@@ -54,3 +54,14 @@ output "gke_node_locations" {
   value       = google_container_cluster.braintrust.node_locations
   description = "Effective cluster node zones."
 }
+
+output "gke_pod_cidr" {
+  value       = google_container_cluster.braintrust.cluster_ipv4_cidr
+  description = "Effective primary Pod range, including GKE allocation."
+}
+
+output "gke_services_node_service_account_email" {
+  value       = try(google_service_account.services_nodes[0].email, null)
+  description = "Services node identity after its required project grants exist."
+  depends_on  = [google_project_iam_member.services_nodes]
+}
