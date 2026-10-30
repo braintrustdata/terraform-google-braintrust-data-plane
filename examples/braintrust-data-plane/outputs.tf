@@ -28,6 +28,11 @@ output "brainstore_service_account" {
   value = module.braintrust-data-plane.brainstore_service_account
 }
 
+output "loop_runtime_service_account" {
+  value = module.braintrust-data-plane.loop_runtime_service_account
+}
+
+
 output "gke_cluster_name" {
   value = module.braintrust-data-plane.gke_cluster_name
 }

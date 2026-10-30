@@ -70,3 +70,7 @@ output "redis_url" {
   value     = "redis://:${module.braintrust-data-plane.redis_auth_string}@${module.braintrust-data-plane.redis_instance_host}:${module.braintrust-data-plane.redis_instance_port}"
   sensitive = true
 }
+
+output "loop_runtime_service_account" {
+  value = module.braintrust-data-plane.loop_runtime_service_account
+}
