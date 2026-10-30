@@ -88,6 +88,10 @@ run "explicit_zones_control_initial_capacity" {
 run "create_services_pool" {
   command = apply
   module { source = "./modules/gke-node-pool" }
+  assert {
+    condition     = terraform_data.machine_type.triggers_replace == var.machine_type
+    error_message = "Existing primary pools must retain the original replacement trigger value."
+  }
 }
 
 run "minimum_change_keeps_pool" {
@@ -129,5 +133,28 @@ run "pool_identity_and_workload_labels_are_reserved" {
   assert {
     condition     = google_container_node_pool.this.node_config[0].labels["braintrust/workload"] == "brainstore"
     error_message = "The workload input must determine the workload label."
+  }
+}
+
+run "enable_nested_virtualization_replaces_pool" {
+  command = apply
+  module { source = "./modules/gke-node-pool" }
+  variables {
+    machine_type                 = "c4-standard-16"
+    enable_nested_virtualization = true
+  }
+  assert {
+    condition     = google_container_node_pool.this.id != run.architecture_change_replaces_services_pool.id
+    error_message = "A nested virtualization change must replace the affected pool."
+  }
+}
+
+run "disable_nested_virtualization_replaces_pool" {
+  command = apply
+  module { source = "./modules/gke-node-pool" }
+  variables { machine_type = "c4-standard-16" }
+  assert {
+    condition     = google_container_node_pool.this.id != run.enable_nested_virtualization_replaces_pool.id
+    error_message = "Removal of nested virtualization must replace the affected pool."
   }
 }

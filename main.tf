@@ -18,8 +18,10 @@ module "vpc" {
 module "kms" {
   source = "./modules/kms"
 
-  deployment_name = var.deployment_name
-  custom_labels   = var.custom_labels
+  deployment_name  = var.deployment_name
+  custom_labels    = var.custom_labels
+  grant_gke_access = var.deploy_gke_cluster
+  project_number   = data.google_project.current.number
 }
 
 module "database" {
@@ -96,7 +98,7 @@ module "gke-cluster" {
   gke_release_channel                = var.gke_release_channel
   gke_enable_private_endpoint        = var.gke_enable_private_endpoint
   gke_deletion_protection            = var.gke_deletion_protection
-  gke_kms_cmek_id                    = module.kms.kms_key_id
+  gke_kms_cmek_id                    = module.kms.gke_kms_key_id
   gke_maintenance_window             = var.gke_maintenance_window
 }
 
