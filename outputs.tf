@@ -151,3 +151,8 @@ output "redis_url" {
   description = "Redis URL consumed by the Braintrust app root."
   sensitive   = true
 }
+
+output "gke_node_service_account_email" {
+  value       = var.deploy_gke_cluster ? module.gke-cluster[0].gke_node_service_account_email : null
+  description = "Node service account email. Null when deploy_gke_cluster is false."
+}

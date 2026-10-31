@@ -9,7 +9,9 @@ locals {
 
 data "google_client_config" "current" {}
 
-data "google_project" "current" {}
+data "google_project" "current" {
+  project_id = data.google_client_config.current.project
+}
 
 #----------------------------------------------------------------------------------------------
 # GKE Autopilot cluster
@@ -110,7 +112,7 @@ resource "google_container_cluster" "braintrust_autopilot" {
   cluster_autoscaling {
     # Autopilot manages autoscaling, but you can set resource limits
     auto_provisioning_defaults {
-      # Use the same service account as the standard cluster
+      # Use the dedicated node service account.
       service_account = google_service_account.gke.email
 
       # Boot disk encryption
@@ -119,6 +121,7 @@ resource "google_container_cluster" "braintrust_autopilot" {
   }
 
   depends_on = [
+    google_project_iam_member.gke_default_node_sa,
     google_kms_crypto_key_iam_member.gke_cluster_cmek,
     google_kms_crypto_key_iam_member.gke_compute_cmek
   ]
@@ -131,42 +134,12 @@ resource "google_container_cluster" "braintrust_autopilot" {
 resource "google_service_account" "gke" {
   account_id   = "${var.deployment_name}-gke-cluster"
   display_name = "${var.deployment_name}-gke-cluster"
-  description  = "Service account for GKE cluster."
+  description  = "Service account for GKE node system tasks."
 }
 
 resource "google_project_iam_member" "gke_default_node_sa" {
   project = data.google_project.current.project_id
   role    = "roles/container.defaultNodeServiceAccount"
-  member  = "serviceAccount:${google_service_account.gke.email}"
-}
-
-resource "google_project_iam_member" "gke_log_writer" {
-  project = data.google_project.current.project_id
-  role    = "roles/logging.logWriter"
-  member  = "serviceAccount:${google_service_account.gke.email}"
-}
-
-resource "google_project_iam_member" "gke_metric_writer" {
-  project = data.google_project.current.project_id
-  role    = "roles/monitoring.metricWriter"
-  member  = "serviceAccount:${google_service_account.gke.email}"
-}
-
-resource "google_project_iam_member" "gke_stackdriver_writer" {
-  project = data.google_project.current.project_id
-  role    = "roles/stackdriver.resourceMetadata.writer"
-  member  = "serviceAccount:${google_service_account.gke.email}"
-}
-
-resource "google_project_iam_member" "gke_object_viewer" {
-  project = data.google_project.current.project_id
-  role    = "roles/storage.objectViewer"
-  member  = "serviceAccount:${google_service_account.gke.email}"
-}
-
-resource "google_project_iam_member" "gke_artifact_reader" {
-  project = data.google_project.current.project_id
-  role    = "roles/artifactregistry.reader"
   member  = "serviceAccount:${google_service_account.gke.email}"
 }
 

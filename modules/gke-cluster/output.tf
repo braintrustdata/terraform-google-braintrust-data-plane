@@ -18,3 +18,8 @@ output "workload_identity_pool" {
   value       = google_container_cluster.braintrust_autopilot.workload_identity_config[0].workload_pool
   description = "Workload Identity pool for Kubernetes service account IAM bindings."
 }
+
+output "gke_node_service_account_email" {
+  value       = google_service_account.gke.email
+  description = "Node service account email for repository-level image access grants."
+}
