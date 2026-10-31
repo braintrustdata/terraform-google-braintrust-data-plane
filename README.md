@@ -28,6 +28,10 @@ A change to the database machine type causes downtime.
 | `db-c4a-highmem-*` | Hyperdisk Balanced |
 | `db-perf-optimized-C4-*` | Hyperdisk Balanced |
 
+## Private registries
+
+If you use a private registry, grant the node service account the permissions required to pull images.
+For Artifact Registry, grant `roles/artifactregistry.reader` on each required repository to the account from `gke_node_service_account_email`.
 
 ## Development Setup
 
