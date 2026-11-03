@@ -32,3 +32,18 @@ resource "google_kms_crypto_key" "kms" {
     prevent_destroy = false
   }
 }
+
+# Both clusters use the deployment key and the same project service agents.
+resource "google_kms_crypto_key_iam_member" "gke_cluster_cmek" {
+  count         = var.grant_gke_access ? 1 : 0
+  crypto_key_id = google_kms_crypto_key.kms.id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:service-${var.project_number}@container-engine-robot.iam.gserviceaccount.com"
+}
+
+resource "google_kms_crypto_key_iam_member" "gke_compute_cmek" {
+  count         = var.grant_gke_access ? 1 : 0
+  crypto_key_id = google_kms_crypto_key.kms.id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:service-${var.project_number}@compute-system.iam.gserviceaccount.com"
+}
