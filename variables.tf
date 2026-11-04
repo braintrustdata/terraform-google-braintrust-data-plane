@@ -699,7 +699,7 @@ variable "gke_isolated_workers" {
       disk_type            = optional(string, "pd-balanced")
       boot_disk_size_gb    = optional(number, 100)
       total_min_node_count = optional(number, 1)
-      total_max_node_count = optional(number, 4)
+      total_max_node_count = optional(number, 1)
       node_locations       = optional(list(string))
 
     }), {})
