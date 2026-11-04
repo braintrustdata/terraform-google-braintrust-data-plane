@@ -228,6 +228,7 @@ module "gke_isolated_workers_cluster" {
   gke_maintenance_window               = { day = 1, start_time = var.gke_isolated_workers.maintenance_start_time }
 }
 
+# Initial node counts are per zone, so a one-node minimum needs one zone.
 module "gke_isolated_services_pool" {
   source = "./modules/gke-node-pool"
   count  = var.gke_isolated_workers == null ? 0 : 1
@@ -246,7 +247,7 @@ module "gke_isolated_services_pool" {
   disk_size_gb           = var.gke_isolated_workers.services_pool.boot_disk_size_gb
   total_min_node_count   = var.gke_isolated_workers.services_pool.total_min_node_count
   total_max_node_count   = var.gke_isolated_workers.services_pool.total_max_node_count
-  node_locations         = var.gke_isolated_workers.services_pool.node_locations != null ? var.gke_isolated_workers.services_pool.node_locations : slice(sort(tolist(module.gke_isolated_workers_cluster[0].gke_node_locations)), 0, min(2, length(module.gke_isolated_workers_cluster[0].gke_node_locations)))
+  node_locations         = var.gke_isolated_workers.services_pool.node_locations != null ? var.gke_isolated_workers.services_pool.node_locations : slice(sort(tolist(module.gke_isolated_workers_cluster[0].gke_node_locations)), 0, 1)
   cluster_node_locations = module.gke_isolated_workers_cluster[0].gke_node_locations
   network_tags           = [module.gke_isolated_workers_network[0].network_tag]
   # The published Sandbox Service chart schedules its controller and DNS here.

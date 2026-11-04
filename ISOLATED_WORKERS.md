@@ -23,7 +23,7 @@ The defaults create two pools:
 
 | Pool | Default capacity | Node configuration |
 | --- | --- | --- |
-| `services` | 2 nodes across 2 available zones | `e2-standard-2`, COS, standard boot disks |
+| `services` | 1 node in 1 zone | `e2-standard-2`, COS, balanced boot disks |
 | `isolated-workers` | 1 node, autoscaling to 10 | `c4-standard-8-lssd`, Ubuntu, nested virtualization, raw local SSD |
 
 Intel C3 and C4 machines with bundled local SSD are supported; availability depends
@@ -33,6 +33,14 @@ or local SSD. `services_pool` overrides its machine, disk, capacity, and zones;
 worker capacity and `node_locations` are configured directly in `gke_isolated_workers`.
 Minimums are totals across zones and must be positive for system Pods. Initial
 capacity rounds up per zone: two nodes across three zones initially creates three.
+The services pool defaults to one zone with both capacity bounds set to one.
+To retain the previous two-zone baseline when upgrading, explicitly set
+`services_pool.node_locations`, `total_min_node_count = 2`, and `total_max_node_count = 4`.
+Changing zones can add or remove nodes.
+
+Node autoscaling responds to pending Kubernetes Pods, not sandbox occupancy.
+The worker Helm release controls the worker replica count; raise its `replicas`
+to request more workers, keeping the node-pool maximum high enough to schedule them.
 
 The published Sandbox Service chart uses these placement settings:
 
