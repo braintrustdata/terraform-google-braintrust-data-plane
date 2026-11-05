@@ -703,7 +703,7 @@ variable "gke_isolated_workers" {
       node_locations       = optional(list(string))
 
     }), {})
-    machine_type           = optional(string, "c4-standard-8-lssd")
+    machine_type           = optional(string, "c4-standard-4-lssd")
     boot_disk_size_gb      = optional(number, 100)
     total_min_node_count   = optional(number, 1)
     total_max_node_count   = optional(number, 10)
