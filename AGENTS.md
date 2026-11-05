@@ -51,6 +51,20 @@ Do not imply that existing Standard customers must switch modes.
 
 ## Critical Safety Constraints
 
+### Release Versioning
+
+Choose the module version bump based on changes to the Terraform module and any changes it introduces to Braintrust release compatibility:
+
+- **Major:** Increment the major version for breaking changes in either the module or the associated Braintrust release.
+- **Minor:** Increment the minor version for non-breaking changes in either the module or the associated Braintrust release, unless the release contains only documentation changes and backward-compatible bug fixes.
+- **Patch:** Increment the patch version when the release contains only documentation changes and backward-compatible bug fixes.
+
+Removing a top-level Terraform module input variable is a breaking change and requires a major version bump.
+
+Use the highest applicable version bump across all changes in the release. Reset the minor and patch versions to zero when incrementing the major version, and reset the patch version to zero when incrementing the minor version.
+
+This module provisions infrastructure; the Helm chart manages Braintrust application versions. Apply this policy to Braintrust release changes when they require a corresponding module release.
+
 ### GKE Cluster Mode
 
 Treat `gke_cluster_mode` as immutable after the initial deployment.
