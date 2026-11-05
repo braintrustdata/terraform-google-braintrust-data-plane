@@ -4,6 +4,32 @@ mock_provider "random" {}
 
 variables { deployment_name = "braintrust" }
 
+run "iam_dns_access_keeps_ip_control_plane_private" {
+  command = plan
+  module { source = "./modules/gke-cluster" }
+  variables {
+    project_id                  = "braintrust-test"
+    region                      = "us-central1"
+    gke_cluster_mode            = "standard"
+    gke_network                 = "primary"
+    gke_subnetwork              = "workers"
+    gke_kms_cmek_id             = "key"
+    gke_cluster_is_private      = true
+    gke_enable_private_endpoint = true
+    gke_dns_endpoint_enabled    = true
+  }
+  assert {
+    condition = (
+      google_container_cluster.braintrust.private_cluster_config[0].enable_private_nodes &&
+      google_container_cluster.braintrust.private_cluster_config[0].enable_private_endpoint &&
+      google_container_cluster.braintrust.control_plane_endpoints_config[0].dns_endpoint_config[0].allow_external_traffic &&
+      !google_container_cluster.braintrust.control_plane_endpoints_config[0].dns_endpoint_config[0].enable_k8s_certs_via_dns &&
+      !google_container_cluster.braintrust.control_plane_endpoints_config[0].dns_endpoint_config[0].enable_k8s_tokens_via_dns
+    )
+    error_message = "Remote deployment must use IAM-authenticated DNS, with private IP access and Kubernetes credentials disabled on DNS."
+  }
+}
+
 run "worker_pool_capabilities" {
   command = apply
   module { source = "./modules/gke-node-pool" }

@@ -7,6 +7,17 @@ This module is used to create the VPC, Databases, Redis, Storage, IAM, and assoc
 Module input variables are defined in [`variables.tf`](variables.tf) and
 outputs are defined in [`outputs.tf`](outputs.tf).
 
+## Loop Runtime infrastructure
+
+Set `enable_loop_runtime = true` to provision Loop's worker cluster, private
+discovery and workload identity. Worker defaults and isolation are owned by this
+module; `gke_isolated_workers` is only needed for optional overrides.
+
+The new worker control plane uses an IAM-authenticated DNS endpoint and private
+IP access. CI needs `container.clusters.connect` and Kubernetes permissions,
+without a fixed public IP allowlist. The `loop_runtime` output supplies the
+application inputs and provider connection. See [Loop and worker configuration](ISOLATED_WORKERS.md).
+
 ## GKE Cluster Modes
 
 GKE Autopilot is the preferred solution for new Braintrust deployments. GKE Standard is supported when customer requirements prevent Autopilot use.

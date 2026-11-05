@@ -137,9 +137,8 @@ output "gke_node_pool_names" {
   description = "Standard GKE node pool names. The map is empty in Autopilot mode."
 }
 
-output "gke_isolated_workers" {
-  description = "Isolated worker infrastructure. Null when isolated workers are absent."
-  value = var.gke_isolated_workers == null ? null : {
+locals {
+  isolated_workers_output = local.isolated_workers == null ? null : {
     discovery                     = module.gke_isolated_workers_network[0].discovery
     loop_egress                   = module.gke_isolated_workers_network[0].loop_egress
     name                          = module.gke_isolated_workers_cluster[0].gke_cluster_name
@@ -162,6 +161,22 @@ output "gke_isolated_workers" {
     pod_cidr                      = local.isolated_network_config.pod_cidr
     service_cidr                  = local.isolated_network_config.service_cidr
   }
+}
+
+output "gke_isolated_workers" {
+  description = "Isolated worker infrastructure. Null when isolated workers are absent."
+  value       = local.isolated_workers_output
+}
+
+output "loop_runtime" {
+  description = "Loop application inputs and IAM-authenticated worker connection. Null unless enable_loop_runtime is true."
+  value = var.enable_loop_runtime ? {
+    service_account = module.gke-iam.loop_runtime_service_account
+    workers         = local.isolated_workers_output
+    connection = {
+      host = "https://${module.gke_isolated_workers_cluster[0].gke_cluster_dns_endpoint}"
+    }
+  } : null
 }
 
 #----------------------------------------------------------------------------------------------

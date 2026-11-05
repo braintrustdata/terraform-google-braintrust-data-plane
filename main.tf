@@ -1,18 +1,28 @@
 locals {
+  isolated_workers = var.enable_loop_runtime ? merge(var.gke_isolated_workers, {
+    network_cidr = coalesce(var.gke_isolated_workers.network_cidr, "10.82.0.0/16")
+    discovery = var.gke_isolated_workers.discovery != null ? var.gke_isolated_workers.discovery : {
+      dns_name                     = "sandbox.${replace(var.deployment_name, "_", "-")}.internal"
+      runtime_source_ranges        = null
+      external_dns_namespace       = "braintrust-sandbox"
+      external_dns_service_account = "external-dns"
+    }
+  }) : (var.gke_isolated_workers.enabled ? var.gke_isolated_workers : null)
+
   isolated_cluster_prefix = length(var.deployment_name) <= 19 ? replace(var.deployment_name, "_", "-") : "${substr(replace(var.deployment_name, "_", "-"), 0, 12)}-${substr(sha256(var.deployment_name), 0, 6)}"
   isolated_cluster_name   = "${local.isolated_cluster_prefix}-gke-isolated-workers"
 
   isolated_services_account_id = "${substr(replace(var.deployment_name, "_", "-"), 0, 13)}-${substr(sha256(var.deployment_name), 0, 6)}-iw-svc"
   isolated_workers_account_id  = "${substr(replace(var.deployment_name, "_", "-"), 0, 13)}-${substr(sha256(var.deployment_name), 0, 6)}-iw-nodes"
 
-  isolated_allocations = try(cidrsubnets(var.gke_isolated_workers.network_cidr, 2, 8, 6, 12), [null, null, null, null])
-  isolated_network_config = var.gke_isolated_workers == null ? null : merge(var.gke_isolated_workers, {
-    node_cidr          = var.gke_isolated_workers.existing_subnet_self_link != null ? var.gke_isolated_workers.node_cidr : try(coalesce(var.gke_isolated_workers.node_cidr, local.isolated_allocations[1]), null)
-    pod_cidr           = try(coalesce(var.gke_isolated_workers.pod_cidr, local.isolated_allocations[0]), null)
-    service_cidr       = try(coalesce(var.gke_isolated_workers.service_cidr, local.isolated_allocations[2]), null)
-    control_plane_cidr = try(coalesce(var.gke_isolated_workers.control_plane_cidr, local.isolated_allocations[3]), null)
-    discovery = var.gke_isolated_workers.discovery == null ? null : merge(var.gke_isolated_workers.discovery, {
-      runtime_source_ranges = var.gke_isolated_workers.discovery.runtime_source_ranges != null ? var.gke_isolated_workers.discovery.runtime_source_ranges : toset(compact([
+  isolated_allocations = try(cidrsubnets(local.isolated_workers.network_cidr, 2, 8, 6, 12), [null, null, null, null])
+  isolated_network_config = local.isolated_workers == null ? null : merge(local.isolated_workers, {
+    node_cidr          = local.isolated_workers.existing_subnet_self_link != null ? local.isolated_workers.node_cidr : try(coalesce(local.isolated_workers.node_cidr, local.isolated_allocations[1]), null)
+    pod_cidr           = try(coalesce(local.isolated_workers.pod_cidr, local.isolated_allocations[0]), null)
+    service_cidr       = try(coalesce(local.isolated_workers.service_cidr, local.isolated_allocations[2]), null)
+    control_plane_cidr = try(coalesce(local.isolated_workers.control_plane_cidr, local.isolated_allocations[3]), null)
+    discovery = local.isolated_workers.discovery == null ? null : merge(local.isolated_workers.discovery, {
+      runtime_source_ranges = local.isolated_workers.discovery.runtime_source_ranges != null ? local.isolated_workers.discovery.runtime_source_ranges : toset(compact([
         var.create_vpc ? var.subnet_cidr_range : data.google_compute_subnetwork.primary_for_isolation[0].ip_cidr_range,
         var.deploy_gke_cluster ? module.gke-cluster[0].gke_pod_cidr : null,
       ]))
@@ -25,7 +35,7 @@ data "google_client_config" "current" {}
 data "google_project" "current" {}
 
 data "google_compute_subnetwork" "primary_for_isolation" {
-  count     = var.gke_isolated_workers == null ? 0 : (!var.create_vpc ? 1 : 0)
+  count     = local.isolated_workers == null ? 0 : (!var.create_vpc ? 1 : 0)
   self_link = var.existing_subnet_self_link
 }
 
@@ -47,7 +57,7 @@ module "kms" {
 
   deployment_name  = var.deployment_name
   custom_labels    = var.custom_labels
-  grant_gke_access = var.deploy_gke_cluster || var.gke_isolated_workers != null
+  grant_gke_access = var.deploy_gke_cluster || local.isolated_workers != null
   project_number   = data.google_project.current.number
 }
 
@@ -171,7 +181,7 @@ module "gke-iam" {
   braintrust_kube_namespace        = var.braintrust_kube_namespace
   braintrust_kube_svc_account      = var.braintrust_kube_svc_account
   brainstore_kube_svc_account      = var.brainstore_kube_svc_account
-  loop_runtime_enabled             = var.gke_isolated_workers != null
+  loop_runtime_enabled             = local.isolated_workers != null
   loop_runtime_kube_svc_account    = var.loop_runtime_kube_svc_account
   braintrust_api_bucket_id         = module.storage.api_bucket_name
   brainstore_gcs_bucket_id         = module.storage.brainstore_bucket_name
@@ -182,7 +192,7 @@ module "gke-iam" {
 
 module "gke_isolated_workers_network" {
   source = "./modules/gke-isolated-workers-network"
-  count  = var.gke_isolated_workers == null ? 0 : 1
+  count  = local.isolated_workers == null ? 0 : 1
 
   deployment_name = var.deployment_name
   network         = var.create_vpc ? module.vpc[0].network_self_link : var.existing_network_self_link
@@ -200,7 +210,7 @@ module "gke_isolated_workers_network" {
 
 module "gke_isolated_workers_cluster" {
   source = "./modules/gke-cluster"
-  count  = var.gke_isolated_workers == null ? 0 : 1
+  count  = local.isolated_workers == null ? 0 : 1
 
   project_id                           = data.google_client_config.current.project
   region                               = data.google_client_config.current.region
@@ -211,27 +221,27 @@ module "gke_isolated_workers_cluster" {
   gke_network                          = module.gke_isolated_workers_network[0].network_self_link
   gke_subnetwork                       = module.gke_isolated_workers_network[0].isolated_subnet_self_link
   gke_cluster_is_private               = true
-  gke_enable_private_endpoint          = false
-  gke_dns_endpoint_enabled             = false
+  gke_enable_private_endpoint          = var.enable_loop_runtime
+  gke_dns_endpoint_enabled             = var.enable_loop_runtime
   gke_control_plane_cidr               = local.isolated_network_config.control_plane_cidr
   gke_pods_ipv4_cidr_block             = local.isolated_network_config.pod_cidr
   gke_services_ipv4_cidr_block         = local.isolated_network_config.service_cidr
-  gke_control_plane_authorized_cidrs   = distinct(concat([module.gke_isolated_workers_network[0].node_cidr, local.isolated_network_config.pod_cidr], coalesce(var.gke_isolated_workers.authorized_cidrs, [])))
-  gke_enable_master_global_access      = var.gke_isolated_workers.master_global_access
-  gke_deletion_protection              = var.gke_isolated_workers.deletion_protection
-  gke_release_channel                  = var.gke_isolated_workers.release_channel
+  gke_control_plane_authorized_cidrs   = distinct(concat([module.gke_isolated_workers_network[0].node_cidr, local.isolated_network_config.pod_cidr], coalesce(local.isolated_workers.authorized_cidrs, [])))
+  gke_enable_master_global_access      = local.isolated_workers.master_global_access
+  gke_deletion_protection              = local.isolated_workers.deletion_protection
+  gke_release_channel                  = local.isolated_workers.release_channel
   gke_node_service_account_id          = local.isolated_workers_account_id
   gke_services_node_service_account_id = local.isolated_services_account_id
   gke_node_project_storage_access      = false
   gke_node_network_tags                = [module.gke_isolated_workers_network[0].network_tag]
   gke_kms_cmek_id                      = module.kms.gke_kms_key_id
-  gke_maintenance_window               = { day = 1, start_time = var.gke_isolated_workers.maintenance_start_time }
+  gke_maintenance_window               = { day = 1, start_time = local.isolated_workers.maintenance_start_time }
 }
 
 # Initial node counts are per zone, so a one-node minimum needs one zone.
 module "gke_isolated_services_pool" {
   source = "./modules/gke-node-pool"
-  count  = var.gke_isolated_workers == null ? 0 : 1
+  count  = local.isolated_workers == null ? 0 : 1
 
   deployment_name        = var.deployment_name
   custom_labels          = var.custom_labels
@@ -241,13 +251,13 @@ module "gke_isolated_services_pool" {
   cluster_id             = module.gke_isolated_workers_cluster[0].gke_cluster_id
   service_account_email  = module.gke_isolated_workers_cluster[0].gke_services_node_service_account_email
   boot_disk_kms_key      = module.kms.kms_key_id
-  machine_type           = var.gke_isolated_workers.services_pool.machine_type
+  machine_type           = local.isolated_workers.services_pool.machine_type
   image_type             = "COS_CONTAINERD"
-  disk_type              = var.gke_isolated_workers.services_pool.disk_type
-  disk_size_gb           = var.gke_isolated_workers.services_pool.boot_disk_size_gb
-  total_min_node_count   = var.gke_isolated_workers.services_pool.total_min_node_count
-  total_max_node_count   = var.gke_isolated_workers.services_pool.total_max_node_count
-  node_locations         = var.gke_isolated_workers.services_pool.node_locations != null ? var.gke_isolated_workers.services_pool.node_locations : slice(sort(tolist(module.gke_isolated_workers_cluster[0].gke_node_locations)), 0, 1)
+  disk_type              = local.isolated_workers.services_pool.disk_type
+  disk_size_gb           = local.isolated_workers.services_pool.boot_disk_size_gb
+  total_min_node_count   = local.isolated_workers.services_pool.total_min_node_count
+  total_max_node_count   = local.isolated_workers.services_pool.total_max_node_count
+  node_locations         = local.isolated_workers.services_pool.node_locations != null ? local.isolated_workers.services_pool.node_locations : slice(sort(tolist(module.gke_isolated_workers_cluster[0].gke_node_locations)), 0, 1)
   cluster_node_locations = module.gke_isolated_workers_cluster[0].gke_node_locations
   network_tags           = [module.gke_isolated_workers_network[0].network_tag]
   # The published Sandbox Service chart schedules its controller and DNS here.
@@ -256,7 +266,7 @@ module "gke_isolated_services_pool" {
 
 module "gke_isolated_workers_pool" {
   source = "./modules/gke-node-pool"
-  count  = var.gke_isolated_workers == null ? 0 : 1
+  count  = local.isolated_workers == null ? 0 : 1
 
   deployment_name              = var.deployment_name
   custom_labels                = var.custom_labels
@@ -266,10 +276,10 @@ module "gke_isolated_workers_pool" {
   cluster_id                   = module.gke_isolated_workers_cluster[0].gke_cluster_id
   service_account_email        = module.gke_isolated_workers_cluster[0].gke_node_service_account_email
   boot_disk_kms_key            = module.kms.kms_key_id
-  machine_type                 = var.gke_isolated_workers.machine_type
+  machine_type                 = local.isolated_workers.machine_type
   image_type                   = "UBUNTU_CONTAINERD"
   disk_type                    = "hyperdisk-balanced"
-  disk_size_gb                 = var.gke_isolated_workers.boot_disk_size_gb
+  disk_size_gb                 = local.isolated_workers.boot_disk_size_gb
   enable_nested_virtualization = true
   raw_local_ssd                = true
   network_tags                 = [module.gke_isolated_workers_network[0].network_tag, "${module.gke_isolated_workers_network[0].network_tag}-workers"]
@@ -280,8 +290,10 @@ module "gke_isolated_workers_pool" {
     value  = "true"
     effect = "NO_SCHEDULE"
   }]
-  total_min_node_count   = var.gke_isolated_workers.total_min_node_count
-  total_max_node_count   = var.gke_isolated_workers.total_max_node_count
-  node_locations         = var.gke_isolated_workers.node_locations
+  total_min_node_count = local.isolated_workers.total_min_node_count
+  total_max_node_count = local.isolated_workers.total_max_node_count
+  node_locations = var.enable_loop_runtime && local.isolated_workers.node_locations == null ? (
+    slice(sort(tolist(module.gke_isolated_workers_cluster[0].gke_node_locations)), 0, 1)
+  ) : local.isolated_workers.node_locations
   cluster_node_locations = module.gke_isolated_workers_cluster[0].gke_node_locations
 }
