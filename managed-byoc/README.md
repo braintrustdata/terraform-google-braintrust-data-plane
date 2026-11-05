@@ -38,8 +38,9 @@ The standard bootstrap creates or mirrors:
   `brainstore-license-key`.
 - Project roles in `deployment-roles.json` granted to the deployment service
   account.
-  These include `roles/compute.securityAdmin` to manage isolated-worker firewall
-  rules and `roles/iam.roleAdmin` to manage the custom roles used by private DNS.
+  `roles/compute.securityAdmin` manages isolated-worker firewall rules;
+  `roles/iam.roleAdmin` manages custom roles when private DNS discovery is enabled.
+  These permissions are needed only when Loop Runtime or isolated workers are enabled.
 - Project roles in `support-roles.json` granted to the support service account.
   These roles allow approved Braintrust support engineers to inspect and operate
   the cluster and surrounding managed services. They intentionally do not include
@@ -60,6 +61,11 @@ Do not create a workload identity pool in the customer project for the standard
 Braintrust managed BYOC pattern. Braintrust maintains the AWS-to-GCP Workload
 Identity Federation bridge in the Braintrust-owned
 `braintrust-byoc-management` project.
+
+The standard bootstrap already grants `roles/resourcemanager.projectIamAdmin`,
+which lets the deployment identity grant itself these project roles. The explicit
+bindings make the service permissions directly available without increasing
+what the deployment identity can already authorize for itself.
 
 ## Setup Script
 
@@ -105,9 +111,28 @@ this with:
 gcloud storage service-agent --project <gcp-project-id>
 ```
 
-For existing deployments, have the customer project IAM owner review and apply
-any newly required role bindings before retrying the infrastructure deployment.
-Publishing an updated role list does not change an existing project's IAM policy.
+For existing deployments enabling Loop Runtime or isolated workers, have the
+customer project IAM owner review and apply these two additional bindings before
+retrying the infrastructure deployment. Use the existing project ID and deployment
+service account email (adjust the email if bootstrap used a custom account name):
+
+```bash
+PROJECT_ID="<project-id>"
+DEPLOY_SA_EMAIL="braintrust-deploy@${PROJECT_ID}.iam.gserviceaccount.com"
+
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:$DEPLOY_SA_EMAIL" \
+  --role="roles/compute.securityAdmin" \
+  --condition=None
+
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:$DEPLOY_SA_EMAIL" \
+  --role="roles/iam.roleAdmin" \
+  --condition=None
+```
+
+Re-running `setup.sh` with the existing bootstrap options also reapplies the role
+list. Publishing an updated role list alone does not change project IAM.
 
 The script is safe to re-run. It skips existing service accounts, re-applies IAM
 bindings idempotently, and only adds a new Brainstore license secret version if
