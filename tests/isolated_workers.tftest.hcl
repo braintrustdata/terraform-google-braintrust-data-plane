@@ -33,7 +33,7 @@ variables { deployment_name = "braintrust" }
 run "disabled_by_default" {
   command = plan
   assert {
-    condition     = output.loop_runtime_service_account == null && output.gke_isolated_workers == null && output.gke_cluster_mode == "autopilot" && length(module.gke_isolated_services_pool) == 0 && length(module.gke_isolated_workers_cluster) == 0
+    condition     = output.loop_runtime == null && output.loop_runtime_service_account == null && output.gke_isolated_workers == null && output.gke_cluster_mode == "autopilot" && length(module.gke_isolated_services_pool) == 0 && length(module.gke_isolated_workers_cluster) == 0
     error_message = "Existing deployments must create no isolated worker infrastructure."
   }
 }
@@ -579,4 +579,71 @@ run "reject_noncanonical_authorized_cidrs" {
     }
   }
   expect_failures = [var.gke_isolated_workers]
+}
+
+run "loop_flag_provisions_its_dependencies" {
+  command = apply
+  variables { enable_loop_runtime = true }
+  assert {
+    condition = (
+      output.gke_cluster_mode == "autopilot" &&
+      length(module.gke_isolated_workers_pool) == 1 &&
+      length(module.gke_isolated_services_pool) == 1 &&
+      output.loop_runtime.service_account == output.loop_runtime_service_account &&
+      output.loop_runtime.workers == output.gke_isolated_workers &&
+      output.loop_runtime.workers.discovery.endpoint == "https://workers.sandbox.braintrust.internal:9400" &&
+      output.loop_runtime.connection.host == "https://${module.gke_isolated_workers_cluster[0].gke_cluster_dns_endpoint}"
+    )
+    error_message = "Enabling Loop must provision its workers, identity, private discovery and IAM-authenticated application connection without a separate worker configuration."
+  }
+}
+
+run "loop_worker_overrides_are_optional" {
+  command = plan
+  variables {
+    enable_loop_runtime = true
+    gke_isolated_workers = {
+      network_cidr         = "10.96.0.0/16"
+      machine_type         = "c3-standard-8-lssd"
+      node_locations       = ["us-central1-b"]
+      total_max_node_count = 2
+    }
+  }
+  assert {
+    condition = (
+      local.isolated_workers.machine_type == "c3-standard-8-lssd" &&
+      local.isolated_workers.total_max_node_count == 2 &&
+      local.isolated_network_config.node_cidr == "10.96.64.0/24" &&
+      local.isolated_network_config.discovery.dns_name == "sandbox.braintrust.internal"
+    )
+    error_message = "Worker tuning must not require explicit discovery or CI IP configuration."
+  }
+}
+
+run "loop_can_create_a_worker_subnet_in_an_existing_vpc" {
+  command = plan
+  override_data {
+    target = data.google_compute_subnetwork.primary_for_isolation[0]
+    values = { ip_cidr_range = "10.0.0.0/24" }
+  }
+  variables {
+    enable_loop_runtime        = true
+    create_vpc                 = false
+    existing_network_self_link = "https://www.googleapis.com/compute/v1/projects/braintrust-test/global/networks/primary"
+    existing_subnet_self_link  = "https://www.googleapis.com/compute/v1/projects/braintrust-test/regions/us-central1/subnetworks/primary"
+  }
+  assert {
+    condition     = length(module.gke_isolated_workers_network) == 1 && local.isolated_network_config.existing_subnet_self_link == null
+    error_message = "Loop must create its own worker subnet when the primary deployment uses an existing VPC."
+  }
+}
+
+
+run "explicit_null_workers_remain_disabled" {
+  command = plan
+  variables { gke_isolated_workers = null }
+  assert {
+    condition     = output.loop_runtime == null && output.gke_isolated_workers == null && length(module.gke_isolated_workers_cluster) == 0
+    error_message = "Existing callers passing null must retain disabled workers."
+  }
 }

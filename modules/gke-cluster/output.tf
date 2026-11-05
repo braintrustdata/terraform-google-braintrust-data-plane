@@ -9,6 +9,11 @@ output "gke_cluster_endpoint" {
   description = "GKE cluster endpoint."
 }
 
+output "gke_cluster_dns_endpoint" {
+  value       = try(google_container_cluster.braintrust.control_plane_endpoints_config[0].dns_endpoint_config[0].endpoint, null)
+  description = "IAM-authenticated control-plane DNS hostname when DNS access is configured."
+}
+
 output "gke_cluster_master_version" {
   value       = google_container_cluster.braintrust.master_version
   description = "GKE cluster control plane version."

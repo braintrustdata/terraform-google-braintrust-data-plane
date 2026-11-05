@@ -680,8 +680,15 @@ variable "brainstore_impersonation_targets" {
   default     = []
 }
 
+variable "enable_loop_runtime" {
+  type        = bool
+  description = "Create Loop's worker infrastructure, private discovery and workload identity with IAM-authenticated DNS access to the worker control plane."
+  default     = false
+}
+
 variable "gke_isolated_workers" {
   type = object({
+    enabled = optional(bool, true)
     discovery = optional(object({
       dns_name                     = string
       runtime_source_ranges        = optional(set(string))
@@ -708,7 +715,7 @@ variable "gke_isolated_workers" {
     total_min_node_count   = optional(number, 1)
     total_max_node_count   = optional(number, 10)
     node_locations         = optional(list(string))
-    authorized_cidrs       = list(string)
+    authorized_cidrs       = optional(list(string), [])
     master_global_access   = optional(bool, false)
     deletion_protection    = optional(bool, true)
     release_channel        = optional(string, "REGULAR")
@@ -723,21 +730,22 @@ variable "gke_isolated_workers" {
       ports              = set(string)
     })), {})
   })
-  default     = null
-  description = "Optional isolated worker cluster in the primary VPC. Null creates no worker infrastructure."
+  default     = { enabled = false }
+  nullable    = false
+  description = "Optional worker overrides for enable_loop_runtime. An explicit object also retains the standalone worker interface; null or omission creates no workers unless Loop is enabled."
 
   validation {
-    condition = var.gke_isolated_workers == null ? true : try(
-      length(var.gke_isolated_workers.authorized_cidrs) > 0 && alltrue([
+    condition = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : try(
+      (var.enable_loop_runtime || length(var.gke_isolated_workers.authorized_cidrs) > 0) && alltrue([
         for cidr in var.gke_isolated_workers.authorized_cidrs :
         can(cidrnetmask(cidr)) && tonumber(split("/", cidr)[1]) > 0 && cidrhost(cidr, 0) == split("/", cidr)[0]
       ]), false
     )
-    error_message = "Isolated workers require explicit canonical IPv4 authorized_cidrs for operator and CI access; null, empty lists, and default routes are not allowed."
+    error_message = "authorized_cidrs must be canonical non-default IPv4 ranges. Standalone workers require a non-empty allowlist; Loop uses IAM-authenticated DNS access."
   }
 
   validation {
-    condition = var.gke_isolated_workers == null ? true : (
+    condition = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (
       var.gke_isolated_workers.network_cidr == null ? true :
       can(regex("/16$", var.gke_isolated_workers.network_cidr)) &&
       try(cidrhost(var.gke_isolated_workers.network_cidr, 0) == split("/", var.gke_isolated_workers.network_cidr)[0], false)
@@ -745,21 +753,21 @@ variable "gke_isolated_workers" {
     error_message = "network_cidr must be a canonical IPv4 /16 block reserved for isolated workers."
   }
   validation {
-    condition = var.gke_isolated_workers == null ? true : (
-      (var.gke_isolated_workers.existing_subnet_self_link != null || var.gke_isolated_workers.node_cidr != null || var.gke_isolated_workers.network_cidr != null) &&
-      alltrue([for cidr in [var.gke_isolated_workers.pod_cidr, var.gke_isolated_workers.service_cidr, var.gke_isolated_workers.control_plane_cidr] : cidr != null || var.gke_isolated_workers.network_cidr != null])
+    condition = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (
+      (var.enable_loop_runtime || var.gke_isolated_workers.existing_subnet_self_link != null || var.gke_isolated_workers.node_cidr != null || var.gke_isolated_workers.network_cidr != null) &&
+      alltrue([for cidr in [var.gke_isolated_workers.pod_cidr, var.gke_isolated_workers.service_cidr, var.gke_isolated_workers.control_plane_cidr] : cidr != null || var.gke_isolated_workers.network_cidr != null || var.enable_loop_runtime])
     )
     error_message = "Provide network_cidr or explicit Pod, Service, control-plane, and node ranges. An existing subnet supplies the node range."
   }
   validation {
-    condition = var.gke_isolated_workers == null ? true : (
-      var.gke_isolated_workers.discovery == null ? true :
+    condition = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (
+      var.gke_isolated_workers.discovery == null ? (!var.enable_loop_runtime || var.deploy_gke_cluster) :
       var.deploy_gke_cluster || var.gke_isolated_workers.discovery.runtime_source_ranges != null
     )
     error_message = "Discovery requires runtime_source_ranges when the module does not create the primary cluster."
   }
   validation {
-    condition = var.gke_isolated_workers == null ? true : (var.gke_isolated_workers.discovery == null ? true : alltrue([
+    condition = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (var.gke_isolated_workers.discovery == null ? true : alltrue([
       for name in compact([var.gke_isolated_workers.discovery.external_dns_namespace, var.gke_isolated_workers.discovery.external_dns_service_account]) :
       length(name) <= 63 && can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", name))
     ]))
@@ -767,7 +775,7 @@ variable "gke_isolated_workers" {
   }
 
   validation {
-    condition = var.gke_isolated_workers == null ? true : (
+    condition = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (
       var.gke_isolated_workers.services_pool.total_min_node_count >= 1 &&
       floor(var.gke_isolated_workers.services_pool.total_min_node_count) == var.gke_isolated_workers.services_pool.total_min_node_count &&
       var.gke_isolated_workers.services_pool.total_max_node_count >= var.gke_isolated_workers.services_pool.total_min_node_count &&
@@ -779,21 +787,21 @@ variable "gke_isolated_workers" {
   }
 
   validation {
-    condition     = var.gke_isolated_workers == null ? true : (var.create_vpc ? var.gke_isolated_workers.existing_subnet_self_link == null : try(basename(var.gke_isolated_workers.existing_subnet_self_link) != basename(var.existing_subnet_self_link), true))
+    condition     = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (var.create_vpc ? var.gke_isolated_workers.existing_subnet_self_link == null : try(basename(var.gke_isolated_workers.existing_subnet_self_link) != basename(var.existing_subnet_self_link), true))
     error_message = "Module-created VPCs create the worker subnet. Existing VPCs require a worker subnet separate from the primary subnet."
   }
 
   validation {
-    condition     = var.gke_isolated_workers == null ? true : (var.create_vpc || var.gke_isolated_workers.existing_subnet_self_link != null)
-    error_message = "An existing VPC requires gke_isolated_workers.existing_subnet_self_link."
+    condition     = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (var.create_vpc || var.enable_loop_runtime || var.gke_isolated_workers.existing_subnet_self_link != null)
+    error_message = "Standalone workers in an existing VPC require gke_isolated_workers.existing_subnet_self_link; enable_loop_runtime can create its own worker subnet."
   }
 
   validation {
-    condition     = var.gke_isolated_workers == null ? true : can(regex("^c[34]-(standard|highcpu|highmem)-[0-9]+-lssd$", var.gke_isolated_workers.machine_type))
+    condition     = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : can(regex("^c[34]-(standard|highcpu|highmem)-[0-9]+-lssd$", var.gke_isolated_workers.machine_type))
     error_message = "Workers require an Intel C3 or C4 machine type with bundled Local SSD."
   }
   validation {
-    condition = var.gke_isolated_workers == null ? true : (
+    condition = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (
       var.gke_isolated_workers.total_min_node_count >= 1 && floor(var.gke_isolated_workers.total_min_node_count) == var.gke_isolated_workers.total_min_node_count &&
       var.gke_isolated_workers.total_max_node_count >= var.gke_isolated_workers.total_min_node_count && floor(var.gke_isolated_workers.total_max_node_count) == var.gke_isolated_workers.total_max_node_count &&
       var.gke_isolated_workers.boot_disk_size_gb >= 20 && floor(var.gke_isolated_workers.boot_disk_size_gb) == var.gke_isolated_workers.boot_disk_size_gb

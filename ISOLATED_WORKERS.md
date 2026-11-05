@@ -1,15 +1,46 @@
 # Isolated worker infrastructure
 
-`gke_isolated_workers` creates a separate GKE Standard cluster in the primary
-project and VPC, leaving the primary cluster's Autopilot or Standard mode unchanged.
-It defaults to null, which creates no worker infrastructure.
+Set `enable_loop_runtime = true` to create Loop's worker infrastructure in the
+primary project and VPC, leaving the primary cluster's mode unchanged. This
+defaults to false. Existing standalone `gke_isolated_workers` configurations
+retain their current behavior.
 
 Terraform owns networking, IAM, KMS, and node pools. The worker Helm release owns
 privileged Pods, `/dev/kvm`, disk preparation, control API authentication, and guest
 isolation. For installation and mTLS setup, use `braintrust/examples/gke-loop-runtime`
 in the [Helm repository](https://github.com/braintrustdata/helm).
 
-## Configuration
+## Enable Loop
+
+```hcl
+enable_loop_runtime = true
+```
+
+This provisions private discovery at `sandbox.<deployment_name>.internal`, a
+worker cluster, its two node pools, and the Loop identity. It reserves
+`10.82.0.0/16` for worker ranges and validates overlap with known primary ranges.
+The worker pool starts in one cluster zone; its autoscaler maximum remains ten.
+Use `gke_isolated_workers` only to override network ranges, sizing or placement.
+For example, a different address block needs only:
+
+```hcl
+enable_loop_runtime = true
+gke_isolated_workers = { network_cidr = "10.96.0.0/16" }
+```
+
+The `loop_runtime` output contains `workers`, `service_account` and
+`connection.host` for the application deployment. Configure its worker
+Kubernetes and Helm providers with `connection.host`
+and the current Google OAuth access token. The DNS endpoint uses a Google-issued
+server certificate, so no cluster CA is needed. Apply infrastructure first, then
+plan the application with those outputs.
+
+The default subnet is created even when the primary deployment uses an existing
+VPC. That VPC still needs the routing, NAT and API access described below. Supply
+worker subnet/range overrides for existing network allocations, and explicit
+runtime source ranges when the module does not create the primary cluster.
+
+## Standalone worker configuration
 
 ```hcl
 gke_isolated_workers = {
@@ -104,12 +135,17 @@ See [Google Workload Identity identifiers](https://docs.cloud.google.com/kuberne
 
 ## Networking and guest isolation
 
-Nodes are private; the Kubernetes API has a public IP endpoint for Helm and
-`kubectl`, with client access through the DNS endpoint disabled. Authentication
-and authorization still apply; Terraform grants no administrator IAM permissions.
-`authorized_cidrs` is required and restricts access to explicit operator/CI egress
-ranges plus isolated node and Pod ranges. Null, empty, malformed, noncanonical,
-and default-route ranges are rejected.
+Nodes are private. With `enable_loop_runtime`, IP-based control-plane access is
+private and CI uses the DNS endpoint with IAM authentication. No CI egress IPs
+are required. IAM must grant `container.clusters.connect`, followed by the
+Kubernetes authorization needed to deploy workers; this module grants neither
+administrator role. Kubernetes ServiceAccount token and client-certificate
+authentication to the DNS endpoint remain disabled. See [GKE endpoint access](https://docs.cloud.google.com/kubernetes-engine/docs/how-to/latest/network-isolation#dns-based_endpoint).
+
+The standalone worker interface retains its public IP endpoint with DNS access
+disabled. In that mode `authorized_cidrs` is required and restricts access to
+explicit operator/CI egress ranges plus isolated node and Pod ranges. Empty,
+malformed, noncanonical and default-route ranges are rejected.
 `master_global_access` controls cross-region access to the private endpoint.
 Infrastructure operations use Google APIs and require no Kubernetes provider.
 
