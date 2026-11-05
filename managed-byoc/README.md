@@ -38,6 +38,8 @@ The standard bootstrap creates or mirrors:
   `brainstore-license-key`.
 - Project roles in `deployment-roles.json` granted to the deployment service
   account.
+  These include `roles/compute.securityAdmin` to manage isolated-worker firewall
+  rules and `roles/iam.roleAdmin` to manage the custom roles used by private DNS.
 - Project roles in `support-roles.json` granted to the support service account.
   These roles allow approved Braintrust support engineers to inspect and operate
   the cluster and surrounding managed services. They intentionally do not include
@@ -102,6 +104,10 @@ this with:
 ```bash
 gcloud storage service-agent --project <gcp-project-id>
 ```
+
+For existing deployments, have the customer project IAM owner review and apply
+any newly required role bindings before retrying the infrastructure deployment.
+Publishing an updated role list does not change an existing project's IAM policy.
 
 The script is safe to re-run. It skips existing service accounts, re-applies IAM
 bindings idempotently, and only adds a new Brainstore license secret version if
