@@ -2,7 +2,7 @@ locals {
   isolated_workers = var.enable_loop_runtime ? merge(var.gke_isolated_workers, {
     network_cidr = coalesce(var.gke_isolated_workers.network_cidr, "10.82.0.0/16")
     discovery = var.gke_isolated_workers.discovery != null ? var.gke_isolated_workers.discovery : {
-      dns_name                     = "sandbox.${var.deployment_name}.internal"
+      dns_name                     = "sandbox.${replace(var.deployment_name, "_", "-")}.internal"
       runtime_source_ranges        = null
       external_dns_namespace       = "braintrust-sandbox"
       external_dns_service_account = "external-dns"

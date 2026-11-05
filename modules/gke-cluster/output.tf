@@ -14,6 +14,14 @@ output "gke_cluster_dns_endpoint" {
   description = "IAM-authenticated control-plane DNS hostname when DNS access is configured."
 }
 
+output "gke_cluster_access" {
+  value = {
+    private_endpoint_enabled = try(google_container_cluster.braintrust.private_cluster_config[0].enable_private_endpoint, false)
+    dns                      = try(google_container_cluster.braintrust.control_plane_endpoints_config[0].dns_endpoint_config[0], null)
+  }
+  description = "Effective private IP and DNS control-plane access settings."
+}
+
 output "gke_cluster_master_version" {
   value       = google_container_cluster.braintrust.master_version
   description = "GKE cluster control plane version."

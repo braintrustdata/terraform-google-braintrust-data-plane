@@ -3,7 +3,13 @@
 Set `enable_loop_runtime = true` to create Loop's worker infrastructure in the
 primary project and VPC, leaving the primary cluster's mode unchanged. This
 defaults to false. Existing standalone `gke_isolated_workers` configurations
-retain their current behavior.
+retain their current behavior while the flag stays false.
+
+Enabling the flag on an existing standalone worker cluster makes its IP endpoint
+private and enables the IAM-authenticated DNS endpoint. Kubeconfigs that use the
+public IP stop working; plan to use DNS access instead. If worker `node_locations`
+is unset, the worker pool also changes to one zone, which can add or remove nodes.
+Set `gke_isolated_workers.node_locations` explicitly to retain the existing zones.
 
 Terraform owns networking, IAM, KMS, and node pools. The worker Helm release owns
 privileged Pods, `/dev/kvm`, disk preparation, control API authentication, and guest
@@ -16,7 +22,8 @@ in the [Helm repository](https://github.com/braintrustdata/helm).
 enable_loop_runtime = true
 ```
 
-This provisions private discovery at `sandbox.<deployment_name>.internal`, a
+This provisions private discovery at `sandbox.<deployment_name>.internal`
+(replacing underscores with hyphens in the deployment name), a
 worker cluster, its two node pools, and the Loop identity. It reserves
 `10.82.0.0/16` for worker ranges and validates overlap with known primary ranges.
 The worker pool starts in one cluster zone; its autoscaler maximum remains ten.
