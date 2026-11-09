@@ -123,9 +123,12 @@ firewalls and optional DNS apply to either path; omit `discovery` to retain exis
 Loop IAM is created only when isolated workers are enabled; its output is otherwise null.
 The runtime retains object-write and bucket-read access to both deployment buckets.
 Each pool has a separate node service account with standard GKE node roles and no
-module-created storage, registry, controller, DNS administration, or service-account
-impersonation grants. Controller permissions require workload identities and
-Kubernetes RBAC in the Helm release. Terraform creates no worker workload identity,
+module-created registry, controller, DNS administration, or service-account
+impersonation grants. Worker nodes also receive object access to the dedicated
+sandbox filesystem bucket; services nodes receive no checkpoint access, and neither
+node identity receives access to the API or Brainstore buckets. Controller
+permissions require workload identities and Kubernetes RBAC in the Helm release.
+Terraform creates no worker workload identity,
 service-account key, HMAC key, or guest Google credential. Public ECR images require
 no Artifact Registry grants.
 
@@ -232,10 +235,32 @@ returned count; machine and capability changes replace the pool. Primary Brainst
 ephemeral storage is independent. See [raw local SSD](https://docs.cloud.google.com/kubernetes-engine/docs/how-to/persistent-volumes/local-ssd-raw).
 
 The worker release must prepare XFS before advertising capacity and preserve data
-across Pod restarts. Node replacement destroys local caches and VM state; durable
-object-storage backups are outside this module. Stop new allocations and drain
-active sandboxes before retiring nodes or removing infrastructure. Pool creation
-and PodDisruptionBudgets do not establish that guest state is safe.
+across Pod restarts. Node replacement destroys local caches and VM state. Stop new
+allocations and drain active sandboxes before retiring nodes or removing
+infrastructure. Pool creation and PodDisruptionBudgets do not establish that guest
+state is safe.
+
+Isolated workers provision a dedicated encrypted, private GCS bucket for filesystem
+checkpoints. `gke_isolated_workers.checkpoint_store` and
+`loop_runtime.workers.checkpoint_store` expose its `gs://.../sandbox-filesystems`
+URI. Apply infrastructure before enabling filesystem retention in a compatible
+Sandbox Service Helm release. The existing local SSD/XFS disks remain the working
+storage; recovery restores the last completed filesystem checkpoint, not running
+processes or subsequent writes.
+
+Workers use host networking, so Google credentials come from their worker-node
+service account rather than ordinary Kubernetes Workload Identity annotations.
+Only that node identity receives `roles/storage.objectUser` on the checkpoint
+bucket. Keep guest access to metadata and host credentials blocked by the worker.
+See [GKE host-network identity restrictions](https://docs.cloud.google.com/kubernetes-engine/docs/concepts/workload-identity#restrictions_of).
+
+Checkpoint GC owns object deletion. The bucket uses Standard storage, disables
+versioning and soft delete, and has no object expiration rules; the general
+Brainstore/API storage lifecycle settings do not apply to it. Terraform abandons
+the bucket instead of deleting it when isolated workers are removed. Record the
+checkpoint URI before removal and retain its encryption key. Before re-enabling
+workers with existing checkpoints, import the original bucket and its name suffix
+into Terraform state rather than creating a replacement checkpoint store.
 
 Deletion protection defaults to true. The cluster name is
 `<deployment_name>-gke-isolated-workers`, with a truncated prefix and six-character
