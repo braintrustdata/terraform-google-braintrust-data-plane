@@ -33,6 +33,7 @@ Do not copy Terraform state, `.terraform` directories, or customer values into e
 
 ### Key architecture concepts
 
+- Define resources in their owning submodules (buckets in `storage`, IAM grants in `gke-iam`); root only wires modules.
 - **Pure infrastructure module.** This module creates VPC, GKE, Cloud SQL, Redis, GCS, and IAM resources. It does not manage application-level configuration (environment variables, image tags, etc.). All application config lives in the Helm chart deployed on top of this infrastructure.
 - **`deployment_name`** prefixes all resource names and must be unique per deployment in the same GCP project.
 - **Workload Identity** is used to grant GKE pods access to GCP resources. The `gke-iam` module creates GCP service accounts and binds them to Kubernetes service accounts via `roles/iam.workloadIdentityUser`.

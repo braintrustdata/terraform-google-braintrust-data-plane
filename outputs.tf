@@ -139,7 +139,7 @@ output "gke_node_pool_names" {
 
 locals {
   isolated_workers_output = local.isolated_workers == null ? null : {
-    checkpoint_store              = "gs://${google_storage_bucket.sandbox_filesystems[0].name}/sandbox-filesystems"
+    checkpoint_store              = "gs://${module.storage.sandbox_filesystems_bucket_name}/sandbox-filesystems"
     discovery                     = module.gke_isolated_workers_network[0].discovery
     loop_egress                   = module.gke_isolated_workers_network[0].loop_egress
     name                          = module.gke_isolated_workers_cluster[0].gke_cluster_name

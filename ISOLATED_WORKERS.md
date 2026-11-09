@@ -259,8 +259,8 @@ versioning and soft delete, and has no object expiration rules; the general
 Brainstore/API storage lifecycle settings do not apply to it. Terraform abandons
 the bucket instead of deleting it when isolated workers are removed. Record the
 checkpoint URI before removal and retain its encryption key. Before re-enabling
-workers with existing checkpoints, import the original bucket and its name suffix
-into Terraform state rather than creating a replacement checkpoint store.
+workers with existing checkpoints, import the original bucket into Terraform state
+rather than creating a replacement checkpoint store.
 
 Deletion protection defaults to true. The cluster name is
 `<deployment_name>-gke-isolated-workers`, with a truncated prefix and six-character

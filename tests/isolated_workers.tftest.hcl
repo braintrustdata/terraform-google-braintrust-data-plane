@@ -33,6 +33,10 @@ variables { deployment_name = "braintrust" }
 run "disabled_by_default" {
   command = plan
   assert {
+    condition     = module.storage.sandbox_filesystems_bucket_name == null
+    error_message = "Disabled workers must not provision checkpoint storage."
+  }
+  assert {
     condition     = output.loop_runtime == null && output.loop_runtime_service_account == null && output.gke_isolated_workers == null && output.gke_cluster_mode == "autopilot" && length(module.gke_isolated_services_pool) == 0 && length(module.gke_isolated_workers_cluster) == 0
     error_message = "Existing deployments must create no isolated worker infrastructure."
   }
@@ -75,6 +79,10 @@ run "loop_discovery_sanitizes_deployment_name" {
 }
 
 run "autopilot_plus_workers" {
+  assert {
+    condition     = output.gke_isolated_workers.checkpoint_store == "gs://${module.storage.sandbox_filesystems_bucket_name}/sandbox-filesystems"
+    error_message = "Workers must expose the checkpoint URI from the storage module."
+  }
   override_resource {
     target = module.gke_isolated_workers_cluster[0].google_service_account.services_nodes[0]
     values = {
@@ -158,6 +166,10 @@ run "firewall_change_keeps_cluster_identity_known" {
 }
 
 run "standard_plus_workers" {
+  assert {
+    condition     = output.gke_isolated_workers.checkpoint_store == "gs://${module.storage.sandbox_filesystems_bucket_name}/sandbox-filesystems"
+    error_message = "Standard deployments must wire the same checkpoint storage."
+  }
   command = apply
   variables {
     gke_cluster_mode = "standard"
