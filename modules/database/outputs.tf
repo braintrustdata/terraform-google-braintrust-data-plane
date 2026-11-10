@@ -18,8 +18,3 @@ output "postgres_password" {
   value     = local.postgres_password
   sensitive = true
 }
-
-output "postgres_iam_username" {
-  value       = google_sql_user.braintrust_iam.name
-  description = "IAM database user name for Cloud SQL IAM authentication"
-}
