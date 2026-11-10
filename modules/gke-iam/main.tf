@@ -54,22 +54,6 @@ resource "google_storage_bucket_iam_member" "braintrust_api_brainstore_gcs_reade
 }
 
 #----------------------------------------------------------------------------------------------
-# Cloud SQL IAM permissions for braintrust service account
-#----------------------------------------------------------------------------------------------
-# Only username / password auth is supported for now, but future support for IAM auth is planned.
-# resource "google_project_iam_member" "braintrust_cloudsql_client" {
-#   project = data.google_project.current.project_id
-#   role    = "roles/cloudsql.client"
-#   member  = "serviceAccount:${google_service_account.braintrust.email}"
-# }
-
-# resource "google_project_iam_member" "braintrust_cloudsql_instance_user" {
-#   project = data.google_project.current.project_id
-#   role    = "roles/cloudsql.instanceUser"
-#   member  = "serviceAccount:${google_service_account.braintrust.email}"
-# }
-
-#----------------------------------------------------------------------------------------------
 # Brainstore service account
 #----------------------------------------------------------------------------------------------
 resource "google_service_account" "brainstore" {
