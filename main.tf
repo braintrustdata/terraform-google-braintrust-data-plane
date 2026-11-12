@@ -113,6 +113,7 @@ module "storage" {
   gcs_api_logging_config                = var.gcs_api_logging_config
   custom_gcs_brainstore_lifecycle_rules = var.custom_gcs_brainstore_lifecycle_rules
   custom_gcs_api_lifecycle_rules        = var.custom_gcs_api_lifecycle_rules
+  sandbox_filesystems_enabled           = local.isolated_workers != null
 }
 
 module "gke-cluster" {
@@ -182,6 +183,9 @@ module "gke-iam" {
   braintrust_kube_svc_account      = var.braintrust_kube_svc_account
   brainstore_kube_svc_account      = var.brainstore_kube_svc_account
   loop_runtime_enabled             = local.isolated_workers != null
+  sandbox_filesystems_enabled      = local.isolated_workers != null
+  sandbox_filesystems_bucket_id    = module.storage.sandbox_filesystems_bucket_name
+  sandbox_worker_service_account   = local.isolated_workers == null ? null : module.gke_isolated_workers_cluster[0].gke_node_service_account_email
   loop_runtime_kube_svc_account    = var.loop_runtime_kube_svc_account
   braintrust_api_bucket_id         = module.storage.api_bucket_name
   brainstore_gcs_bucket_id         = module.storage.brainstore_bucket_name

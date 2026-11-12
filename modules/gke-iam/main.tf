@@ -150,3 +150,11 @@ resource "google_storage_bucket_iam_member" "loop_runtime_api_bucket_gcs_reader"
   role   = "roles/storage.legacyBucketReader"
   member = "serviceAccount:${google_service_account.loop_runtime[0].email}"
 }
+
+resource "google_storage_bucket_iam_member" "sandbox_filesystems_worker" {
+  count = var.sandbox_filesystems_enabled ? 1 : 0
+
+  bucket = var.sandbox_filesystems_bucket_id
+  role   = "roles/storage.objectUser"
+  member = "serviceAccount:${var.sandbox_worker_service_account}"
+}

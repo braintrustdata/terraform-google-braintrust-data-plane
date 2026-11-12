@@ -66,3 +66,21 @@ variable "loop_runtime_enabled" {
   default     = false
   description = "Create the Loop identity and bucket grants when isolated workers are enabled."
 }
+
+variable "sandbox_filesystems_enabled" {
+  type        = bool
+  description = "Grant checkpoint access when isolated sandbox workers are enabled."
+  default     = false
+}
+
+variable "sandbox_filesystems_bucket_id" {
+  type        = string
+  description = "The dedicated sandbox checkpoint bucket name."
+  default     = null
+}
+
+variable "sandbox_worker_service_account" {
+  type        = string
+  description = "The isolated worker-node service account email."
+  default     = null
+}
