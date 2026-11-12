@@ -1,0 +1,31 @@
+name: Terraform bootstrap checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install Terraform
+        env:
+          TERRAFORM_VERSION: 1.15.8
+        run: |
+          set -euo pipefail
+          base="https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}"
+          name="terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+          curl --fail --silent --show-error --location "$base/$name" --output "$RUNNER_TEMP/$name"
+          curl --fail --silent --show-error --location "$base/terraform_${TERRAFORM_VERSION}_SHA256SUMS" --output "$RUNNER_TEMP/checksums"
+          cd "$RUNNER_TEMP"
+          grep " $name$" checksums | sha256sum --check
+          unzip "$name" -d terraform-bin
+          echo "$RUNNER_TEMP/terraform-bin" >> "$GITHUB_PATH"
+      - name: Validate and test without cloud credentials
+        run: bash scripts/check-byoc-bootstrap.sh

@@ -2,6 +2,12 @@
 
 This module is used to create the VPC, Databases, Redis, Storage, IAM, and associated resources for the self-hosted Braintrust data plane on Google using Google Kubernetes Engine.
 
+## Outpost bootstrap candidate
+
+The [BYOC bootstrap module](modules/byoc-bootstrap/README.md) prepares a dedicated customer project for Outpost.
+The [customer example](examples/byoc-bootstrap) applies the bootstrap independently of the data plane.
+The candidate remains non-issuable and defines permissions directly in Terraform during internal iteration.
+
 ## Module Configuration
 
 Module input variables are defined in [`variables.tf`](variables.tf) and

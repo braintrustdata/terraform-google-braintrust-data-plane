@@ -1,0 +1,4 @@
+# Optional remote backend. Copy this file to backend.tf before initialization.
+terraform {
+  backend "gcs" {}
+}

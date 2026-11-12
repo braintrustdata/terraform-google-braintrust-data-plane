@@ -39,3 +39,10 @@ crash.log
 
 # Ignore local dev/test Kubernetes/Helm config files
 local_*.yaml
+
+# BYOC bootstrap test pins and local customer configuration
+!modules/byoc-bootstrap/.terraform.lock.hcl
+!examples/byoc-bootstrap/.terraform.lock.hcl
+examples/byoc-bootstrap/backend.tf
+*.backend.hcl
+__pycache__/

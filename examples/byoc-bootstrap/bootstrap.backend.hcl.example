@@ -1,0 +1,3 @@
+# The customer owns this existing bucket, its location, and its access controls.
+bucket = "customer-existing-bootstrap-state"
+prefix = "braintrust/bootstrap"

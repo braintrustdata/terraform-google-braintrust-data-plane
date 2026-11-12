@@ -1,0 +1,12 @@
+# Replace these placeholders with the reviewed customer handoff values.
+project_id                        = "customer-project"
+project_number                    = "123456789012"
+region                            = "us-central1"
+bootstrap_id                      = "bsp_019d1234-8abc-7def-8123-456789abc111"
+braintrust_bridge_service_account = "bootstrap-bridge@braintrust-byoc-staging.iam.gserviceaccount.com"
+enable_diagnostics                = true
+labels                            = { environment = "customer" }
+
+# Set this to true to include the reviewed quota requests in Terraform apply.
+request_quotas      = false
+quota_contact_email = "cloud-admin@customer.example"
