@@ -69,6 +69,7 @@ module "database" {
   postgres_network                     = var.create_vpc ? module.vpc[0].network_self_link : var.existing_network_self_link
   postgres_kms_cmek_id                 = module.kms.kms_key_id
   postgres_version                     = var.postgres_version
+  postgres_service_identity_email      = var.postgres_service_identity_email
   postgres_availability_type           = var.postgres_availability_type
   postgres_machine_type                = var.postgres_machine_type
   postgres_disk_provisioned_iops       = var.postgres_disk_provisioned_iops

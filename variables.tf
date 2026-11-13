@@ -809,3 +809,23 @@ variable "gke_isolated_workers" {
     error_message = "Workers require integer capacity limits, a positive minimum, and a boot disk of at least 20 GiB."
   }
 }
+
+variable "postgres_service_identity_email" {
+  type        = string
+  description = "Existing Cloud SQL service agent email. Null preserves service identity generation. The value must be known during plan."
+  default     = null
+
+  validation {
+    condition = var.postgres_service_identity_email == null ? true : can(regex(
+      "^service-[1-9][0-9]*@gcp-sa-cloud-sql\\.iam\\.gserviceaccount\\.com$", var.postgres_service_identity_email
+    ))
+    error_message = "The existing identity must be a Cloud SQL service agent email."
+  }
+
+  validation {
+    condition = var.postgres_service_identity_email == null ? true : (
+      var.postgres_service_identity_email == "service-${data.google_project.current.number}@gcp-sa-cloud-sql.iam.gserviceaccount.com"
+    )
+    error_message = "The existing Cloud SQL service agent must belong to the selected project."
+  }
+}
