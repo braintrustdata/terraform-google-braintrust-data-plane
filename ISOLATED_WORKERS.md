@@ -62,7 +62,7 @@ The defaults create two pools:
 | Pool | Default capacity | Node configuration |
 | --- | --- | --- |
 | `services` | 1 node in 1 zone | `e2-standard-2`, COS, balanced boot disks |
-| `isolated-workers` | 1 node, autoscaling to 10 | `c4-standard-8-lssd`, Ubuntu, nested virtualization, raw local SSD |
+| `isolated-workers` | 1 node, autoscaling to 10 | `c4-standard-4-lssd`, Ubuntu, nested virtualization, raw local SSD |
 
 Intel C3 and C4 machines with bundled local SSD are supported; availability depends
 on the region, quota, and GKE version. Both pools use non-Spot nodes, automatic
