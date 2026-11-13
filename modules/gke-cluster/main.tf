@@ -143,6 +143,12 @@ resource "google_project_iam_member" "gke_default_node_sa" {
   member  = "serviceAccount:${google_service_account.gke.email}"
 }
 
+resource "google_project_iam_member" "gke_stackdriver_writer" {
+  project = data.google_project.current.project_id
+  role    = "roles/stackdriver.resourceMetadata.writer"
+  member  = "serviceAccount:${google_service_account.gke.email}"
+}
+
 #----------------------------------------------------------------------------------------------
 # GKE KMS CMEK
 #----------------------------------------------------------------------------------------------
