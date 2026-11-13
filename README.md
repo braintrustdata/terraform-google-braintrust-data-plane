@@ -7,6 +7,23 @@ This module is used to create the VPC, Databases, Redis, Storage, IAM, and assoc
 Module input variables are defined in [`variables.tf`](variables.tf) and
 outputs are defined in [`outputs.tf`](outputs.tf).
 
+## Existing Cloud SQL service identity
+
+The optional `postgres_service_identity_email` input accepts a Cloud SQL service agent that customer infrastructure already prepared.
+The value must identify the selected project's agent and must be known during plan.
+The module uses that identity for its workload key grant and omits the service identity generation resource.
+This path requires no runtime `generateServiceIdentity` call.
+The caller remains responsible for the identity's existence, enabled APIs, and required project role.
+
+```hcl
+postgres_service_identity_email = "service-123456789012@gcp-sa-cloud-sql.iam.gserviceaccount.com"
+```
+
+The default `null` preserves the existing generation path.
+A `moved` block maps the existing identity resource address to its count-indexed address.
+The database instance and its key grant retain their existing resource addresses.
+This input creates no bootstrap service accounts or bootstrap storage.
+
 ## Loop Runtime infrastructure
 
 Set `enable_loop_runtime = true` to provision Loop's worker cluster, private

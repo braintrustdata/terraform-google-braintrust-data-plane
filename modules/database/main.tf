@@ -1,5 +1,6 @@
 locals {
-  postgres_uses_hyperdisk = can(regex("^db-(c4a-highmem|perf-optimized-C4)-[0-9]+$", var.postgres_machine_type))
+  postgres_service_identity_email = var.postgres_service_identity_email != null ? var.postgres_service_identity_email : google_project_service_identity.cloud_sql_sa[0].email
+  postgres_uses_hyperdisk         = can(regex("^db-(c4a-highmem|perf-optimized-C4)-[0-9]+$", var.postgres_machine_type))
 
   common_labels = merge(var.custom_labels, {
     braintrustdeploymentname = var.deployment_name
@@ -148,7 +149,13 @@ resource "google_sql_user" "braintrust" {
 #----------------------------------------------------------------------------------------------
 # Cloud SQL for PostgreSQL KMS CMEK
 #----------------------------------------------------------------------------------------------
+moved {
+  from = google_project_service_identity.cloud_sql_sa
+  to   = google_project_service_identity.cloud_sql_sa[0]
+}
+
 resource "google_project_service_identity" "cloud_sql_sa" {
+  count    = var.postgres_service_identity_email == null ? 1 : 0
   provider = google-beta
   service  = "sqladmin.googleapis.com"
 }
@@ -156,5 +163,5 @@ resource "google_project_service_identity" "cloud_sql_sa" {
 resource "google_kms_crypto_key_iam_member" "cloud_sql_sa_postgres_cmek" {
   crypto_key_id = var.postgres_kms_cmek_id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${google_project_service_identity.cloud_sql_sa.email}"
+  member        = "serviceAccount:${local.postgres_service_identity_email}"
 }

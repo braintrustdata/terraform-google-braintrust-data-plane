@@ -18,3 +18,8 @@ output "postgres_password" {
   value     = local.postgres_password
   sensitive = true
 }
+
+output "postgres_service_identity_email" {
+  description = "Cloud SQL service agent that receives the workload key grant."
+  value       = local.postgres_service_identity_email
+}

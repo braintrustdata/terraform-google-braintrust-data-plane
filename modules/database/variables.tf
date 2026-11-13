@@ -178,3 +178,16 @@ variable "postgres_kms_cmek_id" {
   type        = string
   description = "ID of Cloud KMS customer managed encryption key (CMEK) to use for Cloud SQL for PostgreSQL database instance. If this is not provided, the database will be encrypted with a Google-managed key."
 }
+
+variable "postgres_service_identity_email" {
+  type        = string
+  description = "Existing Cloud SQL service agent email. Null preserves service identity generation. The value must be known during plan."
+  default     = null
+
+  validation {
+    condition = var.postgres_service_identity_email == null ? true : can(regex(
+      "^service-[1-9][0-9]*@gcp-sa-cloud-sql\\.iam\\.gserviceaccount\\.com$", var.postgres_service_identity_email
+    ))
+    error_message = "The existing identity must be a Cloud SQL service agent email."
+  }
+}
