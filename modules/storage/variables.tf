@@ -21,6 +21,12 @@ variable "gcs_storage_class" {
   default     = "STANDARD"
 }
 
+variable "sandbox_filesystems_enabled" {
+  type        = bool
+  description = "Create checkpoint storage when isolated sandbox workers are enabled."
+  default     = false
+}
+
 variable "gcs_uniform_bucket_level_access" {
   type        = bool
   description = "Boolean to enable uniform bucket level access on Braintrust GCS buckets."

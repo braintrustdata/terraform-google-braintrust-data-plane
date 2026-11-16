@@ -8,8 +8,6 @@ locals {
   postgres_password = random_password.postgres_password.result
 }
 
-data "google_client_config" "current" {}
-
 #----------------------------------------------------------------------------------------------
 # Google secret manager - Postgres password
 #----------------------------------------------------------------------------------------------
@@ -144,13 +142,6 @@ resource "google_sql_user" "braintrust" {
   name            = "postgres"
   instance        = google_sql_database_instance.braintrust.name
   password        = random_password.postgres_password.result
-  deletion_policy = var.postgres_deletion_protection ? null : "ABANDON"
-}
-
-resource "google_sql_user" "braintrust_iam" {
-  name            = "${var.deployment_name}-braintrust@${data.google_client_config.current.project}.iam"
-  instance        = google_sql_database_instance.braintrust.name
-  type            = "CLOUD_IAM_SERVICE_ACCOUNT"
   deletion_policy = var.postgres_deletion_protection ? null : "ABANDON"
 }
 

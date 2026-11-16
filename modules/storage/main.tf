@@ -34,6 +34,37 @@ resource "random_id" "gcs_suffix" {
   byte_length = 4
 }
 
+resource "google_storage_bucket" "sandbox_filesystems" {
+  count = var.sandbox_filesystems_enabled ? 1 : 0
+
+  name                        = "${substr(var.deployment_name, 0, 34)}-sandbox-filesystems-${random_id.gcs_suffix.hex}"
+  location                    = data.google_client_config.current.region
+  storage_class               = "STANDARD"
+  uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
+  force_destroy               = false
+  deletion_policy             = "ABANDON"
+  labels                      = local.common_labels
+
+  versioning {
+    enabled = false
+  }
+
+  soft_delete_policy {
+    retention_duration_seconds = 0
+  }
+
+  dynamic "encryption" {
+    for_each = var.gcs_kms_cmek_id != null ? ["encryption"] : []
+
+    content {
+      default_kms_key_name = var.gcs_kms_cmek_id
+    }
+  }
+
+  depends_on = [google_kms_crypto_key_iam_member.gcp_project_gcs_cmek]
+}
+
 #----------------------------------------------------------------------------------------------
 # Google cloud storage (GCS) bucket - access logs
 #----------------------------------------------------------------------------------------------

@@ -450,6 +450,98 @@ variable "deploy_gke_cluster" {
   default     = true
 }
 
+variable "gke_cluster_mode" {
+  type        = string
+  description = "GKE cluster mode. This value is immutable after cluster creation. A change replaces the cluster and requires Helm release redeployment."
+  default     = "autopilot"
+
+  validation {
+    condition     = contains(["autopilot", "standard"], var.gke_cluster_mode)
+    error_message = "`gke_cluster_mode` must be `autopilot` or `standard`."
+  }
+}
+
+variable "gke_standard_node_pools" {
+  type = map(object({
+    machine_type         = string
+    total_min_node_count = number
+    total_max_node_count = number
+    image_type           = optional(string, "COS_CONTAINERD")
+    disk_type            = optional(string, "hyperdisk-balanced")
+    disk_size_gb         = optional(number, 100)
+    spot                 = optional(bool, false)
+    location_policy      = optional(string, "BALANCED")
+    node_locations       = optional(list(string))
+    workload             = optional(string)
+    labels               = optional(map(string), {})
+    taints = optional(list(object({
+      key    = string
+      value  = string
+      effect = string
+    })), [])
+    auto_repair                 = optional(bool, true)
+    respect_pdb_on_delete       = optional(bool, true)
+    max_surge                   = optional(number, 1)
+    max_unavailable             = optional(number, 0)
+    enable_secure_boot          = optional(bool, true)
+    enable_integrity_monitoring = optional(bool, true)
+  }))
+  description = "Node pools for a Standard GKE cluster. The optional workload value lets multiple pools serve one Helm workload. The defaults use the Arm C4A machine series. Standard mode requires at least one pool for the `brainstore` workload using a machine type with bundled Local SSD. This value has no effect in Autopilot mode."
+  default = {
+    services = {
+      machine_type         = "c4a-standard-16"
+      total_min_node_count = 2
+      total_max_node_count = 10
+    }
+    brainstore = {
+      machine_type         = "c4a-standard-48-lssd"
+      total_min_node_count = 6
+      total_max_node_count = 10
+    }
+  }
+
+  validation {
+    condition = alltrue([
+      for name, pool in var.gke_standard_node_pools :
+      can(regex("^[a-z]([-a-z0-9]{0,38}[a-z0-9])?$", name)) &&
+      pool.total_min_node_count >= 0 &&
+      pool.total_max_node_count >= pool.total_min_node_count &&
+      pool.disk_size_gb >= 10 &&
+      contains(["BALANCED", "ANY"], pool.location_policy) &&
+      (pool.workload == null ? true : can(regex("^[a-z]([-a-z0-9]{0,61}[a-z0-9])?$", pool.workload))) &&
+      (pool.node_locations == null ? true : length(pool.node_locations) > 0 && alltrue([for location in pool.node_locations : trimspace(location) != ""])) &&
+      alltrue([
+        for taint in pool.taints : contains(["NO_SCHEDULE", "PREFER_NO_SCHEDULE", "NO_EXECUTE"], taint.effect)
+      ])
+    ])
+    error_message = "Each Standard node pool must use valid names, sizes, autoscaler limits, policies, and taints."
+  }
+
+  validation {
+    condition     = var.gke_cluster_mode != "standard" || length(var.gke_standard_node_pools) > 0
+    error_message = "`gke_standard_node_pools` must contain at least one pool in Standard mode."
+  }
+
+  validation {
+    condition = var.gke_cluster_mode != "standard" || anytrue([
+      for name, pool in var.gke_standard_node_pools :
+      coalesce(pool.workload, name) == "brainstore"
+    ])
+    error_message = "`gke_standard_node_pools` must contain at least one pool for the `brainstore` workload in Standard mode."
+  }
+
+  # Brainstore keeps its cache on node ephemeral storage, which must be backed by
+  # Local SSD. Machine types with bundled Local SSD carry `lssd` in the machine
+  # type name, and GKE configures those disks as ephemeral storage automatically.
+  validation {
+    condition = var.gke_cluster_mode != "standard" || alltrue([
+      for name, pool in var.gke_standard_node_pools :
+      endswith(pool.machine_type, "-lssd") if coalesce(pool.workload, name) == "brainstore"
+    ])
+    error_message = "Every pool for the `brainstore` workload must use a machine type with bundled Local SSD, such as `c4a-standard-48-lssd`, `c4-standard-48-lssd`, or `c4d-standard-48-lssd`."
+  }
+}
+
 variable "gke_cluster_is_private" {
   description = "Whether to deploy the GKE cluster in a private network."
   type        = bool
@@ -569,6 +661,12 @@ variable "brainstore_kube_svc_account" {
   default     = "brainstore"
 }
 
+variable "loop_runtime_kube_svc_account" {
+  type        = string
+  description = "Kubernetes service account name for Loop runtime in braintrust_kube_namespace."
+  default     = "braintrust-loop-runtime"
+}
+
 # With data plane 2.0.0 and later native auth can be used instead of HMAC keys.
 variable "braintrust_hmac_key_enabled" {
   type        = bool
@@ -580,4 +678,134 @@ variable "brainstore_impersonation_targets" {
   type        = list(string)
   description = "Full resource names of service accounts (same or other projects) that the brainstore service account can impersonate via roles/iam.serviceAccountTokenCreator. Format: projects/{project_id}/serviceAccounts/{email}. Only required if you are not granting IAM access to the brainstore service account yourself. Note: the principal running this Terraform deployment must have permission to manage IAM policies on the target service accounts (e.g. roles/iam.serviceAccountAdmin or roles/resourcemanager.projectIamAdmin)."
   default     = []
+}
+
+variable "enable_loop_runtime" {
+  type        = bool
+  description = "Create Loop's worker infrastructure, private discovery and workload identity with IAM-authenticated DNS access to the worker control plane."
+  default     = false
+}
+
+variable "gke_isolated_workers" {
+  type = object({
+    enabled = optional(bool, true)
+    discovery = optional(object({
+      dns_name                     = string
+      runtime_source_ranges        = optional(set(string))
+      external_dns_namespace       = optional(string, "braintrust-sandbox")
+      external_dns_service_account = optional(string, "external-dns")
+    }))
+    network_cidr              = optional(string)
+    node_cidr                 = optional(string)
+    pod_cidr                  = optional(string)
+    service_cidr              = optional(string)
+    control_plane_cidr        = optional(string)
+    existing_subnet_self_link = optional(string)
+    services_pool = optional(object({
+      machine_type         = optional(string, "e2-standard-2")
+      disk_type            = optional(string, "pd-balanced")
+      boot_disk_size_gb    = optional(number, 100)
+      total_min_node_count = optional(number, 1)
+      total_max_node_count = optional(number, 1)
+      node_locations       = optional(list(string))
+
+    }), {})
+    machine_type           = optional(string, "c4-standard-8-lssd")
+    boot_disk_size_gb      = optional(number, 100)
+    total_min_node_count   = optional(number, 1)
+    total_max_node_count   = optional(number, 10)
+    node_locations         = optional(list(string))
+    authorized_cidrs       = optional(list(string), [])
+    master_global_access   = optional(bool, false)
+    deletion_protection    = optional(bool, true)
+    release_channel        = optional(string, "REGULAR")
+    maintenance_start_time = optional(string, "08:00")
+
+    ingress_rules = optional(map(object({
+      source_ranges = set(string)
+      ports         = set(string)
+    })), {})
+    egress_rules = optional(map(object({
+      destination_ranges = set(string)
+      ports              = set(string)
+    })), {})
+  })
+  default     = { enabled = false }
+  nullable    = false
+  description = "Optional worker overrides for enable_loop_runtime. An explicit object also retains the standalone worker interface; null or omission creates no workers unless Loop is enabled."
+
+  validation {
+    condition = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : try(
+      (var.enable_loop_runtime || length(var.gke_isolated_workers.authorized_cidrs) > 0) && alltrue([
+        for cidr in var.gke_isolated_workers.authorized_cidrs :
+        can(cidrnetmask(cidr)) && tonumber(split("/", cidr)[1]) > 0 && cidrhost(cidr, 0) == split("/", cidr)[0]
+      ]), false
+    )
+    error_message = "authorized_cidrs must be canonical non-default IPv4 ranges. Standalone workers require a non-empty allowlist; Loop uses IAM-authenticated DNS access."
+  }
+
+  validation {
+    condition = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (
+      var.gke_isolated_workers.network_cidr == null ? true :
+      can(regex("/16$", var.gke_isolated_workers.network_cidr)) &&
+      try(cidrhost(var.gke_isolated_workers.network_cidr, 0) == split("/", var.gke_isolated_workers.network_cidr)[0], false)
+    )
+    error_message = "network_cidr must be a canonical IPv4 /16 block reserved for isolated workers."
+  }
+  validation {
+    condition = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (
+      (var.enable_loop_runtime || var.gke_isolated_workers.existing_subnet_self_link != null || var.gke_isolated_workers.node_cidr != null || var.gke_isolated_workers.network_cidr != null) &&
+      alltrue([for cidr in [var.gke_isolated_workers.pod_cidr, var.gke_isolated_workers.service_cidr, var.gke_isolated_workers.control_plane_cidr] : cidr != null || var.gke_isolated_workers.network_cidr != null || var.enable_loop_runtime])
+    )
+    error_message = "Provide network_cidr or explicit Pod, Service, control-plane, and node ranges. An existing subnet supplies the node range."
+  }
+  validation {
+    condition = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (
+      var.gke_isolated_workers.discovery == null ? (!var.enable_loop_runtime || var.deploy_gke_cluster) :
+      var.deploy_gke_cluster || var.gke_isolated_workers.discovery.runtime_source_ranges != null
+    )
+    error_message = "Discovery requires runtime_source_ranges when the module does not create the primary cluster."
+  }
+  validation {
+    condition = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (var.gke_isolated_workers.discovery == null ? true : alltrue([
+      for name in compact([var.gke_isolated_workers.discovery.external_dns_namespace, var.gke_isolated_workers.discovery.external_dns_service_account]) :
+      length(name) <= 63 && can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", name))
+    ]))
+    error_message = "External-dns namespace and service-account names must be lowercase Kubernetes names with at most 63 characters."
+  }
+
+  validation {
+    condition = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (
+      var.gke_isolated_workers.services_pool.total_min_node_count >= 1 &&
+      floor(var.gke_isolated_workers.services_pool.total_min_node_count) == var.gke_isolated_workers.services_pool.total_min_node_count &&
+      var.gke_isolated_workers.services_pool.total_max_node_count >= var.gke_isolated_workers.services_pool.total_min_node_count &&
+      floor(var.gke_isolated_workers.services_pool.total_max_node_count) == var.gke_isolated_workers.services_pool.total_max_node_count &&
+      var.gke_isolated_workers.services_pool.boot_disk_size_gb >= 20 &&
+      floor(var.gke_isolated_workers.services_pool.boot_disk_size_gb) == var.gke_isolated_workers.services_pool.boot_disk_size_gb
+    )
+    error_message = "The services pool requires integer capacity limits, a positive minimum, and a boot disk of at least 20 GiB."
+  }
+
+  validation {
+    condition     = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (var.create_vpc ? var.gke_isolated_workers.existing_subnet_self_link == null : try(basename(var.gke_isolated_workers.existing_subnet_self_link) != basename(var.existing_subnet_self_link), true))
+    error_message = "Module-created VPCs create the worker subnet. Existing VPCs require a worker subnet separate from the primary subnet."
+  }
+
+  validation {
+    condition     = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (var.create_vpc || var.enable_loop_runtime || var.gke_isolated_workers.existing_subnet_self_link != null)
+    error_message = "Standalone workers in an existing VPC require gke_isolated_workers.existing_subnet_self_link; enable_loop_runtime can create its own worker subnet."
+  }
+
+  validation {
+    condition     = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : can(regex("^c[34]-(standard|highcpu|highmem)-[0-9]+-lssd$", var.gke_isolated_workers.machine_type))
+    error_message = "Workers require an Intel C3 or C4 machine type with bundled Local SSD."
+  }
+  validation {
+    condition = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (
+      var.gke_isolated_workers.total_min_node_count >= 1 && floor(var.gke_isolated_workers.total_min_node_count) == var.gke_isolated_workers.total_min_node_count &&
+      var.gke_isolated_workers.total_max_node_count >= var.gke_isolated_workers.total_min_node_count && floor(var.gke_isolated_workers.total_max_node_count) == var.gke_isolated_workers.total_max_node_count &&
+      var.gke_isolated_workers.boot_disk_size_gb >= 20 && floor(var.gke_isolated_workers.boot_disk_size_gb) == var.gke_isolated_workers.boot_disk_size_gb
+    )
+    error_message = "Workers require integer capacity limits, a positive minimum, and a boot disk of at least 20 GiB."
+  }
 }

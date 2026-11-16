@@ -17,3 +17,7 @@ output "api_bucket_name" {
 output "api_bucket_self_link" {
   value = google_storage_bucket.api.self_link
 }
+
+output "sandbox_filesystems_bucket_name" {
+  value = try(google_storage_bucket.sandbox_filesystems[0].name, null)
+}

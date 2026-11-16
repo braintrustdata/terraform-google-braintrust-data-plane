@@ -1,25 +1,80 @@
-# Autopilot cluster outputs
-output "gke_autopilot_cluster_name" {
-  value       = google_container_cluster.braintrust_autopilot.name
-  description = "Name of the autopilot cluster (null if not enabled)"
+# Generic cluster outputs
+output "gke_cluster_name" {
+  value       = google_container_cluster.braintrust.name
+  description = "GKE cluster name."
 }
 
-output "gke_autopilot_cluster_endpoint" {
-  value       = google_container_cluster.braintrust_autopilot.endpoint
-  description = "Endpoint of the autopilot cluster (null if not enabled)"
+output "gke_cluster_endpoint" {
+  value       = google_container_cluster.braintrust.endpoint
+  description = "GKE cluster endpoint."
 }
 
-output "gke_autopilot_cluster_master_version" {
-  value       = google_container_cluster.braintrust_autopilot.master_version
-  description = "Master version of the autopilot cluster (null if not enabled)"
+output "gke_cluster_dns_endpoint" {
+  value       = try(google_container_cluster.braintrust.control_plane_endpoints_config[0].dns_endpoint_config[0].endpoint, null)
+  description = "IAM-authenticated control-plane DNS hostname when DNS access is configured."
 }
 
-output "workload_identity_pool" {
-  value       = google_container_cluster.braintrust_autopilot.workload_identity_config[0].workload_pool
-  description = "Workload Identity pool for Kubernetes service account IAM bindings."
+output "gke_cluster_access" {
+  value = {
+    private_endpoint_enabled = try(google_container_cluster.braintrust.private_cluster_config[0].enable_private_endpoint, false)
+    dns                      = try(google_container_cluster.braintrust.control_plane_endpoints_config[0].dns_endpoint_config[0], null)
+  }
+  description = "Effective private IP and DNS control-plane access settings."
+}
+
+output "gke_cluster_master_version" {
+  value       = google_container_cluster.braintrust.master_version
+  description = "GKE cluster control plane version."
+}
+
+output "gke_cluster_id" {
+  value       = google_container_cluster.braintrust.id
+  description = "GKE cluster resource ID."
+}
+
+output "gke_cluster_location" {
+  value       = google_container_cluster.braintrust.location
+  description = "GKE cluster location."
 }
 
 output "gke_node_service_account_email" {
   value       = google_service_account.gke.email
-  description = "Node service account email for repository-level image access grants."
+  description = "Email address of the GKE node service account."
+}
+
+# Compatibility outputs
+output "gke_autopilot_cluster_name" {
+  value       = var.gke_cluster_mode == "autopilot" ? google_container_cluster.braintrust.name : null
+  description = "GKE Autopilot cluster name. Null for Standard clusters."
+}
+
+output "gke_autopilot_cluster_endpoint" {
+  value       = var.gke_cluster_mode == "autopilot" ? google_container_cluster.braintrust.endpoint : null
+  description = "GKE Autopilot cluster endpoint. Null for Standard clusters."
+}
+
+output "gke_autopilot_cluster_master_version" {
+  value       = var.gke_cluster_mode == "autopilot" ? google_container_cluster.braintrust.master_version : null
+  description = "GKE Autopilot control plane version. Null for Standard clusters."
+}
+
+output "workload_identity_pool" {
+  value       = google_container_cluster.braintrust.workload_identity_config[0].workload_pool
+  description = "Workload Identity pool for Kubernetes service account IAM bindings."
+}
+
+output "gke_node_locations" {
+  value       = google_container_cluster.braintrust.node_locations
+  description = "Effective cluster node zones."
+}
+
+output "gke_pod_cidr" {
+  value       = google_container_cluster.braintrust.cluster_ipv4_cidr
+  description = "Effective primary Pod range, including GKE allocation."
+}
+
+output "gke_services_node_service_account_email" {
+  value       = try(google_service_account.services_nodes[0].email, null)
+  description = "Services node identity after its required project grants exist."
+  depends_on  = [google_project_iam_member.services_nodes]
 }

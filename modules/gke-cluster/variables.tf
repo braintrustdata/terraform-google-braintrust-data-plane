@@ -15,6 +15,28 @@ variable "custom_labels" {
 #----------------------------------------------------------------------------------------------
 # GKE Cluster
 #----------------------------------------------------------------------------------------------
+variable "gke_cluster_mode" {
+  type        = string
+  description = "GKE cluster mode. This value is immutable after cluster creation. A change replaces the cluster and requires Helm release redeployment."
+  default     = "autopilot"
+
+  validation {
+    condition     = contains(["autopilot", "standard"], var.gke_cluster_mode)
+    error_message = "`gke_cluster_mode` must be `autopilot` or `standard`."
+  }
+}
+
+variable "gke_cluster_name" {
+  type        = string
+  description = "Optional GKE cluster name. The module derives the name from the deployment name and cluster mode when this value is null."
+  default     = null
+
+  validation {
+    condition     = var.gke_cluster_name == null || can(regex("^[a-z]([-a-z0-9]{0,38}[a-z0-9])?$", var.gke_cluster_name))
+    error_message = "`gke_cluster_name` must contain 1 through 40 lowercase letters, numbers, or hyphens."
+  }
+}
+
 variable "gke_network" {
   type        = string
   description = "The network of the GKE cluster."
@@ -138,4 +160,38 @@ variable "gke_maintenance_window" {
     condition     = can(regex("^([01]?[0-9]|2[0-3]):[0-5][0-9]$", var.gke_maintenance_window.start_time))
     error_message = "`start_time` must be in HH:MM format (24-hour), e.g., '08:00'."
   }
+}
+
+variable "gke_node_service_account_id" {
+  type        = string
+  description = "Optional node service account ID. Null preserves the deployment-derived ID."
+  default     = null
+}
+
+variable "gke_dns_endpoint_enabled" {
+  type        = bool
+  description = "Allow IAM-authenticated DNS endpoint access. Null preserves existing endpoint configuration."
+  default     = null
+}
+
+variable "gke_node_network_tags" {
+  type        = list(string)
+  description = "Network tags for bootstrap nodes."
+  default     = []
+}
+
+variable "project_id" {
+  type        = string
+  description = "Project ID supplied by the root module."
+}
+
+variable "region" {
+  type        = string
+  description = "Cluster region supplied by the root module."
+}
+
+variable "gke_services_node_service_account_id" {
+  type        = string
+  default     = null
+  description = "Optional separate services-pool node identity. Null creates no additional service account."
 }

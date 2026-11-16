@@ -1,10 +1,4 @@
 mock_provider "google" {
-  mock_data "google_client_config" {
-    defaults = {
-      project = "test-project"
-      region  = "us-central1"
-    }
-  }
   mock_resource "google_service_account" {
     defaults = {
       email = "bt-test-gke-cluster@test-project.iam.gserviceaccount.com"
@@ -12,15 +6,9 @@ mock_provider "google" {
   }
 }
 
-override_data {
-  target = data.google_project.current
-  values = {
-    project_id = "test-project"
-    number     = "123456789012"
-  }
-}
-
 variables {
+  project_id      = "test-project"
+  region          = "us-central1"
   deployment_name = "bt-test"
   gke_network     = "projects/test-project/global/networks/test"
   gke_subnetwork  = "projects/test-project/regions/us-central1/subnetworks/test"
@@ -34,7 +22,7 @@ run "dedicated_node_identity" {
   }
 
   assert {
-    condition     = google_container_cluster.braintrust_autopilot.cluster_autoscaling[0].auto_provisioning_defaults[0].service_account == google_service_account.gke.email
+    condition     = google_container_cluster.braintrust.cluster_autoscaling[0].auto_provisioning_defaults[0].service_account == google_service_account.gke.email
     error_message = "Autopilot must use the dedicated node service account."
   }
 
@@ -44,17 +32,17 @@ run "dedicated_node_identity" {
   }
 
   assert {
-    condition     = google_container_cluster.braintrust_autopilot.workload_identity_config[0].workload_pool == "test-project.svc.id.goog"
+    condition     = google_container_cluster.braintrust.workload_identity_config[0].workload_pool == "test-project.svc.id.goog"
     error_message = "Application identities must retain the project workload pool."
-  }
-
-  assert {
-    condition     = google_kms_crypto_key_iam_member.gke_cluster_cmek.member == "serviceAccount:service-123456789012@container-engine-robot.iam.gserviceaccount.com" && google_kms_crypto_key_iam_member.gke_compute_cmek.member == "serviceAccount:service-123456789012@compute-system.iam.gserviceaccount.com"
-    error_message = "CMEK access must remain on the GKE and Compute Engine service agents."
   }
 
   assert {
     condition     = output.gke_node_service_account_email == google_service_account.gke.email
     error_message = "The output must identify the node account for private repository grants."
+  }
+
+  assert {
+    condition     = google_project_iam_member.gke_stackdriver_writer.role == "roles/stackdriver.resourceMetadata.writer" && google_project_iam_member.gke_stackdriver_writer.member == "serviceAccount:${google_service_account.gke.email}" && google_project_iam_member.gke_stackdriver_writer.project == "test-project"
+    error_message = "The node account must retain metadata access for Cloud Monitoring."
   }
 }

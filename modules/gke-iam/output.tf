@@ -17,3 +17,8 @@ output "braintrust_hmac_secret" {
   value       = one(google_storage_hmac_key.braintrust[*].secret)
   sensitive   = true
 }
+
+output "loop_runtime_service_account" {
+  description = "Google service account email for loopRuntime.serviceAccount.googleServiceAccount in Helm."
+  value       = one(google_service_account.loop_runtime[*].email)
+}

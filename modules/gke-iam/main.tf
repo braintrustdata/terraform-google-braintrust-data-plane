@@ -54,22 +54,6 @@ resource "google_storage_bucket_iam_member" "braintrust_api_brainstore_gcs_reade
 }
 
 #----------------------------------------------------------------------------------------------
-# Cloud SQL IAM permissions for braintrust service account
-#----------------------------------------------------------------------------------------------
-# Only username / password auth is supported for now, but future support for IAM auth is planned.
-# resource "google_project_iam_member" "braintrust_cloudsql_client" {
-#   project = data.google_project.current.project_id
-#   role    = "roles/cloudsql.client"
-#   member  = "serviceAccount:${google_service_account.braintrust.email}"
-# }
-
-# resource "google_project_iam_member" "braintrust_cloudsql_instance_user" {
-#   project = data.google_project.current.project_id
-#   role    = "roles/cloudsql.instanceUser"
-#   member  = "serviceAccount:${google_service_account.braintrust.email}"
-# }
-
-#----------------------------------------------------------------------------------------------
 # Brainstore service account
 #----------------------------------------------------------------------------------------------
 resource "google_service_account" "brainstore" {
@@ -118,4 +102,59 @@ resource "google_service_account_iam_member" "brainstore_impersonation_target" {
   service_account_id = each.value
   role               = "roles/iam.serviceAccountTokenCreator"
   member             = "serviceAccount:${google_service_account.brainstore.email}"
+}
+
+#----------------------------------------------------------------------------------------------
+# Loop runtime service account
+#----------------------------------------------------------------------------------------------
+resource "google_service_account" "loop_runtime" {
+  count        = var.loop_runtime_enabled ? 1 : 0
+  account_id   = "${var.deployment_name}-loop"
+  display_name = "${var.deployment_name}-loop-runtime"
+  description  = "Service account for the Braintrust Loop runtime."
+}
+
+resource "google_service_account_iam_binding" "loop_runtime_workload_identity" {
+  count              = var.loop_runtime_enabled ? 1 : 0
+  service_account_id = google_service_account.loop_runtime[0].id
+  role               = "roles/iam.workloadIdentityUser"
+  members = [
+    "serviceAccount:${var.workload_identity_pool}[${var.braintrust_kube_namespace}/${var.loop_runtime_kube_svc_account}]"
+  ]
+}
+
+resource "google_storage_bucket_iam_member" "loop_runtime_brainstore_gcs_object_admin" {
+  count  = var.loop_runtime_enabled ? 1 : 0
+  bucket = var.brainstore_gcs_bucket_id
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.loop_runtime[0].email}"
+}
+
+resource "google_storage_bucket_iam_member" "loop_runtime_brainstore_gcs_reader" {
+  count  = var.loop_runtime_enabled ? 1 : 0
+  bucket = var.brainstore_gcs_bucket_id
+  role   = "roles/storage.legacyBucketReader"
+  member = "serviceAccount:${google_service_account.loop_runtime[0].email}"
+}
+
+resource "google_storage_bucket_iam_member" "loop_runtime_api_bucket_gcs_object_admin" {
+  count  = var.loop_runtime_enabled ? 1 : 0
+  bucket = var.braintrust_api_bucket_id
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.loop_runtime[0].email}"
+}
+
+resource "google_storage_bucket_iam_member" "loop_runtime_api_bucket_gcs_reader" {
+  count  = var.loop_runtime_enabled ? 1 : 0
+  bucket = var.braintrust_api_bucket_id
+  role   = "roles/storage.legacyBucketReader"
+  member = "serviceAccount:${google_service_account.loop_runtime[0].email}"
+}
+
+resource "google_storage_bucket_iam_member" "sandbox_filesystems_worker" {
+  count = var.sandbox_filesystems_enabled ? 1 : 0
+
+  bucket = var.sandbox_filesystems_bucket_id
+  role   = "roles/storage.objectUser"
+  member = "serviceAccount:${var.sandbox_worker_service_account}"
 }

@@ -54,3 +54,33 @@ variable "brainstore_impersonation_targets" {
   description = "Full resource names of service accounts (same or other projects) that the brainstore service account can impersonate via roles/iam.serviceAccountTokenCreator. Format: projects/{project_id}/serviceAccounts/{email}"
   default     = []
 }
+
+variable "loop_runtime_kube_svc_account" {
+  type        = string
+  description = "Kubernetes service account name for Loop runtime in braintrust_kube_namespace."
+  default     = "braintrust-loop-runtime"
+}
+
+variable "loop_runtime_enabled" {
+  type        = bool
+  default     = false
+  description = "Create the Loop identity and bucket grants when isolated workers are enabled."
+}
+
+variable "sandbox_filesystems_enabled" {
+  type        = bool
+  description = "Grant checkpoint access when isolated sandbox workers are enabled."
+  default     = false
+}
+
+variable "sandbox_filesystems_bucket_id" {
+  type        = string
+  description = "The dedicated sandbox checkpoint bucket name."
+  default     = null
+}
+
+variable "sandbox_worker_service_account" {
+  type        = string
+  description = "The isolated worker-node service account email."
+  default     = null
+}

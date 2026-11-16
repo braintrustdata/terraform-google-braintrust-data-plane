@@ -57,6 +57,11 @@ output "brainstore_service_account" {
   value = module.gke-iam.brainstore_service_account
 }
 
+output "loop_runtime_service_account" {
+  description = "Loop Google service account email for Helm, or null when isolated workers are disabled."
+  value       = module.gke-iam.loop_runtime_service_account
+}
+
 output "braintrust_hmac_access_id" {
   description = "HMAC access ID for the Braintrust service account. Null when braintrust_hmac_key_enabled is false."
   value       = module.gke-iam.braintrust_hmac_access_id
@@ -106,18 +111,73 @@ output "pg_url" {
 #----------------------------------------------------------------------------------------------
 
 output "gke_cluster_name" {
-  value       = var.deploy_gke_cluster ? module.gke-cluster[0].gke_autopilot_cluster_name : null
+  value       = var.deploy_gke_cluster ? module.gke-cluster[0].gke_cluster_name : null
   description = "GKE cluster name. Null when deploy_gke_cluster is false."
 }
 
 output "gke_cluster_endpoint" {
-  value       = var.deploy_gke_cluster ? module.gke-cluster[0].gke_autopilot_cluster_endpoint : null
+  value       = var.deploy_gke_cluster ? module.gke-cluster[0].gke_cluster_endpoint : null
   description = "GKE cluster endpoint. Null when deploy_gke_cluster is false."
 }
 
 output "gke_cluster_master_version" {
-  value       = var.deploy_gke_cluster ? module.gke-cluster[0].gke_autopilot_cluster_master_version : null
+  value       = var.deploy_gke_cluster ? module.gke-cluster[0].gke_cluster_master_version : null
   description = "GKE cluster master version. Null when deploy_gke_cluster is false."
+}
+
+output "gke_cluster_mode" {
+  value       = var.deploy_gke_cluster ? var.gke_cluster_mode : null
+  description = "GKE cluster mode. Null when deploy_gke_cluster is false."
+}
+
+output "gke_node_pool_names" {
+  value = {
+    for name, pool in module.gke-standard-node-pool : name => pool.name
+  }
+  description = "Standard GKE node pool names. The map is empty in Autopilot mode."
+}
+
+locals {
+  isolated_workers_output = local.isolated_workers == null ? null : {
+    checkpoint_store              = "gs://${module.storage.sandbox_filesystems_bucket_name}/sandbox-filesystems"
+    discovery                     = module.gke_isolated_workers_network[0].discovery
+    loop_egress                   = module.gke_isolated_workers_network[0].loop_egress
+    name                          = module.gke_isolated_workers_cluster[0].gke_cluster_name
+    id                            = module.gke_isolated_workers_cluster[0].gke_cluster_id
+    location                      = module.gke_isolated_workers_cluster[0].gke_cluster_location
+    project_id                    = data.google_project.current.project_id
+    endpoint                      = module.gke_isolated_workers_cluster[0].gke_cluster_endpoint
+    node_service_account          = module.gke_isolated_workers_cluster[0].gke_node_service_account_email
+    node_pool_name                = module.gke_isolated_workers_pool[0].name
+    node_selector                 = { "braintrust/node-pool" = "isolated-workers" }
+    worker_tolerations            = [{ key = "braintrust.io/sandbox", operator = "Equal", value = "true", effect = "NoSchedule" }]
+    services_node_pool_name       = module.gke_isolated_services_pool[0].name
+    services_node_selector        = { "braintrust/node-pool" = "services" }
+    services_node_service_account = module.gke_isolated_workers_cluster[0].gke_services_node_service_account_email
+    network                       = module.gke_isolated_workers_network[0].network_self_link
+    subnet                        = module.gke_isolated_workers_network[0].isolated_subnet_self_link
+    kms_key_id                    = module.kms.kms_key_id
+    node_cidr                     = module.gke_isolated_workers_network[0].node_cidr
+    control_plane_cidr            = local.isolated_network_config.control_plane_cidr
+    pod_cidr                      = local.isolated_network_config.pod_cidr
+    service_cidr                  = local.isolated_network_config.service_cidr
+  }
+}
+
+output "gke_isolated_workers" {
+  description = "Isolated worker infrastructure. Null when isolated workers are absent."
+  value       = local.isolated_workers_output
+}
+
+output "loop_runtime" {
+  description = "Loop application inputs and IAM-authenticated worker connection. Null unless enable_loop_runtime is true."
+  value = var.enable_loop_runtime ? {
+    service_account = module.gke-iam.loop_runtime_service_account
+    workers         = local.isolated_workers_output
+    connection = {
+      host = "https://${module.gke_isolated_workers_cluster[0].gke_cluster_dns_endpoint}"
+    }
+  } : null
 }
 
 #----------------------------------------------------------------------------------------------

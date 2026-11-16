@@ -5,29 +5,39 @@ locals {
   common_labels = merge(var.custom_labels, {
     braintrustdeploymentname = var.deployment_name
   })
-}
-
-data "google_client_config" "current" {}
-
-data "google_project" "current" {
-  project_id = data.google_client_config.current.project
+  cluster_name = coalesce(var.gke_cluster_name, "${var.deployment_name}-gke-${var.gke_cluster_mode}")
 }
 
 #----------------------------------------------------------------------------------------------
-# GKE Autopilot cluster
+# GKE cluster
 #----------------------------------------------------------------------------------------------
-resource "google_container_cluster" "braintrust_autopilot" {
-  name    = "${var.deployment_name}-gke-autopilot"
-  project = data.google_project.current.project_id
+resource "google_container_cluster" "braintrust" {
+  name    = local.cluster_name
+  project = var.project_id
 
-  enable_autopilot = true
+  enable_autopilot         = var.gke_cluster_mode == "autopilot" ? true : null
+  remove_default_node_pool = var.gke_cluster_mode == "standard" ? true : null
+  initial_node_count       = var.gke_cluster_mode == "standard" ? 1 : null
+
+  dynamic "node_config" {
+    for_each = var.gke_cluster_mode == "standard" ? [1] : []
+
+    content {
+      service_account   = google_service_account.gke.email
+      boot_disk_kms_key = var.gke_kms_cmek_id
+      tags              = var.gke_node_network_tags
+      oauth_scopes = [
+        "https://www.googleapis.com/auth/cloud-platform",
+      ]
+    }
+  }
 
   release_channel {
     channel = var.gke_release_channel
   }
 
   # Location and network configuration
-  location   = data.google_client_config.current.region
+  location   = var.region
   network    = var.gke_network
   subnetwork = var.gke_subnetwork
 
@@ -66,6 +76,17 @@ resource "google_container_cluster" "braintrust_autopilot" {
     }
   }
 
+  dynamic "control_plane_endpoints_config" {
+    for_each = var.gke_dns_endpoint_enabled == null ? [] : [var.gke_dns_endpoint_enabled]
+    content {
+      dns_endpoint_config {
+        allow_external_traffic    = control_plane_endpoints_config.value
+        enable_k8s_certs_via_dns  = false
+        enable_k8s_tokens_via_dns = false
+      }
+    }
+  }
+
   # Master authorized networks
   dynamic "master_authorized_networks_config" {
     for_each = var.gke_control_plane_authorized_cidrs == null ? [] : [1]
@@ -92,7 +113,7 @@ resource "google_container_cluster" "braintrust_autopilot" {
   }
 
   workload_identity_config {
-    workload_pool = "${data.google_project.current.project_id}.svc.id.goog"
+    workload_pool = "${var.project_id}.svc.id.goog"
   }
 
   logging_service = "logging.googleapis.com/kubernetes"
@@ -108,22 +129,23 @@ resource "google_container_cluster" "braintrust_autopilot" {
     }
   }
 
-  # Autopilot-specific configurations
-  cluster_autoscaling {
-    # Autopilot manages autoscaling, but you can set resource limits
-    auto_provisioning_defaults {
-      # Use the dedicated node service account.
-      service_account = google_service_account.gke.email
+  dynamic "cluster_autoscaling" {
+    for_each = var.gke_cluster_mode == "autopilot" ? [1] : []
 
-      # Boot disk encryption
-      boot_disk_kms_key = var.gke_kms_cmek_id
+    content {
+      auto_provisioning_defaults {
+        service_account   = google_service_account.gke.email
+        boot_disk_kms_key = var.gke_kms_cmek_id
+      }
     }
   }
 
+  lifecycle {
+    ignore_changes = [node_config]
+  }
+
   depends_on = [
-    google_project_iam_member.gke_default_node_sa,
-    google_kms_crypto_key_iam_member.gke_cluster_cmek,
-    google_kms_crypto_key_iam_member.gke_compute_cmek
+    google_project_iam_member.gke_default_node_sa
   ]
 
 }
@@ -132,43 +154,40 @@ resource "google_container_cluster" "braintrust_autopilot" {
 # GKE cluster service account
 #----------------------------------------------------------------------------------------------
 resource "google_service_account" "gke" {
-  account_id   = "${var.deployment_name}-gke-cluster"
+  project      = var.project_id
+  account_id   = coalesce(var.gke_node_service_account_id, "${var.deployment_name}-gke-cluster")
   display_name = "${var.deployment_name}-gke-cluster"
   description  = "Service account for GKE node system tasks."
 }
 
 resource "google_project_iam_member" "gke_default_node_sa" {
-  project = data.google_project.current.project_id
+  project = var.project_id
   role    = "roles/container.defaultNodeServiceAccount"
   member  = "serviceAccount:${google_service_account.gke.email}"
 }
 
 resource "google_project_iam_member" "gke_stackdriver_writer" {
-  project = data.google_project.current.project_id
+  project = var.project_id
   role    = "roles/stackdriver.resourceMetadata.writer"
   member  = "serviceAccount:${google_service_account.gke.email}"
 }
 
-#----------------------------------------------------------------------------------------------
-# GKE KMS CMEK
-#----------------------------------------------------------------------------------------------
-locals {
-  # Container Engine Robot service account for cluster-level encryption
-  gke_cluster_service_account_email = "service-${data.google_project.current.number}@container-engine-robot.iam.gserviceaccount.com"
-  # Compute Engine service account for node boot disk encryption
-  gke_compute_service_account_email = "service-${data.google_project.current.number}@compute-system.iam.gserviceaccount.com"
+# Optional identity for the isolated cluster's services pool.
+resource "google_service_account" "services_nodes" {
+  count        = var.gke_services_node_service_account_id == null ? 0 : 1
+  project      = var.project_id
+  account_id   = var.gke_services_node_service_account_id
+  display_name = "${var.deployment_name} isolated cluster services nodes"
 }
 
-# KMS permissions for GKE cluster (etcd/secrets encryption)
-resource "google_kms_crypto_key_iam_member" "gke_cluster_cmek" {
-  crypto_key_id = var.gke_kms_cmek_id
-  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${local.gke_cluster_service_account_email}"
-}
-
-# KMS permissions for GKE node boot disks
-resource "google_kms_crypto_key_iam_member" "gke_compute_cmek" {
-  crypto_key_id = var.gke_kms_cmek_id
-  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${local.gke_compute_service_account_email}"
+resource "google_project_iam_member" "services_nodes" {
+  for_each = var.gke_services_node_service_account_id == null ? toset([]) : toset([
+    "roles/container.defaultNodeServiceAccount",
+    "roles/logging.logWriter",
+    "roles/monitoring.metricWriter",
+    "roles/stackdriver.resourceMetadata.writer",
+  ])
+  project = var.project_id
+  role    = each.key
+  member  = "serviceAccount:${google_service_account.services_nodes[0].email}"
 }
