@@ -91,6 +91,8 @@ module "braintrust-data-plane" {
   # Create a dedicated GCS access log bucket and send both bucket logs to it.
   # gcs_brainstore_logging_config = {}
   # gcs_api_logging_config        = {}
+  # Days to keep objects in the dedicated access log bucket. Defaults to 90. Set to null to keep them forever.
+  # gcs_access_log_retention_days = 90
   #
   # Optional GCS access logging with existing log buckets.
   # gcs_brainstore_logging_config = {

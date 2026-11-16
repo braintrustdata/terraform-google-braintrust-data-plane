@@ -89,6 +89,17 @@ variable "gcs_api_logging_config" {
   }
 }
 
+variable "gcs_access_log_retention_days" {
+  type        = number
+  description = "Number of days to retain objects in the dedicated GCS access log bucket. Set to null to retain access logs forever. Deleted (noncurrent) versions are removed after `gcs_bucket_retention_days`."
+  default     = 90
+
+  validation {
+    condition     = var.gcs_access_log_retention_days == null ? true : var.gcs_access_log_retention_days >= 1 && floor(var.gcs_access_log_retention_days) == var.gcs_access_log_retention_days
+    error_message = "`gcs_access_log_retention_days` must be null or a whole number of days greater than or equal to 1."
+  }
+}
+
 variable "gcs_kms_cmek_id" {
   type        = string
   description = "ID of Cloud KMS customer managed encryption key (CMEK) to use for Braintrust GCS buckets encryption."
