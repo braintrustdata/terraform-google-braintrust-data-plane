@@ -111,6 +111,7 @@ module "storage" {
   gcs_soft_delete_retention_days        = var.gcs_soft_delete_retention_days
   gcs_brainstore_logging_config         = var.gcs_brainstore_logging_config
   gcs_api_logging_config                = var.gcs_api_logging_config
+  gcs_access_log_retention_days         = var.gcs_access_log_retention_days
   custom_gcs_brainstore_lifecycle_rules = var.custom_gcs_brainstore_lifecycle_rules
   custom_gcs_api_lifecycle_rules        = var.custom_gcs_api_lifecycle_rules
   sandbox_filesystems_enabled           = local.isolated_workers != null

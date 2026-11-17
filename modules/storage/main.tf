@@ -86,6 +86,30 @@ resource "google_storage_bucket" "access_logs" {
     retention_duration_seconds = var.gcs_soft_delete_retention_days * 86400
   }
 
+  # Delete access logs after the configured retention period. Null retains them forever.
+  dynamic "lifecycle_rule" {
+    for_each = var.gcs_access_log_retention_days == null ? [] : [var.gcs_access_log_retention_days]
+
+    content {
+      condition {
+        age = lifecycle_rule.value
+      }
+      action {
+        type = "Delete"
+      }
+    }
+  }
+
+  # Permanently remove deleted (noncurrent) access log versions.
+  lifecycle_rule {
+    condition {
+      days_since_noncurrent_time = var.gcs_bucket_retention_days
+    }
+    action {
+      type = "Delete"
+    }
+  }
+
   dynamic "encryption" {
     for_each = var.gcs_kms_cmek_id != null ? ["encryption"] : []
 
