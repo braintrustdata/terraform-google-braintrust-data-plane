@@ -278,12 +278,9 @@ run "worker_cluster_iam_and_endpoints" {
     gke_dns_endpoint_enabled           = false
     gke_control_plane_authorized_cidrs = null
     gke_node_service_account_id        = "braintrust-iw-nodes"
-    gke_node_project_storage_access    = false
   }
   assert {
     condition = (
-      length(google_project_iam_member.gke_object_viewer) == 0 &&
-      length(google_project_iam_member.gke_artifact_reader) == 0 &&
       google_service_account.gke.account_id == "braintrust-iw-nodes" &&
       length(google_service_account.services_nodes) == 0 && length(google_project_iam_member.services_nodes) == 0
     )

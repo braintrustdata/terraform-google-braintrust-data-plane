@@ -168,12 +168,6 @@ variable "gke_node_service_account_id" {
   default     = null
 }
 
-variable "gke_node_project_storage_access" {
-  type        = bool
-  description = "Grant legacy project-wide storage and registry read access to nodes."
-  default     = true
-}
-
 variable "gke_dns_endpoint_enabled" {
   type        = bool
   description = "Allow IAM-authenticated DNS endpoint access. Null preserves existing endpoint configuration."

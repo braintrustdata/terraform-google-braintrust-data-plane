@@ -157,7 +157,7 @@ resource "google_service_account" "gke" {
   project      = var.project_id
   account_id   = coalesce(var.gke_node_service_account_id, "${var.deployment_name}-gke-cluster")
   display_name = "${var.deployment_name}-gke-cluster"
-  description  = "Service account for GKE cluster."
+  description  = "Service account for GKE node system tasks."
 }
 
 resource "google_project_iam_member" "gke_default_node_sa" {
@@ -166,35 +166,9 @@ resource "google_project_iam_member" "gke_default_node_sa" {
   member  = "serviceAccount:${google_service_account.gke.email}"
 }
 
-resource "google_project_iam_member" "gke_log_writer" {
-  project = var.project_id
-  role    = "roles/logging.logWriter"
-  member  = "serviceAccount:${google_service_account.gke.email}"
-}
-
-resource "google_project_iam_member" "gke_metric_writer" {
-  project = var.project_id
-  role    = "roles/monitoring.metricWriter"
-  member  = "serviceAccount:${google_service_account.gke.email}"
-}
-
 resource "google_project_iam_member" "gke_stackdriver_writer" {
   project = var.project_id
   role    = "roles/stackdriver.resourceMetadata.writer"
-  member  = "serviceAccount:${google_service_account.gke.email}"
-}
-
-resource "google_project_iam_member" "gke_object_viewer" {
-  count   = var.gke_node_project_storage_access ? 1 : 0
-  project = var.project_id
-  role    = "roles/storage.objectViewer"
-  member  = "serviceAccount:${google_service_account.gke.email}"
-}
-
-resource "google_project_iam_member" "gke_artifact_reader" {
-  count   = var.gke_node_project_storage_access ? 1 : 0
-  project = var.project_id
-  role    = "roles/artifactregistry.reader"
   member  = "serviceAccount:${google_service_account.gke.email}"
 }
 

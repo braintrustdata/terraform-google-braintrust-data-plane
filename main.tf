@@ -237,7 +237,6 @@ module "gke_isolated_workers_cluster" {
   gke_release_channel                  = local.isolated_workers.release_channel
   gke_node_service_account_id          = local.isolated_workers_account_id
   gke_services_node_service_account_id = local.isolated_services_account_id
-  gke_node_project_storage_access      = false
   gke_node_network_tags                = [module.gke_isolated_workers_network[0].network_tag]
   gke_kms_cmek_id                      = module.kms.gke_kms_key_id
   gke_maintenance_window               = { day = 1, start_time = local.isolated_workers.maintenance_start_time }
