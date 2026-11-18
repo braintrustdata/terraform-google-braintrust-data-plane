@@ -40,7 +40,7 @@ run "worker_pool_capabilities" {
     cluster_id                   = "workers"
     service_account_email        = "workers@braintrust-test.iam.gserviceaccount.com"
     boot_disk_kms_key            = "key"
-    machine_type                 = "c4-standard-8-lssd"
+    machine_type                 = "c4-standard-4-lssd"
     image_type                   = "UBUNTU_CONTAINERD"
     total_min_node_count         = 1
     total_max_node_count         = 10
@@ -51,6 +51,7 @@ run "worker_pool_capabilities" {
   }
   assert {
     condition = (
+      google_container_node_pool.this.node_config[0].machine_type == "c4-standard-4-lssd" &&
       google_container_node_pool.this.node_config[0].advanced_machine_features[0].enable_nested_virtualization &&
       length(google_container_node_pool.this.node_config[0].local_nvme_ssd_block_config) == 1 &&
       google_container_node_pool.this.node_config[0].image_type == "UBUNTU_CONTAINERD" &&
