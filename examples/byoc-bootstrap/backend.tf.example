@@ -1,0 +1,8 @@
+# Optional remote backend. Copy this file to backend.tf before initialization.
+terraform {
+  backend "gcs" {
+    # The customer owns this existing bucket, its location, and its access controls.
+    bucket = "customer-existing-bootstrap-state"
+    prefix = "braintrust/bootstrap"
+  }
+}

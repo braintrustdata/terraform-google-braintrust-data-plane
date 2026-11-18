@@ -1,17 +1,17 @@
 [tools]
 tflint = "latest"
 pre-commit = "latest"
-terraform = "1.10"
+terraform = "1.15.8"
 uv = "latest"
 
 [tasks]
 lint = ["terraform fmt -recursive", "tflint --recursive"]
 setup = ["pre-commit install", "tflint --init"]
-test = ["terraform test"]
+test = ["terraform test", "terraform -chdir=modules/byoc-bootstrap test", "terraform -chdir=examples/byoc-bootstrap test", "python3 -B -m unittest discover -s modules/byoc-bootstrap/tests -p 'test_*.py' -v"]
 precommit = ["pre-commit run --all-files"]
 
 [tasks.validate]
-description = "Validate the Terraform module and example code"
+description = "Validate the Terraform modules and examples"
 run = """
 #!/usr/bin/env bash
 set -e
@@ -33,5 +33,10 @@ EOF
     terraform init -backend=false
     terraform validate
   )
+done
+
+for bootstrap_dir in modules/byoc-bootstrap examples/byoc-bootstrap; do
+  terraform -chdir="$bootstrap_dir" init -backend=false -input=false
+  terraform -chdir="$bootstrap_dir" validate
 done
 """

@@ -144,3 +144,13 @@ mise run test       # Run Terraform tests
 ```
 
 Pre-commit hooks run automatically on commit. Run `mise run lint` to check before committing.
+
+## Managed BYOC v2 bootstrap
+
+`modules/byoc-bootstrap` contains the independent customer bootstrap module.
+`examples/byoc-bootstrap` contains its customer root and accepts the Braintrust tfvars file.
+The tfvars file includes the exact bootstrap-specific bridge service account.
+The data plane root and its examples must not call this module.
+The bootstrap module creates access resources, APIs, and storage for later Braintrust operations.
+It creates no data plane infrastructure.
+The `managed-byoc` directory retains the separate legacy scripts.

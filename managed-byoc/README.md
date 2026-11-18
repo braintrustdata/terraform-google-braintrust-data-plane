@@ -1,5 +1,8 @@
 # Managed BYOC Bootstrap for GCP
 
+This directory contains the legacy bootstrap scripts.
+The separate [BYOC v2 customer root](../examples/byoc-bootstrap/README.md) contains the Terraform bootstrap workflow.
+
 This directory contains the customer-project bootstrap reference for Braintrust
 managed BYOC on GCP. It prepares the access envelope Braintrust needs before
 Braintrust deploys the data plane.

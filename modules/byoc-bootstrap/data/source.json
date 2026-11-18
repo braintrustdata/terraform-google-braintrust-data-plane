@@ -1,0 +1,14 @@
+{
+  "repository": "braintrustdata/terraform-google-braintrust-data-plane",
+  "commit": "cd98a467db83c2162db7abc7b9162dd523de3eba",
+  "files": {
+    "quota-defaults.json": {
+      "path": "managed-byoc/quota-config.json",
+      "sha256": "adc0126e0e4ede82fe75d561f57b908d182546334b2f28b0c840960a36a8aed8"
+    },
+    "LICENSE": {
+      "path": "LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    }
+  }
+}

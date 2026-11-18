@@ -2,6 +2,14 @@
 
 This module is used to create the VPC, Databases, Redis, Storage, IAM, and associated resources for the self-hosted Braintrust data plane on Google using Google Kubernetes Engine.
 
+## Managed BYOC v2 bootstrap
+
+The separate [customer bootstrap root](examples/byoc-bootstrap/README.md) prepares a dedicated GCP project for Braintrust-managed BYOC v2.
+Braintrust supplies the customer tfvars file.
+The customer applies that file through the bootstrap root.
+The bootstrap module does not create the data plane.
+The data plane root and its examples do not call the bootstrap module.
+
 ## Module Configuration
 
 Module input variables are defined in [`variables.tf`](variables.tf) and
