@@ -1,3 +1,5 @@
+mock_provider "time" {}
+
 mock_provider "google" {
   override_during = plan
   mock_data "google_project" {

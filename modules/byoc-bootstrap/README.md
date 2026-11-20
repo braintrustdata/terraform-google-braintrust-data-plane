@@ -58,6 +58,11 @@ Existing objects still require their original keys after a default key change.
 The customer controls this bootstrap root's backend separately from these buckets.
 The [customer setup](../../examples/byoc-bootstrap/README.md#setup) covers the optional backend.
 
+Terraform waits 60 seconds after creation or an update of either storage role before it applies the bucket grants.
+The delay uses the `hashicorp/time` provider and repeats after either role changes or requires replacement.
+Later applies without role changes do not repeat the delay.
+The delay reduces role propagation failures, but GCP can require more time.
+
 ## Quotas
 
 Quota requests default to disabled.

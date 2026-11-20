@@ -482,16 +482,38 @@ resource "google_service_account_iam_member" "deployment_bridge" {
   member             = "serviceAccount:${var.braintrust_bridge_service_account}"
 }
 
+# Cloud Storage can reject a new role after IAM reports successful creation.
+# The Google provider does not retry the role hierarchy error.
+resource "time_sleep" "storage_role_propagation" {
+  create_duration = "60s"
+
+  triggers = {
+    state_role    = google_project_iam_custom_role.foundation["state"].name
+    evidence_role = google_project_iam_custom_role.foundation["evidence"].name
+  }
+
+  lifecycle {
+    replace_triggered_by = [
+      google_project_iam_custom_role.foundation["state"],
+      google_project_iam_custom_role.foundation["evidence"],
+    ]
+  }
+}
+
 resource "google_storage_bucket_iam_member" "state" {
   bucket = google_storage_bucket.state.name
   role   = google_project_iam_custom_role.foundation["state"].name
   member = "serviceAccount:${google_service_account.bootstrap["deployment"].email}"
+
+  depends_on = [time_sleep.storage_role_propagation]
 }
 
 resource "google_storage_bucket_iam_member" "evidence" {
   bucket = google_storage_bucket.evidence.name
   role   = google_project_iam_custom_role.foundation["evidence"].name
   member = "serviceAccount:${google_service_account.bootstrap["deployment"].email}"
+
+  depends_on = [time_sleep.storage_role_propagation]
 }
 
 # Readiness reads reuse Deployment. No key cryptographic use or policy mutation applies.
