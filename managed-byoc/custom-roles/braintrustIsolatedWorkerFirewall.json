@@ -1,0 +1,13 @@
+{
+  "title": "Braintrust isolated worker firewalls",
+  "description": "Manage worker VPC firewall rules without Cloud Armor or certificate administration.",
+  "stage": "GA",
+  "includedPermissions": [
+    "compute.firewalls.create",
+    "compute.firewalls.get",
+    "compute.firewalls.update",
+    "compute.firewalls.delete",
+    "compute.globalOperations.get",
+    "compute.networks.updatePolicy"
+  ]
+}

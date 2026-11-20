@@ -13,6 +13,11 @@ Set `enable_loop_runtime = true` to provision Loop's worker cluster, private
 discovery and workload identity. Worker defaults and isolation are owned by this
 module; `gke_isolated_workers` is only needed for optional overrides.
 
+For managed BYOC, pass `isolated_worker_dns_roles` from the
+[bootstrap output](managed-byoc/README.md#worker-permissions-for-existing-deployments)
+so deployment automation does not need to manage custom DNS role definitions.
+Leaving it unset preserves existing module-owned roles.
+
 The new worker control plane uses an IAM-authenticated DNS endpoint and private
 IP access. CI needs `container.clusters.connect` and Kubernetes permissions,
 without a fixed public IP allowlist. The `loop_runtime` output supplies the

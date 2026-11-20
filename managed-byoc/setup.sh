@@ -28,6 +28,7 @@ DEPLOY_SA_NAME="braintrust-deploy"
 SUPPORT_SA_NAME="braintrust-support"
 PROJECT_ID=""
 DRY_RUN=false
+LOOP_PERMISSIONS_ONLY=false
 LICENSE_KEY=""
 LICENSE_SECRET_NAME="brainstore-license-key"
 
@@ -45,6 +46,7 @@ usage() {
   echo "  --license-key      (optional) Brainstore license key to store in Secret Manager"
   echo "  --license-secret   (optional) Secret Manager secret name (default: brainstore-license-key)"
   echo "  --dry-run          (optional) Preview commands without changing the project"
+  echo "  --loop-permissions-only (optional) Provision only worker firewall/DNS permissions for an existing deployment"
   exit "$status"
 }
 
@@ -81,6 +83,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --dry-run)
       DRY_RUN=true
+      shift
+      ;;
+    --loop-permissions-only)
+      LOOP_PERMISSIONS_ONLY=true
       shift
       ;;
     -h|--help)
@@ -151,6 +157,34 @@ run() {
   "$@"
 }
 
+configure_loop_permissions() {
+  local definition role_id deleted
+  for definition in "$SCRIPT_DIR"/custom-roles/*.json; do
+    role_id="$(basename "$definition" .json)"
+    if deleted="$(gcloud iam roles describe "$role_id" --project="$PROJECT_ID" --format='value(deleted)' 2>/dev/null)"; then
+      if [[ "$deleted" == "True" ]]; then
+        run gcloud iam roles undelete "$role_id" --project="$PROJECT_ID" --quiet >/dev/null
+      fi
+      run gcloud iam roles update "$role_id" --project="$PROJECT_ID" --file="$definition" --quiet >/dev/null
+    else
+      run gcloud iam roles create "$role_id" --project="$PROJECT_ID" --file="$definition" --quiet >/dev/null
+    fi
+  done
+
+  run gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+    --member="serviceAccount:$DEPLOY_SA_EMAIL" \
+    --role="projects/$PROJECT_ID/roles/braintrustIsolatedWorkerFirewall" \
+    --condition=None --quiet >/dev/null
+
+  echo "Pass these bootstrap-owned roles to the data-plane module:"
+  cat <<EOF
+isolated_worker_dns_roles = {
+  zone_list = "projects/$PROJECT_ID/roles/braintrustIsolatedDnsList"
+  records   = "projects/$PROJECT_ID/roles/braintrustIsolatedDnsRecords"
+}
+EOF
+}
+
 echo "=========================================="
 echo " Braintrust BYOC GCP Setup"
 echo "=========================================="
@@ -164,6 +198,11 @@ echo " License Key Provided: $([[ -n "$LICENSE_KEY" ]] && echo true || echo fals
 echo " Dry Run:              $DRY_RUN"
 echo "=========================================="
 echo ""
+
+if [[ "$LOOP_PERMISSIONS_ONLY" == "true" ]]; then
+  configure_loop_permissions
+  exit 0
+fi
 
 # -----------------------------------------------------------------------------
 # Step 1: Enable required GCP APIs
@@ -300,6 +339,7 @@ echo ""
 # -----------------------------------------------------------------------------
 # Step 4: Grant project-level IAM roles
 # -----------------------------------------------------------------------------
+configure_loop_permissions
 grant_project_roles "serviceAccount:$DEPLOY_SA_EMAIL" "$DEPLOY_SA_EMAIL" "${DEPLOYMENT_ROLES[@]}"
 grant_project_roles "serviceAccount:$SUPPORT_SA_EMAIL" "$SUPPORT_SA_EMAIL" "${SUPPORT_ROLES[@]}"
 echo ""

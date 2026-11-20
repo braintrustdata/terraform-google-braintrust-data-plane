@@ -1,6 +1,5 @@
 [
   "roles/compute.networkAdmin",
-  "roles/compute.securityAdmin",
   "roles/container.admin",
   "roles/cloudsql.admin",
   "roles/redis.admin",
@@ -9,7 +8,6 @@
   "roles/secretmanager.admin",
   "roles/iam.serviceAccountAdmin",
   "roles/iam.serviceAccountUser",
-  "roles/iam.roleAdmin",
   "roles/resourcemanager.projectIamAdmin",
   "roles/servicenetworking.networksAdmin",
   "roles/serviceusage.serviceUsageAdmin",

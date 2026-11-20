@@ -39,3 +39,6 @@ crash.log
 
 # Ignore local dev/test Kubernetes/Helm config files
 local_*.yaml
+
+# Ignore Python test bytecode
+__pycache__/

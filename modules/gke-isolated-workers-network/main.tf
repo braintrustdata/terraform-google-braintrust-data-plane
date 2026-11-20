@@ -226,8 +226,10 @@ resource "google_compute_firewall" "runtime_to_workers" {
 }
 
 locals {
-  isolated_discovery     = var.config.discovery
-  isolated_dns_namespace = local.isolated_discovery == null ? null : local.isolated_discovery.external_dns_namespace
+  isolated_discovery          = var.config.discovery
+  isolated_dns_namespace      = local.isolated_discovery == null ? null : local.isolated_discovery.external_dns_namespace
+  isolated_dns_zone_list_role = var.existing_dns_roles == null ? try(google_project_iam_custom_role.isolated_dns_zone_list[0].name, null) : var.existing_dns_roles.zone_list
+  isolated_dns_records_role   = var.existing_dns_roles == null ? try(google_project_iam_custom_role.isolated_dns_records[0].name, null) : var.existing_dns_roles.records
   # The published Sandbox Service chart cannot annotate its external-dns
   # ServiceAccount, so grant the Kubernetes identity directly.
   isolated_external_dns_member = local.isolated_discovery == null ? null : "principal://iam.googleapis.com/projects/${data.google_project.current.number}/locations/global/workloadIdentityPools/${data.google_client_config.current.project}.svc.id.goog/subject/ns/${local.isolated_dns_namespace}/sa/${local.isolated_discovery.external_dns_service_account}"
@@ -235,7 +237,7 @@ locals {
 
 # External-dns lists zones before it applies its zone and domain filters.
 resource "google_project_iam_custom_role" "isolated_dns_zone_list" {
-  count       = local.isolated_discovery == null ? 0 : 1
+  count       = local.isolated_discovery == null || var.existing_dns_roles != null ? 0 : 1
   project     = data.google_client_config.current.project
   role_id     = "isolatedDnsList_${substr(sha256(var.deployment_name), 0, 12)}"
   title       = "Isolated worker DNS zone discovery"
@@ -245,12 +247,12 @@ resource "google_project_iam_custom_role" "isolated_dns_zone_list" {
 resource "google_project_iam_member" "isolated_dns_zone_list" {
   count   = local.isolated_discovery == null ? 0 : 1
   project = data.google_client_config.current.project
-  role    = google_project_iam_custom_role.isolated_dns_zone_list[0].name
+  role    = local.isolated_dns_zone_list_role
   member  = local.isolated_external_dns_member
 }
 
 resource "google_project_iam_custom_role" "isolated_dns_records" {
-  count   = local.isolated_discovery == null ? 0 : 1
+  count   = local.isolated_discovery == null || var.existing_dns_roles != null ? 0 : 1
   project = data.google_client_config.current.project
   role_id = "isolatedDnsRecords_${substr(sha256(var.deployment_name), 0, 12)}"
   title   = "Isolated worker DNS records"
@@ -267,7 +269,7 @@ resource "google_dns_managed_zone_iam_member" "isolated_external_dns" {
   count        = local.isolated_discovery == null ? 0 : 1
   project      = data.google_client_config.current.project
   managed_zone = google_dns_managed_zone.discovery[0].name
-  role         = google_project_iam_custom_role.isolated_dns_records[0].name
+  role         = local.isolated_dns_records_role
   member       = local.isolated_external_dns_member
 }
 

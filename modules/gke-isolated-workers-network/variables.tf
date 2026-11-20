@@ -4,6 +4,23 @@ variable "primary_cidrs" {
   description = "Known primary network ranges for overlap validation."
 }
 
+variable "existing_dns_roles" {
+  type = object({
+    zone_list = string
+    records   = string
+  })
+  default     = null
+  description = "Existing bootstrap-owned DNS role names; null preserves role creation."
+
+  validation {
+    condition = var.existing_dns_roles == null ? true : alltrue([
+      for role in values(var.existing_dns_roles) :
+      can(regex("^(projects|organizations)/[^/]+/roles/[A-Za-z0-9_.]+$", role))
+    ])
+    error_message = "Supply both DNS custom roles as full projects/<project>/roles/<role> or organizations/<org>/roles/<role> names."
+  }
+}
+
 variable "config" {
   type = object({
     existing_subnet_self_link = optional(string)

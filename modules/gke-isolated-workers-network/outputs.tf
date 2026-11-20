@@ -18,6 +18,10 @@ output "discovery" {
     endpoint                     = "https://workers.${trimsuffix(var.config.discovery.dns_name, ".")}:9400"
     external_dns_namespace       = local.isolated_dns_namespace
     external_dns_service_account = local.isolated_discovery.external_dns_service_account
+    dns_roles = {
+      zone_list = local.isolated_dns_zone_list_role
+      records   = local.isolated_dns_records_role
+    }
     # Arguments the published Sandbox Service chart does not set itself.
     external_dns_extra_args = [
       "--google-project=${data.google_client_config.current.project}",
