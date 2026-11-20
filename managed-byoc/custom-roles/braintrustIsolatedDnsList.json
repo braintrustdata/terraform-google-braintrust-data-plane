@@ -1,0 +1,8 @@
+{
+  "title": "Braintrust isolated worker DNS discovery",
+  "description": "List DNS zones for isolated worker discovery.",
+  "stage": "GA",
+  "includedPermissions": [
+    "dns.managedZones.list"
+  ]
+}

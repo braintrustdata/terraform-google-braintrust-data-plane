@@ -1,0 +1,12 @@
+{
+  "title": "Braintrust isolated worker DNS records",
+  "description": "Manage records when granted on the isolated worker discovery zone.",
+  "stage": "GA",
+  "includedPermissions": [
+    "dns.changes.create",
+    "dns.resourceRecordSets.create",
+    "dns.resourceRecordSets.delete",
+    "dns.resourceRecordSets.list",
+    "dns.resourceRecordSets.update"
+  ]
+}

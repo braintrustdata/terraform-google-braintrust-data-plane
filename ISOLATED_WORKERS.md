@@ -210,8 +210,13 @@ External-dns uses the Kubernetes principal directly through Workload Identity
 Federation, without a Google service account or service account annotation. Its
 project role permits only `dns.managedZones.list`; a separate role permits record
 reads/writes only on the discovery zone. It cannot create zones, change zone IAM,
-or modify Google API or unrelated zones. Deployment requires the Cloud DNS API,
-custom-role creation permissions, and permission to set the zone policy.
+or modify Google API or unrelated zones. Deployment requires the Cloud DNS API
+and permission to set the zone policy.
+
+Pass `isolated_worker_dns_roles` from the
+[managed bootstrap](managed-byoc/README.md#worker-permissions-for-existing-deployments)
+to avoid role lifecycle permissions. Otherwise, Terraform retains ownership of
+the DNS role definitions and needs create/get/update/delete/undelete permissions.
 
 The defaults are namespace `braintrust-sandbox` and service account `external-dns`;
 override `external_dns_namespace` and `external_dns_service_account` as needed.

@@ -38,9 +38,10 @@ The standard bootstrap creates or mirrors:
   `brainstore-license-key`.
 - Project roles in `deployment-roles.json` granted to the deployment service
   account.
-  `roles/compute.securityAdmin` manages isolated-worker firewall rules;
-  `roles/iam.roleAdmin` manages custom roles when private DNS discovery is enabled.
-  These permissions are needed only when Loop Runtime or isolated workers are enabled.
+- Worker roles from `custom-roles/`: `braintrustIsolatedWorkerFirewall` grants
+  the deployment account six firewall permissions; `braintrustIsolatedDnsList`
+  and `braintrustIsolatedDnsRecords` are created for the module to grant to the
+  worker DNS identity.
 - Project roles in `support-roles.json` granted to the support service account.
   These roles allow approved Braintrust support engineers to inspect and operate
   the cluster and surrounding managed services. They intentionally do not include
@@ -66,12 +67,13 @@ The standard bootstrap already grants `roles/resourcemanager.projectIamAdmin`,
 which lets the deployment identity grant itself these project roles. The explicit
 bindings make the service permissions directly available without increasing
 what the deployment identity can already authorize for itself.
+Firewall writes remain project-scoped, not limited by rule name or target tag.
 
 ## Setup Script
 
 Run from Cloud Shell or an approved workstation with `gcloud` and `jq`
 installed. The caller must be allowed to enable APIs, create service accounts,
-and manage IAM policies in the target project.
+and manage IAM policies and custom role definitions in the target project.
 
 ```bash
 ./setup.sh \
@@ -100,9 +102,10 @@ Options:
 | `--license-key` | unset | Brainstore license key to store in the customer project Secret Manager |
 | `--license-secret` | `brainstore-license-key` | Secret Manager secret name for the Brainstore license key |
 | `--dry-run` | `false` | Print the API, service account, IAM, and impersonation changes without applying them |
+| `--loop-permissions-only` | `false` | Provision worker IAM only, without changing APIs, accounts, secrets or impersonation |
 
 If the customer mirrors bootstrap with their own provisioning process, use
-`setup.sh`, `services.json`, `deployment-roles.json`, and `support-roles.json`
+`setup.sh`, `services.json`, `deployment-roles.json`, `custom-roles/`, and `support-roles.json`
 as the source of truth for the required end state. The provisioning process must
 also initialize the Cloud Storage service agent for the project; `setup.sh` does
 this with:
@@ -111,28 +114,31 @@ this with:
 gcloud storage service-agent --project <gcp-project-id>
 ```
 
-For existing deployments enabling Loop Runtime or isolated workers, have the
-customer project IAM owner review and apply these two additional bindings before
-retrying the infrastructure deployment. Use the existing project ID and deployment
-service account email (adjust the email if bootstrap used a custom account name):
+## Worker permissions for existing deployments
+
+For an existing deployment, run as the project IAM owner before enabling workers:
 
 ```bash
-PROJECT_ID="<project-id>"
-DEPLOY_SA_EMAIL="braintrust-deploy@${PROJECT_ID}.iam.gserviceaccount.com"
-
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:$DEPLOY_SA_EMAIL" \
-  --role="roles/compute.securityAdmin" \
-  --condition=None
-
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:$DEPLOY_SA_EMAIL" \
-  --role="roles/iam.roleAdmin" \
-  --condition=None
+./setup.sh --project <project-id> --loop-permissions-only --dry-run
+./setup.sh --project <project-id> --loop-permissions-only
 ```
 
-Re-running `setup.sh` with the existing bootstrap options also reapplies the role
-list. Publishing an updated role list alone does not change project IAM.
+Add `--deploy-sa-name <account-name>` for a custom account. Both setup modes print:
+
+```hcl
+isolated_worker_dns_roles = {
+  zone_list = "projects/<project-id>/roles/braintrustIsolatedDnsList"
+  records   = "projects/<project-id>/roles/braintrustIsolatedDnsRecords"
+}
+```
+
+Pass this input to a supporting data-plane module version to use bootstrap-owned
+roles. Omission preserves module-owned roles. If roles are already in Terraform
+state, hand off ownership before setting this input to avoid planned deletions.
+
+Existing `roles/compute.securityAdmin` and `roles/iam.roleAdmin` grants are not
+revoked; remove them after verifying ownership and the deployment plan.
+Publishing an updated role list alone does not change project IAM.
 
 The script is safe to re-run. It skips existing service accounts, re-applies IAM
 bindings idempotently, and only adds a new Brainstore license secret version if
@@ -177,3 +183,4 @@ After bootstrap, provide Braintrust:
 - support service account email
 - relevant organization policies or IAM Deny policies that may affect GKE, Cloud
   SQL, Redis, GCS, IAM, DNS, load balancing, or support access
+- `isolated_worker_dns_roles` printed by setup, for the data-plane module input

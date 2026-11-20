@@ -420,6 +420,36 @@ run "supplied_subnet_requires_same_vpc" {
   expect_failures = [data.google_compute_subnetwork.existing]
 }
 
+run "discovery_consumes_bootstrap_roles_without_managing_definitions" {
+  command = plan
+  module { source = "./modules/gke-isolated-workers-network" }
+  variables {
+    network        = "https://www.googleapis.com/compute/v1/projects/braintrust-test/global/networks/primary"
+    primary_subnet = "https://www.googleapis.com/compute/v1/projects/braintrust-test/regions/us-central1/subnetworks/primary"
+    existing_dns_roles = {
+      zone_list = "projects/braintrust-test/roles/bootstrapDnsList"
+      records   = "projects/braintrust-test/roles/bootstrapDnsRecords"
+    }
+    config = {
+      node_cidr          = "10.60.0.0/24"
+      pod_cidr           = "10.64.0.0/18"
+      service_cidr       = "10.65.0.0/22"
+      control_plane_cidr = "10.60.1.0/28"
+      discovery          = { dns_name = "test.isolated.internal", runtime_source_ranges = ["10.20.0.0/20"] }
+    }
+  }
+  assert {
+    condition = (
+      length(google_project_iam_custom_role.isolated_dns_zone_list) == 0 &&
+      length(google_project_iam_custom_role.isolated_dns_records) == 0 &&
+      google_project_iam_member.isolated_dns_zone_list[0].role == var.existing_dns_roles.zone_list &&
+      google_dns_managed_zone_iam_member.isolated_external_dns[0].role == var.existing_dns_roles.records &&
+      google_dns_managed_zone_iam_member.isolated_external_dns[0].managed_zone == output.discovery.zone_name
+    )
+    error_message = "Bootstrap-owned roles must only receive the project-list and zone-record grants, without role lifecycle operations."
+  }
+}
+
 run "discovery_uses_private_zone_and_worker_only_ingress" {
   command = apply
   module { source = "./modules/gke-isolated-workers-network" }

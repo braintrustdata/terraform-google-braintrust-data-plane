@@ -697,6 +697,15 @@ variable "enable_loop_runtime" {
   default     = false
 }
 
+variable "isolated_worker_dns_roles" {
+  type = object({
+    zone_list = string
+    records   = string
+  })
+  default     = null
+  description = "Bootstrap-owned DNS custom role names. Null preserves module-managed role ownership and its IAM role lifecycle permissions."
+}
+
 variable "gke_isolated_workers" {
   type = object({
     enabled = optional(bool, true)
