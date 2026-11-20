@@ -38,13 +38,10 @@ The standard bootstrap creates or mirrors:
   `brainstore-license-key`.
 - Project roles in `deployment-roles.json` granted to the deployment service
   account.
-- Custom roles from `custom-roles/`, created by the bootstrap operator:
-  - `braintrustIsolatedWorkerFirewall`, granted to the deployment account for
-    firewall create/get/update/delete, operation reads, and network policy updates.
-  - `braintrustIsolatedDnsList` and `braintrustIsolatedDnsRecords`, whose grants
-    are managed by the data-plane module for the worker DNS identity.
-  The deployment account receives no custom-role lifecycle permissions from
-  these grants, and the firewall role excludes Cloud Armor and certificates.
+- Worker roles from `custom-roles/`: `braintrustIsolatedWorkerFirewall` grants
+  the deployment account six firewall permissions; `braintrustIsolatedDnsList`
+  and `braintrustIsolatedDnsRecords` are created for the module to grant to the
+  worker DNS identity.
 - Project roles in `support-roles.json` granted to the support service account.
   These roles allow approved Braintrust support engineers to inspect and operate
   the cluster and surrounding managed services. They intentionally do not include
@@ -66,18 +63,17 @@ Braintrust managed BYOC pattern. Braintrust maintains the AWS-to-GCP Workload
 Identity Federation bridge in the Braintrust-owned
 `braintrust-byoc-management` project.
 
-The full bootstrap retains `roles/resourcemanager.projectIamAdmin`, which can
-allow the deployment identity to grant itself other project roles. The worker
-roles narrow direct permissions; they do not establish a complete privilege
-boundary while that grant remains unrestricted. Firewall writes remain
-project-scoped, not limited by rule name or target tag.
+The standard bootstrap already grants `roles/resourcemanager.projectIamAdmin`,
+which lets the deployment identity grant itself these project roles. The explicit
+bindings make the service permissions directly available without increasing
+what the deployment identity can already authorize for itself.
+Firewall writes remain project-scoped, not limited by rule name or target tag.
 
 ## Setup Script
 
 Run from Cloud Shell or an approved workstation with `gcloud` and `jq`
 installed. The caller must be allowed to enable APIs, create service accounts,
 and manage IAM policies and custom role definitions in the target project.
-The bootstrap operator creates the DNS roles; the deployment identity does not.
 
 ```bash
 ./setup.sh \
@@ -106,7 +102,7 @@ Options:
 | `--license-key` | unset | Brainstore license key to store in the customer project Secret Manager |
 | `--license-secret` | `brainstore-license-key` | Secret Manager secret name for the Brainstore license key |
 | `--dry-run` | `false` | Print the API, service account, IAM, and impersonation changes without applying them |
-| `--loop-permissions-only` | `false` | Create/update worker custom roles and grant the firewall role to the existing deployment account, without API, service-account, secret, or impersonation changes |
+| `--loop-permissions-only` | `false` | Provision worker IAM only, without changing APIs, accounts, secrets or impersonation |
 
 If the customer mirrors bootstrap with their own provisioning process, use
 `setup.sh`, `services.json`, `deployment-roles.json`, `custom-roles/`, and `support-roles.json`
@@ -120,17 +116,14 @@ gcloud storage service-agent --project <gcp-project-id>
 
 ## Worker permissions for existing deployments
 
-Have the project IAM owner review and run the permissions-only mode before
-enabling Loop Runtime or isolated workers. Use the existing project and account
-name; this mode assumes the required APIs and deployment account already exist.
+For an existing deployment, run as the project IAM owner before enabling workers:
 
 ```bash
 ./setup.sh --project <project-id> --loop-permissions-only --dry-run
 ./setup.sh --project <project-id> --loop-permissions-only
 ```
 
-For a custom deployment account, add `--deploy-sa-name <account-name>`.
-Both setup modes print the input to pass to the data-plane module:
+Add `--deploy-sa-name <account-name>` for a custom account. Both setup modes print:
 
 ```hcl
 isolated_worker_dns_roles = {
@@ -139,19 +132,12 @@ isolated_worker_dns_roles = {
 }
 ```
 
-With this input, Terraform grants zone listing at project scope and record access
-on the private discovery zone, without reading or managing role definitions.
-Omitting it preserves the existing module-managed DNS roles and still requires
-role lifecycle permissions. Use a module version that supports this input.
+Pass this input to a supporting data-plane module version to use bootstrap-owned
+roles. Omission preserves module-owned roles. If roles are already in Terraform
+state, hand off ownership before setting this input to avoid planned deletions.
 
-For a deployment whose DNS roles are already in Terraform state, keep the input
-unset until ownership has been explicitly handed off. Setting it immediately
-plans deletion of the old module-owned roles. Review the ownership transfer and
-any existing grants before removing resources from Terraform management.
-
-Setup adds or updates the reviewed grants; it does not revoke existing
-`roles/compute.securityAdmin` or `roles/iam.roleAdmin` grants. Remove obsolete
-grants only after the new role ownership and deployment plan are verified.
+Existing `roles/compute.securityAdmin` and `roles/iam.roleAdmin` grants are not
+revoked; remove them after verifying ownership and the deployment plan.
 Publishing an updated role list alone does not change project IAM.
 
 The script is safe to re-run. It skips existing service accounts, re-applies IAM

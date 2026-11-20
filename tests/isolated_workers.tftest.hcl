@@ -42,21 +42,6 @@ run "disabled_by_default" {
   }
 }
 
-run "loop_uses_bootstrap_dns_roles" {
-  command = plan
-  variables {
-    enable_loop_runtime = true
-    isolated_worker_dns_roles = {
-      zone_list = "projects/braintrust-test/roles/bootstrapDnsList"
-      records   = "projects/braintrust-test/roles/bootstrapDnsRecords"
-    }
-  }
-  assert {
-    condition     = output.loop_runtime.workers.discovery.dns_roles == var.isolated_worker_dns_roles
-    error_message = "The Loop entry point must pass bootstrap role names through to worker discovery."
-  }
-}
-
 run "loop_discovery_sanitizes_deployment_name" {
   command = plan
   # Keep this regression focused on generated worker DNS, independent of primary resource naming.

@@ -199,12 +199,11 @@ module "gke_isolated_workers_network" {
   source = "./modules/gke-isolated-workers-network"
   count  = local.isolated_workers == null ? 0 : 1
 
-  deployment_name    = var.deployment_name
-  network            = var.create_vpc ? module.vpc[0].network_self_link : var.existing_network_self_link
-  primary_subnet     = var.create_vpc ? module.vpc[0].subnet_self_link : var.existing_subnet_self_link
-  config             = local.isolated_network_config
-  existing_dns_roles = var.isolated_worker_dns_roles
-  custom_labels      = var.custom_labels
+  deployment_name = var.deployment_name
+  network         = var.create_vpc ? module.vpc[0].network_self_link : var.existing_network_self_link
+  primary_subnet  = var.create_vpc ? module.vpc[0].subnet_self_link : var.existing_subnet_self_link
+  config          = local.isolated_network_config
+  custom_labels   = var.custom_labels
   primary_cidrs = compact([
     var.create_vpc ? var.subnet_cidr_range : data.google_compute_subnetwork.primary_for_isolation[0].ip_cidr_range,
     var.gke_cluster_is_private ? var.gke_control_plane_cidr : null,
@@ -212,6 +211,8 @@ module "gke_isolated_workers_network" {
     var.gke_services_ipv4_cidr_block,
     var.private_service_access_address == null ? null : "${var.private_service_access_address}/${var.private_service_access_prefix_length}",
   ])
+
+  existing_dns_roles = var.isolated_worker_dns_roles
 }
 
 module "gke_isolated_workers_cluster" {
