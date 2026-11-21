@@ -697,13 +697,19 @@ variable "enable_loop_runtime" {
   default     = false
 }
 
+variable "deploy_service_account_email" {
+  type        = string
+  default     = null
+  description = "Existing deployment account for Terraform-owned worker firewall permissions. Omit when bootstrap already grants worker firewall access. Initial creation requires IAM custom-role administration."
+}
+
 variable "isolated_worker_dns_roles" {
   type = object({
     zone_list = string
     records   = string
   })
   default     = null
-  description = "Bootstrap-owned DNS custom role names. Null preserves module-managed role ownership and its IAM role lifecycle permissions."
+  description = "Optional DNS custom role names. Null discovers bootstrap roles, falling back to existing deployment roles. Role definitions are not managed by this module."
 }
 
 variable "gke_isolated_workers" {

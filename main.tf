@@ -212,7 +212,8 @@ module "gke_isolated_workers_network" {
     var.private_service_access_address == null ? null : "${var.private_service_access_address}/${var.private_service_access_prefix_length}",
   ])
 
-  existing_dns_roles = var.isolated_worker_dns_roles
+  existing_dns_roles           = var.isolated_worker_dns_roles
+  deploy_service_account_email = var.deploy_service_account_email
 }
 
 module "gke_isolated_workers_cluster" {

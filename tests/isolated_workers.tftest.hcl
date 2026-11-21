@@ -18,6 +18,14 @@ mock_provider "google" {
   mock_data "google_project" {
     defaults = { project_id = "braintrust-test", number = "123456789012" }
   }
+  mock_data "google_project_iam_custom_roles" {
+    defaults = {
+      roles = [
+        { name = "projects/braintrust-test/roles/braintrustIsolatedDnsList", deleted = false, stage = "GA" },
+        { name = "projects/braintrust-test/roles/braintrustIsolatedDnsRecords", deleted = false, stage = "GA" },
+      ]
+    }
+  }
   mock_resource "google_container_cluster" {
     defaults = {
       cluster_ipv4_cidr = "10.20.0.0/20"
@@ -440,8 +448,7 @@ run "discovery_consumes_bootstrap_roles_without_managing_definitions" {
   }
   assert {
     condition = (
-      length(google_project_iam_custom_role.isolated_dns_zone_list) == 0 &&
-      length(google_project_iam_custom_role.isolated_dns_records) == 0 &&
+      length(data.google_project_iam_custom_roles.isolated_dns) == 0 &&
       google_project_iam_member.isolated_dns_zone_list[0].role == var.existing_dns_roles.zone_list &&
       google_dns_managed_zone_iam_member.isolated_external_dns[0].role == var.existing_dns_roles.records &&
       google_dns_managed_zone_iam_member.isolated_external_dns[0].managed_zone == output.discovery.zone_name
@@ -470,8 +477,8 @@ run "discovery_uses_private_zone_and_worker_only_ingress" {
   }
   assert {
     condition = (
-      google_project_iam_custom_role.isolated_dns_zone_list[0].permissions == toset(["dns.managedZones.list"]) &&
-      google_project_iam_custom_role.isolated_dns_records[0].permissions == toset(["dns.changes.create", "dns.resourceRecordSets.create", "dns.resourceRecordSets.delete", "dns.resourceRecordSets.list", "dns.resourceRecordSets.update"]) &&
+      google_project_iam_member.isolated_dns_zone_list[0].role == "projects/braintrust-test/roles/braintrustIsolatedDnsList" &&
+      google_dns_managed_zone_iam_member.isolated_external_dns[0].role == "projects/braintrust-test/roles/braintrustIsolatedDnsRecords" &&
       google_dns_managed_zone_iam_member.isolated_external_dns[0].managed_zone == output.discovery.zone_name
     )
     error_message = "External-dns must use a separate identity with record writes scoped to its discovery zone."
