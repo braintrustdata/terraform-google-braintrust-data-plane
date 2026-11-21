@@ -7,16 +7,28 @@ This module is used to create the VPC, Databases, Redis, Storage, IAM, and assoc
 Module input variables are defined in [`variables.tf`](variables.tf) and
 outputs are defined in [`outputs.tf`](outputs.tf).
 
-## Loop Runtime infrastructure
+## Loop Runtime
 
-Set `enable_loop_runtime = true` to provision Loop's worker cluster, private
-discovery and workload identity. Worker defaults and isolation are owned by this
-module; `gke_isolated_workers` is only needed for optional overrides.
+Set `enable_loop_runtime = true` to create the isolated worker cluster and install
+Sandbox Service. The apply waits for a Cloud Run job to generate and retain TLS
+in Secret Manager and install the worker chart. Later applies reuse that TLS.
+`gke_isolated_workers` and `loop_runtime_options` are optional overrides.
 
-The new worker control plane uses an IAM-authenticated DNS endpoint and private
-IP access. CI needs `container.clusters.connect` and Kubernetes permissions,
-without a fixed public IP allowlist. The `loop_runtime` output supplies the
-application inputs and provider connection. See [Loop and worker configuration](ISOLATED_WORKERS.md).
+For a Terraform-managed primary release, pass the ready configuration to the
+[GKE app module](https://github.com/braintrustdata/terraform-google-braintrust-gke-app#managed-loop-runtime):
+
+```hcl
+loop_runtime = try(data.terraform_remote_state.infra.outputs.loop_runtime, null)
+```
+
+For a Helm-managed primary release, pass this infrastructure's
+`loop_runtime_helm_values_yaml` output as an additional values file. Both paths
+use the same worker installation and client-secret reference; neither needs a
+separate setup module, worker provider aliases, or certificate files. Use a
+Braintrust chart supporting `loopRuntime.sandbox.clientTlsSecret` and compatible
+API, Brainstore, and routed AI Gateway versions.
+See [configuration and lifecycle](ISOLATED_WORKERS.md) and the
+[Helm guide](https://github.com/braintrustdata/helm/tree/main/braintrust/examples/gke-loop-runtime).
 
 ## GKE Cluster Modes
 

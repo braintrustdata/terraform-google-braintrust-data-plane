@@ -7,7 +7,7 @@ uv = "latest"
 [tasks]
 lint = ["terraform fmt -recursive", "tflint --recursive"]
 setup = ["pre-commit install", "tflint --init"]
-test = ["terraform test", "python3 -m unittest discover -s managed-byoc/tests"]
+test = ["terraform test", "python3 -m unittest discover -s managed-byoc/tests", "python3 -m unittest discover -s modules/gke-loop-bootstrap"]
 precommit = ["pre-commit run --all-files"]
 
 [tasks.validate]

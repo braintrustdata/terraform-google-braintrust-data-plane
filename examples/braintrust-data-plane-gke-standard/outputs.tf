@@ -74,3 +74,11 @@ output "redis_url" {
 output "loop_runtime_service_account" {
   value = module.braintrust-data-plane.loop_runtime_service_account
 }
+
+output "loop_runtime" {
+  value = module.braintrust-data-plane.loop_runtime
+}
+
+output "loop_runtime_helm_values_yaml" {
+  value = module.braintrust-data-plane.loop_runtime_helm_values_yaml
+}

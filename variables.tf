@@ -691,9 +691,22 @@ variable "brainstore_impersonation_targets" {
   default     = []
 }
 
+variable "loop_runtime_options" {
+  description = "Optional worker image, capacity, Helm and telemetry overrides for the automatic Loop bootstrap."
+  type = object({
+    services_version               = optional(string)
+    worker_replicas                = optional(number, 1)
+    worker_helm_values             = optional(string, "")
+    brainstore_license_secret_name = optional(string, "brainstore-license-key")
+    control_plane_telemetry        = optional(string, "status,metrics,usage")
+  })
+  default  = {}
+  nullable = false
+}
+
 variable "enable_loop_runtime" {
   type        = bool
-  description = "Create Loop's worker infrastructure, private discovery and workload identity with IAM-authenticated DNS access to the worker control plane."
+  description = "Provision isolated Loop workers, bootstrap their Helm release and TLS, and expose ready runtime configuration."
   default     = false
 }
 

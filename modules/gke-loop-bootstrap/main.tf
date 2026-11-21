@@ -1,0 +1,131 @@
+data "google_client_config" "current" {}
+data "google_project" "current" {
+  project_id = data.google_client_config.current.project
+}
+
+locals {
+  name     = "${substr(replace(var.deployment_name, "_", "-"), 0, 14)}-${substr(sha256(var.deployment_name), 0, 6)}-loop"
+  versions = jsondecode(file("${path.module}/VERSIONS.json"))
+  secret_ids = {
+    seed   = "${local.name}-tls-seed"
+    server = "${local.name}-server-tls"
+    client = "${split("@", var.runtime_service_account)[0]}-client-tls"
+  }
+  config = {
+    project          = data.google_project.current.project_id
+    endpoint         = var.cluster.endpoint
+    namespace        = var.workers.discovery.external_dns_namespace
+    hostname         = var.workers.discovery.hostname
+    checkpoint_store = var.workers.checkpoint_store
+    dns_args         = var.workers.discovery.external_dns_extra_args
+    services_version = coalesce(var.options.services_version, local.versions.services_version)
+    replicas         = var.options.worker_replicas
+    overrides        = jsondecode(var.options.worker_helm_values == "" ? "{}" : jsonencode(yamldecode(var.options.worker_helm_values)))
+    license_secret   = var.options.brainstore_license_secret_name
+    telemetry        = var.options.control_plane_telemetry
+    secrets          = { for kind, secret in google_secret_manager_secret.tls : kind => secret.id }
+    helm_url         = local.versions.helm_url
+    helm_sha256      = local.versions.helm_sha256
+    chart_url        = local.versions.chart_url
+  }
+  revision = substr(sha256(jsonencode({ config = local.config, script = filesha256("${path.module}/bootstrap.py"), image = local.versions.image })), 0, 20)
+}
+
+resource "google_project_service" "run" {
+  project            = data.google_project.current.project_id
+  service            = "run.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_service_account" "installer" {
+  account_id   = local.name
+  display_name = "Loop worker installer"
+}
+
+resource "google_project_iam_member" "installer_cluster" {
+  project = data.google_project.current.project_id
+  role    = "roles/container.admin"
+  member  = "serviceAccount:${google_service_account.installer.email}"
+  condition {
+    title      = "loop-worker-cluster"
+    expression = "resource.name == '${var.cluster.id}'"
+  }
+}
+
+resource "google_secret_manager_secret" "tls" {
+  for_each  = local.secret_ids
+  secret_id = each.value
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_iam_member" "installer_read" {
+  for_each  = local.secret_ids
+  secret_id = google_secret_manager_secret.tls[each.key].id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.installer.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "installer_write" {
+  for_each  = local.secret_ids
+  secret_id = google_secret_manager_secret.tls[each.key].id
+  role      = "roles/secretmanager.secretVersionAdder"
+  member    = "serviceAccount:${google_service_account.installer.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "runtime" {
+  secret_id = google_secret_manager_secret.tls["client"].id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${var.runtime_service_account}"
+}
+
+resource "google_project_iam_member" "license" {
+  count   = var.options.brainstore_license_secret_name == "" ? 0 : 1
+  project = data.google_project.current.project_id
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${google_service_account.installer.email}"
+  condition {
+    title      = "loop-worker-telemetry-license"
+    expression = "resource.name == 'projects/${data.google_project.current.number}/secrets/${var.options.brainstore_license_secret_name}' || resource.name.startsWith('projects/${data.google_project.current.number}/secrets/${var.options.brainstore_license_secret_name}/versions/')"
+  }
+}
+
+resource "google_cloud_run_v2_job" "install" {
+  project             = data.google_project.current.project_id
+  name                = "${local.name}-setup"
+  location            = var.region
+  deletion_protection = false
+  run_execution_token = "r${local.revision}"
+  template {
+    template {
+      service_account = google_service_account.installer.email
+      timeout         = "1800s"
+      max_retries     = 0
+      containers {
+        image   = local.versions.image
+        command = ["/google-cloud-sdk/platform/bundledpythonunix/bin/python3"]
+        args    = ["-c", file("${path.module}/bootstrap.py")]
+        env {
+          name  = "LOOP_BOOTSTRAP_CONFIG"
+          value = jsonencode(local.config)
+        }
+        resources {
+          limits = { cpu = "1", memory = "1Gi" }
+        }
+      }
+    }
+  }
+  timeouts {
+    create = "40m"
+    update = "40m"
+  }
+  depends_on = [
+    google_project_service.run,
+    google_project_iam_member.installer_cluster,
+    google_project_iam_member.license,
+    google_secret_manager_secret_iam_member.installer_read,
+    google_secret_manager_secret_iam_member.installer_write,
+    google_secret_manager_secret_iam_member.runtime,
+  ]
+}

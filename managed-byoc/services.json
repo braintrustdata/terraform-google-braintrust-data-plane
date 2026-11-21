@@ -21,5 +21,6 @@
   "container.googleapis.com",
   "sqladmin.googleapis.com",
   "artifactregistry.googleapis.com",
-  "cloudquotas.googleapis.com"
+  "cloudquotas.googleapis.com",
+  "run.googleapis.com"
 ]

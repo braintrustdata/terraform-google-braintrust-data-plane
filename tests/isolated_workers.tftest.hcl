@@ -55,6 +55,14 @@ run "loop_discovery_sanitizes_deployment_name" {
   # Keep this regression focused on generated worker DNS, independent of primary resource naming.
   override_module { target = module.gke-iam }
   override_module {
+    target = module.gke_loop_bootstrap
+    outputs = {
+      client_tls_secret = "projects/braintrust-test/secrets/loop-client-tls/versions/latest"
+      services_version  = "v2.24.0"
+      revision          = "test-revision"
+    }
+  }
+  override_module {
     target = module.redis
     outputs = {
       redis_instance_host = "127.0.0.1"
@@ -79,8 +87,8 @@ run "loop_discovery_sanitizes_deployment_name" {
   }
   assert {
     condition = (
-      output.loop_runtime.workers.discovery.dns_name == "sandbox.foo-bar.internal." &&
-      output.loop_runtime.workers.discovery.endpoint == "https://workers.sandbox.foo-bar.internal:9400"
+      output.gke_isolated_workers.discovery.dns_name == "sandbox.foo-bar.internal." &&
+      output.gke_isolated_workers.discovery.endpoint == "https://workers.sandbox.foo-bar.internal:9400"
     )
     error_message = "Generated discovery zones and worker endpoints must replace deployment-name underscores with hyphens."
   }
@@ -671,11 +679,16 @@ run "loop_flag_provisions_its_dependencies" {
       output.gke_cluster_mode == "autopilot" &&
       length(module.gke_isolated_workers_pool) == 1 &&
       length(module.gke_isolated_services_pool) == 1 &&
-      output.loop_runtime.service_account == output.loop_runtime_service_account &&
-      output.loop_runtime.workers == output.gke_isolated_workers &&
-      output.loop_runtime.workers.discovery.endpoint == "https://workers.sandbox.braintrust.internal:9400" &&
+      yamldecode(output.loop_runtime.helm_values_yaml).loopRuntime.serviceAccount.googleServiceAccount == output.loop_runtime_service_account &&
+      yamldecode(output.loop_runtime.helm_values_yaml).loopRuntime.sandbox.clientTlsSecret == module.gke_loop_bootstrap[0].client_tls_secret &&
+      yamldecode(output.loop_runtime.helm_values_yaml).loopRuntime.sandbox.dnsUrl == output.gke_isolated_workers.discovery.endpoint &&
+      yamldecode(output.loop_runtime.helm_values_yaml).loopRuntime.sandbox.egressGateway.address == output.gke_isolated_workers.loop_egress.address &&
+      yamldecode(output.loop_runtime.helm_values_yaml).loopRuntime.sandbox.egressGateway.url == output.gke_isolated_workers.loop_egress.url &&
+      yamldecode(output.loop_runtime.helm_values_yaml).loopRuntime.sandbox.egressGateway.sourceRanges == output.gke_isolated_workers.loop_egress.source_ranges &&
+      output.gke_isolated_workers.discovery.endpoint == "https://workers.sandbox.braintrust.internal:9400" &&
       length(module.gke_isolated_workers_cluster[0].gke_cluster_dns_endpoint) > 0 &&
-      output.loop_runtime.connection.host == "https://${module.gke_isolated_workers_cluster[0].gke_cluster_dns_endpoint}"
+      length(module.gke_loop_bootstrap) == 1 &&
+      !strcontains(output.loop_runtime.helm_values_yaml, "PRIVATE KEY")
     )
     error_message = "Enabling Loop must provision its workers, identity, private discovery and IAM-authenticated application connection without a separate worker configuration."
   }

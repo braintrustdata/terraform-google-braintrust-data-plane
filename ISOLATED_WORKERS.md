@@ -11,10 +11,9 @@ public IP stop working; plan to use DNS access instead. If worker `node_location
 is unset, the worker pool also changes to one zone, which can add or remove nodes.
 Set `gke_isolated_workers.node_locations` explicitly to retain the existing zones.
 
-Terraform owns networking, IAM, KMS, and node pools. The worker Helm release owns
-privileged Pods, `/dev/kvm`, disk preparation, control API authentication, and guest
-isolation. For installation and mTLS setup, use `braintrust/examples/gke-loop-runtime`
-in the [Helm repository](https://github.com/braintrustdata/helm).
+Terraform owns networking, IAM, KMS, node pools and the worker bootstrap job.
+The job installs the worker Helm release, which owns privileged Pods, `/dev/kvm`,
+disk preparation, control API authentication and guest isolation.
 
 ## Enable Loop
 
@@ -35,12 +34,28 @@ enable_loop_runtime = true
 gke_isolated_workers = { network_cidr = "10.96.0.0/16" }
 ```
 
-The `loop_runtime` output contains `workers`, `service_account` and
-`connection.host` for the application deployment. Configure its worker
-Kubernetes and Helm providers with `connection.host`
-and the current Google OAuth access token. The DNS endpoint uses a Google-issued
-server certificate, so no cluster CA is needed. Apply infrastructure first, then
-plan the application with those outputs.
+The infrastructure apply also installs workers and creates persistent mTLS
+credentials in Secret Manager. It waits for installation to succeed before
+exposing `loop_runtime`. Pass that output to the existing application module:
+
+```hcl
+loop_runtime = try(data.terraform_remote_state.infra.outputs.loop_runtime, null)
+```
+
+For direct Helm installations, export `loop_runtime_helm_values_yaml` and pass it
+after your existing values. This overlay contains connection settings, the
+runtime identity and a client-secret reference. The runtime retrieves its bundle
+through Workload Identity when its Pod starts. Generated private keys do not pass
+through Terraform state, outputs or Helm values. No worker providers, separate
+setup apply or manual TLS steps are required. See the
+[Helm guide](https://github.com/braintrustdata/helm/tree/main/braintrust/examples/gke-loop-runtime).
+
+`loop_runtime_options` can override `services_version`, `worker_replicas` and
+`worker_helm_values`. The packaged version and immutable installer/chart artifacts
+are recorded in `modules/gke-loop-bootstrap/VERSIONS.json`. The generated runtime
+tag follows `services_version`; keep it compatible with the primary services.
+`brainstore_license_secret_name` defaults to `brainstore-license-key`; set it to an
+empty string to omit worker telemetry license lookup.
 
 The default subnet is created even when the primary deployment uses an existing
 VPC. That VPC still needs the routing, NAT and API access described below. Supply
@@ -146,10 +161,14 @@ See [Google Workload Identity identifiers](https://docs.cloud.google.com/kuberne
 ## Networking and guest isolation
 
 Nodes are private. With `enable_loop_runtime`, IP-based control-plane access is
-private and CI uses the DNS endpoint with IAM authentication. No CI egress IPs
-are required. IAM must grant `container.clusters.connect`, followed by the
-Kubernetes authorization needed to deploy workers; this module grants neither
-administrator role. Kubernetes ServiceAccount token and client-certificate
+private and the installer uses the DNS endpoint with IAM authentication. No CI egress IPs
+are required. A dedicated installer identity receives `roles/container.admin`
+conditioned on this worker cluster. Its Secret Manager access is limited to the
+three bootstrap secrets and the optional telemetry license. The runtime identity
+can read only its client TLS secret. The deployment identity needs
+`roles/run.developer` and permission to act as the installer; the managed
+bootstrap supplies these through its deployment roles. The Run API is enabled
+automatically. Kubernetes ServiceAccount token and client-certificate
 authentication to the DNS endpoint remain disabled. See [GKE endpoint access](https://docs.cloud.google.com/kubernetes-engine/docs/how-to/latest/network-isolation#dns-based_endpoint).
 
 The standalone worker interface retains its public IP endpoint with DNS access
@@ -230,10 +249,13 @@ the hostname, endpoint, zone, and `external_dns_extra_args` for the worker chart
 Google provider. Annotate the headless Service with the hostname and install the
 controller/external-dns RBAC through Helm.
 
-Workers must require mTLS with server certificates covering the discovery hostname.
-Supply client certificates and the HTTPS endpoint to Loop and the controller.
-Terraform creates no keys, TLS Secrets, or CAs; source-range rules do not replace
-authentication. See [Cloud DNS zone IAM](https://docs.cloud.google.com/dns/docs/zones/iam-per-resource-zones)
+Workers require mTLS with server certificates covering the discovery hostname.
+With `enable_loop_runtime`, the installer generates separate client and server
+CAs, persists their bundles, and installs worker Kubernetes Secrets. The runtime
+loads its client bundle into an in-memory volume on startup. Existing bundles
+are reused; inconsistent stored trust roots fail the job rather than silently
+rotating them. For standalone worker infrastructure, the caller still owns chart
+installation and TLS. See [Cloud DNS zone IAM](https://docs.cloud.google.com/dns/docs/zones/iam-per-resource-zones)
 and the [external-dns Google provider](https://github.com/kubernetes-sigs/external-dns/blob/v0.21.0/provider/google/google.go).
 
 ## Storage and lifecycle
@@ -250,8 +272,7 @@ infrastructure. Pool creation and PodDisruptionBudgets do not establish that gue
 state is safe.
 
 Isolated workers provision a dedicated encrypted, private GCS bucket for filesystem
-checkpoints. `gke_isolated_workers.checkpoint_store` and
-`loop_runtime.workers.checkpoint_store` expose its `gs://.../sandbox-filesystems`
+checkpoints. `gke_isolated_workers.checkpoint_store` exposes its `gs://.../sandbox-filesystems`
 URI. Apply infrastructure before enabling filesystem retention in a compatible
 Sandbox Service Helm release. The existing local SSD/XFS disks remain the working
 storage; recovery restores the last completed filesystem checkpoint, not running
@@ -275,3 +296,19 @@ Deletion protection defaults to true. The cluster name is
 `<deployment_name>-gke-isolated-workers`, with a truncated prefix and six-character
 hash when needed for the 40-character limit. Changing it replaces the cluster and
 requires redeploying the worker Helm release.
+
+## Removing Loop
+
+Set `loop_runtime_options.worker_replicas = 0`, apply, and wait for active
+sandboxes to drain. Disable the primary runtime before removing worker
+infrastructure. Uninstall the worker release after it has drained, then set
+`enable_loop_runtime = false` and apply infrastructure. Cluster deletion
+protection still applies. Retain checkpoint storage and its encryption key when
+sandboxes must remain recoverable.
+
+Existing app-managed installations must transfer worker ownership before the
+first automatic bootstrap. The app module retains its old worker resources and
+TLS Secret when removing them from state. Retain the existing CA bundles in the
+bootstrap secrets if uninterrupted trust is required; a new installation creates
+new trust roots. Do not remove active worker resources or rotate trust without
+coordinating that transition.
