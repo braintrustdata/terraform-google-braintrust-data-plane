@@ -13,8 +13,8 @@ Set `gke_isolated_workers.node_locations` explicitly to retain the existing zone
 
 Terraform owns networking, IAM, KMS, and node pools. The worker Helm release owns
 privileged Pods, `/dev/kvm`, disk preparation, control API authentication, and guest
-isolation. For installation and mTLS setup, use `braintrust/examples/gke-loop-runtime`
-in the [Helm repository](https://github.com/braintrustdata/helm).
+isolation. The [GKE app module](https://github.com/braintrustdata/terraform-google-braintrust-gke-app#managed-loop-runtime)
+installs that release and manages mTLS automatically.
 
 ## Enable Loop
 
@@ -35,12 +35,23 @@ enable_loop_runtime = true
 gke_isolated_workers = { network_cidr = "10.96.0.0/16" }
 ```
 
-The `loop_runtime` output contains `workers`, `service_account` and
-`connection.host` for the application deployment. Configure its worker
-Kubernetes and Helm providers with `connection.host`
-and the current Google OAuth access token. The DNS endpoint uses a Google-issued
-server certificate, so no cluster CA is needed. Apply infrastructure first, then
-plan the application with those outputs.
+Apply infrastructure first. The `loop_runtime` output connects the existing
+application module to the workers:
+
+```hcl
+loop_runtime = try(data.terraform_remote_state.infra.outputs.loop_runtime, null)
+```
+
+Apply the app root next. It configures its worker providers with the current
+Google identity, installs the worker chart, creates and shares mTLS secrets, and
+adds the generated Loop values to the primary Helm release. Worker and runtime
+images come from the selected Braintrust chart. Keep existing sizing overrides;
+worker options are optional. See the app module's
+[complete example](https://github.com/braintrustdata/terraform-google-braintrust-gke-app/tree/main/examples/remote-state-app-root).
+
+The output includes `workers`, `service_account` and `connection.host` for custom
+installers. Direct Helm installation remains available in the
+[Helm example](https://github.com/braintrustdata/helm/tree/main/braintrust/examples/gke-loop-runtime#manual-helm-installation).
 
 The default subnet is created even when the primary deployment uses an existing
 VPC. That VPC still needs the routing, NAT and API access described below. Supply
