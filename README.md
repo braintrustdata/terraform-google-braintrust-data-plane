@@ -25,7 +25,10 @@ The app installs the worker chart, creates and shares TLS, and configures Loop i
 the primary Helm release. No separate app enable flag is needed. The worker
 control plane uses an IAM-authenticated DNS endpoint; the deployment identity
 needs `container.clusters.connect` and Kubernetes permissions for both clusters.
-See [Loop and worker configuration](ISOLATED_WORKERS.md).
+If Helm manages the primary release, use the
+[standalone Loop module](https://github.com/braintrustdata/terraform-google-braintrust-gke-app/tree/main/modules/loop-runtime-helm)
+to install workers and produce one Helm overlay, including client TLS.
+The full app module is optional. See [Loop and worker configuration](ISOLATED_WORKERS.md).
 
 ## GKE Cluster Modes
 

@@ -49,6 +49,12 @@ images come from the selected Braintrust chart. Keep existing sizing overrides;
 worker options are optional. See the app module's
 [complete example](https://github.com/braintrustdata/terraform-google-braintrust-gke-app/tree/main/examples/remote-state-app-root).
 
+For a Helm-managed primary release, use the
+[standalone Loop module](https://github.com/braintrustdata/terraform-google-braintrust-gke-app/tree/main/modules/loop-runtime-helm)
+with this same output. It installs workers and generates a single Helm values
+file; the primary chart creates its client TLS Secret from those values. It does
+not take over the primary namespace, application secrets, or Helm release.
+
 The output includes `workers`, `service_account` and `connection.host` for custom
 installers. Direct Helm installation remains available in the
 [Helm example](https://github.com/braintrustdata/helm/tree/main/braintrust/examples/gke-loop-runtime#manual-helm-installation).
