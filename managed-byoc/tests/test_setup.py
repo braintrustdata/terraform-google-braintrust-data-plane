@@ -60,15 +60,18 @@ class SetupTest(unittest.TestCase):
             "compute.firewalls.delete", "compute.globalOperations.get", "compute.networks.updatePolicy",
         })
         self.assertEqual(definitions["braintrustIsolatedDnsList"]["includedPermissions"], ["dns.managedZones.list"])
-        self.assertIn("dns.resourceRecordSets.update", definitions["braintrustIsolatedDnsRecords"]["includedPermissions"])
+        self.assertEqual(set(definitions["braintrustIsolatedDnsRecords"]["includedPermissions"]), {
+            "dns.changes.create", "dns.resourceRecordSets.create", "dns.resourceRecordSets.delete",
+            "dns.resourceRecordSets.list", "dns.resourceRecordSets.update",
+        })
         grants = [c for c in commands if c[:2] == ["projects", "add-iam-policy-binding"]]
         self.assertEqual(len(grants), 1)
         self.assertIn("--role=projects/braintrust-test/roles/braintrustIsolatedWorkerFirewall", grants[0])
         self.assertIn("--member=serviceAccount:custom-deploy@braintrust-test.iam.gserviceaccount.com", grants[0])
         self.assertFalse(any(c[0] in {"services", "secrets", "storage"} for c in commands))
         self.assertFalse(any(c[:2] == ["iam", "service-accounts"] for c in commands))
-        self.assertIn('zone_list = "projects/braintrust-test/roles/braintrustIsolatedDnsList"', result.stdout)
-        self.assertIn('records   = "projects/braintrust-test/roles/braintrustIsolatedDnsRecords"', result.stdout)
+        self.assertIn("discovers the DNS roles automatically", result.stdout)
+        self.assertNotIn("isolated_worker_dns_roles =", result.stdout)
 
     def test_rerun_updates_existing_roles(self):
         result, commands = self.invoke("--loop-permissions-only", role_state="active")

@@ -5,6 +5,14 @@ mock_provider "google" {
   mock_data "google_project" {
     defaults = { project_id = "braintrust-test", number = "123456789012" }
   }
+  mock_data "google_project_iam_custom_roles" {
+    defaults = {
+      roles = [
+        { name = "projects/braintrust-test/roles/braintrustIsolatedDnsList", deleted = false, stage = "GA" },
+        { name = "projects/braintrust-test/roles/braintrustIsolatedDnsRecords", deleted = false, stage = "GA" },
+      ]
+    }
+  }
 }
 
 variables {
@@ -20,7 +28,7 @@ variables {
   }
 }
 
-run "terraform_owned_permissions_preserve_dns_and_custom_identity" {
+run "terraform_owned_permissions_use_discovered_dns_and_custom_identity" {
   command = apply
   module { source = "./modules/gke-isolated-workers-network" }
   variables {
@@ -39,23 +47,23 @@ run "terraform_owned_permissions_preserve_dns_and_custom_identity" {
       google_project_iam_member.worker_firewall[0].role == google_project_iam_custom_role.worker_firewall[0].name &&
       google_project_iam_member.worker_firewall[0].project == "braintrust-test" &&
       google_project_iam_member.worker_firewall[0].member == "serviceAccount:custom-deploy@braintrust-test.iam.gserviceaccount.com" &&
-      length(google_project_iam_custom_role.isolated_dns_records) == 1 &&
-      length(google_project_iam_custom_role.isolated_dns_zone_list) == 1
+      google_project_iam_member.isolated_dns_zone_list[0].role == "projects/braintrust-test/roles/braintrustIsolatedDnsList" &&
+      google_dns_managed_zone_iam_member.isolated_external_dns[0].role == "projects/braintrust-test/roles/braintrustIsolatedDnsRecords"
     )
-    error_message = "Terraform-owned access must preserve DNS roles and grant only deployment-specific firewall permissions to the supplied identity."
+    error_message = "Terraform-owned firewall access must preserve discovered DNS grants and the supplied deployment identity."
   }
 }
 
-run "bootstrap_owned_permissions_leave_existing_dns_roles_managed" {
+run "bootstrap_owned_firewall_permissions_use_discovered_dns_roles" {
   command = plan
   module { source = "./modules/gke-isolated-workers-network" }
   assert {
     condition = (
       length(google_project_iam_custom_role.worker_firewall) == 0 &&
       length(google_project_iam_member.worker_firewall) == 0 &&
-      length(google_project_iam_custom_role.isolated_dns_records) == 1 &&
-      length(google_project_iam_custom_role.isolated_dns_zone_list) == 1
+      google_project_iam_member.isolated_dns_zone_list[0].role == "projects/braintrust-test/roles/braintrustIsolatedDnsList" &&
+      google_dns_managed_zone_iam_member.isolated_external_dns[0].role == "projects/braintrust-test/roles/braintrustIsolatedDnsRecords"
     )
-    error_message = "Omission must not take over bootstrap IAM or change legacy DNS role ownership."
+    error_message = "Omission must leave firewall IAM to bootstrap and discover the DNS role grants."
   }
 }

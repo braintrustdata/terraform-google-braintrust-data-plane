@@ -213,10 +213,14 @@ reads/writes only on the discovery zone. It cannot create zones, change zone IAM
 or modify Google API or unrelated zones. Deployment requires the Cloud DNS API
 and permission to set the zone policy.
 
-Pass `isolated_worker_dns_roles` from the
-[managed bootstrap](managed-byoc/README.md#worker-permissions-for-existing-deployments)
-to avoid role lifecycle permissions. Otherwise, Terraform retains ownership of
-the DNS role definitions and needs create/get/update/delete/undelete permissions.
+Run the [managed bootstrap](managed-byoc/README.md#worker-permissions-for-existing-deployments)
+before enabling workers on a new deployment. Terraform discovers its DNS roles
+automatically, using the deployment identity's existing Viewer access to list
+project roles. Existing deployments fall back to their legacy roles, and upgrades
+relinquish ownership of those definitions without deleting them or requiring state
+commands. Terraform only manages the grants, so the deployment identity needs no
+role lifecycle permissions. Set `isolated_worker_dns_roles` only to override role
+names supplied by your own IAM setup.
 
 The defaults are namespace `braintrust-sandbox` and service account `external-dns`;
 override `external_dns_namespace` and `external_dns_service_account` as needed.
