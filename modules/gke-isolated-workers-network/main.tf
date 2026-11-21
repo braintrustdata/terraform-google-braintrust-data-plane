@@ -6,6 +6,7 @@ locals {
   # Preserve a readable prefix and avoid truncation collisions for long deployments.
   name                 = "${substr(replace(var.deployment_name, "_", "-"), 0, 14)}-${substr(sha256(var.deployment_name), 0, 6)}-isolated-workers"
   labels               = merge(var.custom_labels, { braintrustdeploymentname = var.deployment_name })
+  worker_firewall_role = jsondecode(file("${path.module}/../../managed-byoc/custom-roles/braintrustIsolatedWorkerFirewall.json"))
   subnet               = var.config.existing_subnet_self_link == null ? google_compute_subnetwork.workers[0].self_link : data.google_compute_subnetwork.existing[0].self_link
   node_cidr            = var.config.existing_subnet_self_link == null ? var.config.node_cidr : data.google_compute_subnetwork.existing[0].ip_cidr_range
   ranges               = [local.node_cidr, var.config.pod_cidr, var.config.service_cidr, var.config.control_plane_cidr]
@@ -63,19 +64,32 @@ resource "google_compute_subnetwork" "workers" {
   depends_on = [terraform_data.network_contract]
 }
 
-module "deployment_iam" {
-  source = "../worker-deployment-iam"
-  count  = var.deploy_service_account_email == null ? 0 : 1
+resource "google_project_iam_custom_role" "worker_firewall" {
+  count       = var.deploy_service_account_email == null ? 0 : 1
+  project     = data.google_client_config.current.project
+  role_id     = "braintrustIsolatedWorkerFirewall_${substr(sha256(var.deployment_name), 0, 12)}"
+  title       = local.worker_firewall_role.title
+  description = local.worker_firewall_role.description
+  stage       = local.worker_firewall_role.stage
+  permissions = local.worker_firewall_role.includedPermissions
+}
 
-  deployment_name              = var.deployment_name
-  project_id                   = data.google_client_config.current.project
-  deploy_service_account_email = var.deploy_service_account_email
+resource "google_project_iam_member" "worker_firewall" {
+  count   = var.deploy_service_account_email == null ? 0 : 1
+  project = data.google_client_config.current.project
+  role    = google_project_iam_custom_role.worker_firewall[0].name
+  member  = "serviceAccount:${var.deploy_service_account_email}"
+
+  # Grant the narrow role before revoking a broad grant moved to this address.
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # These controls protect hosts and VPC destinations. Guest DNS and metadata
 # isolation remain the responsibility of the privileged worker application.
 resource "google_compute_firewall" "deny" {
-  depends_on = [module.deployment_iam]
+  depends_on = [google_project_iam_member.worker_firewall]
 
   for_each           = toset(["INGRESS", "EGRESS"])
   name               = "${local.name}-deny-${lower(each.key)}"
@@ -91,7 +105,7 @@ resource "google_compute_firewall" "deny" {
 }
 
 resource "google_compute_firewall" "internal" {
-  depends_on = [module.deployment_iam]
+  depends_on = [google_project_iam_member.worker_firewall]
 
   for_each           = toset(["INGRESS", "EGRESS"])
   name               = "${local.name}-internal-${lower(each.key)}"
@@ -106,7 +120,7 @@ resource "google_compute_firewall" "internal" {
 }
 
 resource "google_compute_firewall" "control_plane_ingress" {
-  depends_on = [module.deployment_iam]
+  depends_on = [google_project_iam_member.worker_firewall]
 
   name          = "${local.name}-control-ingress"
   project       = data.google_client_config.current.project
@@ -122,7 +136,7 @@ resource "google_compute_firewall" "control_plane_ingress" {
 }
 
 resource "google_compute_firewall" "control_plane_egress" {
-  depends_on = [module.deployment_iam]
+  depends_on = [google_project_iam_member.worker_firewall]
 
   name               = "${local.name}-control-egress"
   project            = data.google_client_config.current.project
@@ -138,7 +152,7 @@ resource "google_compute_firewall" "control_plane_egress" {
 }
 
 resource "google_compute_firewall" "public_https" {
-  depends_on = [module.deployment_iam]
+  depends_on = [google_project_iam_member.worker_firewall]
 
   name               = "${local.name}-public-https"
   project            = data.google_client_config.current.project
@@ -156,7 +170,7 @@ resource "google_compute_firewall" "public_https" {
 # Internal cluster traffic and explicit exceptions precede this deny.
 # This deny precedes general outbound HTTPS through the existing NAT path.
 resource "google_compute_firewall" "private_egress" {
-  depends_on = [module.deployment_iam]
+  depends_on = [google_project_iam_member.worker_firewall]
 
   name               = "${local.name}-deny-private"
   project            = data.google_client_config.current.project
@@ -170,7 +184,7 @@ resource "google_compute_firewall" "private_egress" {
 }
 
 resource "google_compute_firewall" "ingress" {
-  depends_on = [module.deployment_iam]
+  depends_on = [google_project_iam_member.worker_firewall]
 
   for_each      = var.config.ingress_rules
   name          = "${local.name}-in-${substr(sha256(each.key), 0, 8)}"
@@ -189,7 +203,7 @@ resource "google_compute_firewall" "ingress" {
 }
 
 resource "google_compute_firewall" "egress" {
-  depends_on = [module.deployment_iam]
+  depends_on = [google_project_iam_member.worker_firewall]
 
   for_each           = var.config.egress_rules
   name               = "${local.name}-out-${substr(sha256(each.key), 0, 8)}"
@@ -235,7 +249,7 @@ resource "google_dns_managed_zone" "discovery" {
 }
 
 resource "google_compute_firewall" "runtime_to_workers" {
-  depends_on = [module.deployment_iam]
+  depends_on = [google_project_iam_member.worker_firewall]
 
   count         = var.config.discovery == null ? 0 : 1
   project       = data.google_client_config.current.project
@@ -325,7 +339,7 @@ resource "google_dns_record_set" "loop_egress" {
 }
 
 resource "google_compute_firewall" "workers_to_loop_egress" {
-  depends_on = [module.deployment_iam]
+  depends_on = [google_project_iam_member.worker_firewall]
 
   count              = var.config.discovery == null ? 0 : 1
   project            = data.google_client_config.current.project

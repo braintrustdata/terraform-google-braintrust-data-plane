@@ -136,19 +136,15 @@ Pass this input to a supporting data-plane module version to use bootstrap-owned
 roles. Omission preserves module-owned roles. If roles are already in Terraform
 state, hand off ownership before setting this input to avoid planned deletions.
 
-For an existing deployment where Terraform should own the firewall role, pass
-`deploy_service_account_email` to the data-plane module instead of copying role
-resources into the caller. The module uses bootstrap's permission definition with
-a deployment-specific role ID and grants it before changing worker firewalls.
-Leave this input unset when bootstrap already grants worker firewall access.
-Initial role creation and later role-definition changes require IAM custom-role
-administration. Removing that access limits later deployment operations to the
-existing role definitions.
+Set `deploy_service_account_email` to let the data-plane module manage a
+deployment-specific firewall role using bootstrap's permission definition.
+The grant is applied before worker firewall changes. Leave the input unset when
+bootstrap already grants access. Creating or changing role definitions still
+requires IAM custom-role administration.
 
-For a role or grant already managed in the caller, use Terraform `moved` blocks
-to transfer its existing address to the shared module. A moved broad grant is
-replaced with create-before-destroy so the new role is created and granted first.
-Existing DNS roles and grants do not need to change for this firewall migration.
+Use `moved` blocks for caller-owned role or grant addresses. A moved broad grant
+is replaced with create-before-destroy so the narrow role is created and granted
+first. Existing DNS roles and grants remain unchanged.
 Existing `roles/compute.securityAdmin` and `roles/iam.roleAdmin` grants are not
 revoked automatically; remove their old resources after reviewing the plan.
 Publishing an updated role list alone does not change project IAM.
