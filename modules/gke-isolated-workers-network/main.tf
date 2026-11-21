@@ -67,6 +67,7 @@ module "deployment_iam" {
   source = "../worker-deployment-iam"
   count  = var.deploy_service_account_email == null ? 0 : 1
 
+  deployment_name              = var.deployment_name
   project_id                   = data.google_client_config.current.project
   deploy_service_account_email = var.deploy_service_account_email
 }

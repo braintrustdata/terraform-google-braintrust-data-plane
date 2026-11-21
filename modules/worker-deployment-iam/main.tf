@@ -4,7 +4,7 @@ locals {
 
 resource "google_project_iam_custom_role" "firewall" {
   project     = var.project_id
-  role_id     = "braintrustIsolatedWorkerFirewall"
+  role_id     = "braintrustIsolatedWorkerFirewall_${substr(sha256(var.deployment_name), 0, 12)}"
   title       = local.firewall_role.title
   description = local.firewall_role.description
   stage       = local.firewall_role.stage

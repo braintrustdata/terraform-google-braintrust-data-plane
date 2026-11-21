@@ -138,9 +138,9 @@ state, hand off ownership before setting this input to avoid planned deletions.
 
 For an existing deployment where Terraform should own the firewall role, pass
 `deploy_service_account_email` to the data-plane module instead of copying role
-resources into the caller. The module uses the same role definition as bootstrap
-and grants it before changing worker firewalls. Leave this input unset when
-bootstrap already owns the role; do not manage the same role in two places.
+resources into the caller. The module uses bootstrap's permission definition with
+a deployment-specific role ID and grants it before changing worker firewalls.
+Leave this input unset when bootstrap already grants worker firewall access.
 Initial role creation and later role-definition changes require IAM custom-role
 administration. Removing that access limits later deployment operations to the
 existing role definitions.

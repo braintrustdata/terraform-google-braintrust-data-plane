@@ -11,13 +11,14 @@ run "shared_firewall_role_matches_bootstrap_and_custom_identity" {
   command = apply
   module { source = "./modules/worker-deployment-iam" }
   variables {
+    deployment_name              = "braintrust"
     project_id                   = "braintrust-test"
     deploy_service_account_email = "custom-deploy@braintrust-test.iam.gserviceaccount.com"
   }
   assert {
     condition = (
       google_project_iam_custom_role.firewall.project == "braintrust-test" &&
-      google_project_iam_custom_role.firewall.role_id == "braintrustIsolatedWorkerFirewall" &&
+      google_project_iam_custom_role.firewall.role_id == "braintrustIsolatedWorkerFirewall_${substr(sha256("braintrust"), 0, 12)}" &&
       google_project_iam_custom_role.firewall.permissions == toset([
         "compute.firewalls.create", "compute.firewalls.get",
         "compute.firewalls.update", "compute.firewalls.delete",

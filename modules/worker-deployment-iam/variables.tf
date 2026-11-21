@@ -1,3 +1,8 @@
+variable "deployment_name" {
+  type        = string
+  description = "Deployment name used to isolate the firewall role within the project."
+}
+
 variable "project_id" {
   type        = string
   description = "Project containing the deployment account and worker firewalls."
