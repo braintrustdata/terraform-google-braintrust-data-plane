@@ -10,7 +10,7 @@ variable "existing_dns_roles" {
     records   = string
   })
   default     = null
-  description = "Existing bootstrap-owned DNS role names; null preserves role creation."
+  description = "Optional DNS custom role names. Null discovers bootstrap roles, falling back to existing deployment roles. Role definitions are not managed by this module."
 
   validation {
     condition = var.existing_dns_roles == null ? true : alltrue([
