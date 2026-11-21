@@ -176,13 +176,7 @@ configure_loop_permissions() {
     --role="projects/$PROJECT_ID/roles/braintrustIsolatedWorkerFirewall" \
     --condition=None --quiet >/dev/null
 
-  echo "Pass these bootstrap-owned roles to the data-plane module:"
-  cat <<EOF
-isolated_worker_dns_roles = {
-  zone_list = "projects/$PROJECT_ID/roles/braintrustIsolatedDnsList"
-  records   = "projects/$PROJECT_ID/roles/braintrustIsolatedDnsRecords"
-}
-EOF
+  echo "Worker permissions configured. The data-plane module discovers the DNS roles automatically."
 }
 
 echo "=========================================="

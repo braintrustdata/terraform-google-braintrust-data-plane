@@ -123,18 +123,15 @@ For an existing deployment, run as the project IAM owner before enabling workers
 ./setup.sh --project <project-id> --loop-permissions-only
 ```
 
-Add `--deploy-sa-name <account-name>` for a custom account. Both setup modes print:
+Add `--deploy-sa-name <account-name>` for a custom account, then run the normal
+Terraform plan and apply. The data-plane module discovers the DNS roles
+automatically; no role IDs or Terraform state commands are needed.
 
-```hcl
-isolated_worker_dns_roles = {
-  zone_list = "projects/<project-id>/roles/braintrustIsolatedDnsList"
-  records   = "projects/<project-id>/roles/braintrustIsolatedDnsRecords"
-}
-```
-
-Pass this input to a supporting data-plane module version to use bootstrap-owned
-roles. Omission preserves module-owned roles. If roles are already in Terraform
-state, hand off ownership before setting this input to avoid planned deletions.
+Existing deployments can keep using their legacy DNS roles until bootstrap is
+run. On upgrade, Terraform relinquishes ownership of those definitions without
+deleting them. Bootstrap owns the shared DNS role definitions; the deployment
+identity needs no DNS role create, update, delete or undelete permissions.
+`isolated_worker_dns_roles` remains available for custom role names.
 
 For an existing deployment where Terraform should own the firewall role, pass
 `deploy_service_account_email` to the data-plane module instead of copying role
@@ -196,4 +193,3 @@ After bootstrap, provide Braintrust:
 - support service account email
 - relevant organization policies or IAM Deny policies that may affect GKE, Cloud
   SQL, Redis, GCS, IAM, DNS, load balancing, or support access
-- `isolated_worker_dns_roles` printed by setup, for the data-plane module input

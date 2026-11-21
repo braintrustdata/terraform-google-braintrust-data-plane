@@ -5,6 +5,14 @@ mock_provider "google" {
   mock_data "google_project" {
     defaults = { project_id = "braintrust-test", number = "123456789012" }
   }
+  mock_data "google_project_iam_custom_roles" {
+    defaults = {
+      roles = [
+        { name = "projects/braintrust-test/roles/braintrustIsolatedDnsList", deleted = false, stage = "GA" },
+        { name = "projects/braintrust-test/roles/braintrustIsolatedDnsRecords", deleted = false, stage = "GA" },
+      ]
+    }
+  }
 }
 
 run "shared_firewall_role_matches_bootstrap_and_custom_identity" {
@@ -32,7 +40,7 @@ run "shared_firewall_role_matches_bootstrap_and_custom_identity" {
   }
 }
 
-run "bootstrap_owned_permissions_leave_existing_dns_roles_managed" {
+run "bootstrap_owned_firewall_permissions_use_discovered_dns_roles" {
   command = plan
   module { source = "./modules/gke-isolated-workers-network" }
   variables {
@@ -50,14 +58,14 @@ run "bootstrap_owned_permissions_leave_existing_dns_roles_managed" {
   assert {
     condition = (
       length(module.deployment_iam) == 0 &&
-      length(google_project_iam_custom_role.isolated_dns_records) == 1 &&
-      length(google_project_iam_custom_role.isolated_dns_zone_list) == 1
+      google_project_iam_member.isolated_dns_zone_list[0].role == "projects/braintrust-test/roles/braintrustIsolatedDnsList" &&
+      google_dns_managed_zone_iam_member.isolated_external_dns[0].role == "projects/braintrust-test/roles/braintrustIsolatedDnsRecords"
     )
-    error_message = "Omission must not take over bootstrap IAM or change legacy DNS role ownership."
+    error_message = "Omission must leave firewall IAM to bootstrap and discover the DNS role grants."
   }
 }
 
-run "terraform_owned_firewall_permissions_preserve_dns_ownership" {
+run "terraform_owned_firewall_permissions_use_discovered_dns_roles" {
   command = plan
   module { source = "./modules/gke-isolated-workers-network" }
   variables {
@@ -76,9 +84,9 @@ run "terraform_owned_firewall_permissions_preserve_dns_ownership" {
   assert {
     condition = (
       length(module.deployment_iam) == 1 &&
-      length(google_project_iam_custom_role.isolated_dns_records) == 1 &&
-      length(google_project_iam_custom_role.isolated_dns_zone_list) == 1
+      google_project_iam_member.isolated_dns_zone_list[0].role == "projects/braintrust-test/roles/braintrustIsolatedDnsList" &&
+      google_dns_managed_zone_iam_member.isolated_external_dns[0].role == "projects/braintrust-test/roles/braintrustIsolatedDnsRecords"
     )
-    error_message = "Enabling shared deployment IAM must leave DNS role definitions and grants in place."
+    error_message = "Firewall IAM ownership must not affect the discovered DNS role grants."
   }
 }
