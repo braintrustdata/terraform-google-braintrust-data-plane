@@ -16,5 +16,6 @@
   "roles/monitoring.admin",
   "roles/storage.hmacKeyAdmin",
   "roles/viewer",
-  "roles/cloudsupport.techSupportEditor"
+  "roles/cloudsupport.techSupportEditor",
+  "roles/run.developer"
 ]

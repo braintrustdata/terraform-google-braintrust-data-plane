@@ -75,3 +75,11 @@ output "redis_url" {
   value     = "redis://:${module.braintrust-data-plane.redis_auth_string}@${module.braintrust-data-plane.redis_instance_host}:${module.braintrust-data-plane.redis_instance_port}"
   sensitive = true
 }
+
+output "loop_runtime" {
+  value = module.braintrust-data-plane.loop_runtime
+}
+
+output "loop_runtime_helm_values_yaml" {
+  value = module.braintrust-data-plane.loop_runtime_helm_values_yaml
+}

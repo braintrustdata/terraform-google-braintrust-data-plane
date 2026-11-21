@@ -189,3 +189,12 @@ After bootstrap, provide Braintrust:
 - support service account email
 - relevant organization policies or IAM Deny policies that may affect GKE, Cloud
   SQL, Redis, GCS, IAM, DNS, load balancing, or support access
+
+### Automatic Loop installation
+
+The deployment role list includes `roles/run.developer` so Terraform can create
+and execute the worker bootstrap job. The job uses a separate service account;
+Terraform limits its cluster administration grant to the isolated worker cluster
+and its secret access to the bootstrap bundles and optional telemetry license.
+The runtime receives access only to its client bundle. Reapply the managed
+bootstrap when upgrading an existing deployment to this installer.
