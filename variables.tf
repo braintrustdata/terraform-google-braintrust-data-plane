@@ -697,6 +697,12 @@ variable "enable_loop_runtime" {
   default     = false
 }
 
+variable "deploy_service_account_email" {
+  type        = string
+  default     = null
+  description = "Existing deployment account for Terraform-owned worker firewall permissions. Omit when bootstrap already owns the custom role. Initial creation requires IAM custom-role administration."
+}
+
 variable "isolated_worker_dns_roles" {
   type = object({
     zone_list = string

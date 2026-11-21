@@ -1,3 +1,9 @@
+variable "deploy_service_account_email" {
+  type        = string
+  default     = null
+  description = "Existing deployment account for Terraform-owned worker firewall permissions; null leaves permissions to bootstrap."
+}
+
 variable "primary_cidrs" {
   type        = list(string)
   default     = []
