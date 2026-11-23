@@ -9,21 +9,16 @@ outputs are defined in [`outputs.tf`](outputs.tf).
 
 ## Loop Runtime infrastructure
 
-Set `enable_loop_runtime = true` to provision Loop's isolated workers and install
-Sandbox Service. A Cloud Run job generates persistent TLS in Secret Manager and
-waits for worker readiness. `gke_isolated_workers` and `loop_runtime_options`
-provide optional overrides.
-
-An installer account is created automatically, including for human Terraform
-logins. Use `loop_runtime_options.installer_service_account_email` to reuse an existing
-deployment account without changing worker firewall IAM.
-
-Pass the `loop_runtime` output to the
+Set `enable_loop_runtime = true` to install isolated workers and persistent TLS
+through a Cloud Run job that waits for worker readiness. Pass `loop_runtime` to the
 [GKE app module](https://github.com/braintrustdata/terraform-google-braintrust-gke-app#managed-loop-runtime),
 or use `loop_runtime_helm_values_yaml` with a
 [direct Helm installation](https://github.com/braintrustdata/helm/tree/main/braintrust/examples/gke-loop-runtime).
-Both paths use a client-secret reference, without worker provider aliases or
-certificate files. See [configuration and lifecycle](ISOLATED_WORKERS.md).
+
+Installer accounts are created automatically, including for human logins.
+Use `loop_runtime_options.installer_service_account_email` to reuse a deployment
+account without changing firewall IAM. See [configuration and lifecycle](ISOLATED_WORKERS.md)
+for worker overrides, client-secret references and removal steps.
 
 ## GKE Cluster Modes
 

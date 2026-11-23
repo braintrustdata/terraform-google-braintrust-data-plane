@@ -16,12 +16,6 @@ import urllib.parse
 import urllib.request
 
 
-class ApiError(RuntimeError):
-    def __init__(self, status):
-        self.status = status
-        super().__init__(f"Bootstrap API request failed ({status})")
-
-
 class Api:
     def __init__(self):
         self.token = None
@@ -58,7 +52,7 @@ class Api:
                 if error.code == 404 and missing:
                     return None
                 if error.code not in (403, 429, 500, 502, 503, 504) or time.monotonic() >= deadline:
-                    raise ApiError(error.code) from None
+                    raise RuntimeError(f"Bootstrap API request failed ({error.code})") from None
                 time.sleep(5)
 
     def read_secret(self, name, version="latest"):
@@ -82,7 +76,6 @@ def openssl(*args):
     result = subprocess.run(["openssl", *args], capture_output=True)
     if result.returncode:
         raise RuntimeError("Bootstrap certificate operation failed")
-    return result.stdout.decode()
 
 
 def create_ca(directory, name):

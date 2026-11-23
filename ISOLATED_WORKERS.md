@@ -34,11 +34,10 @@ enable_loop_runtime = true
 gke_isolated_workers = { network_cidr = "10.96.0.0/16" }
 ```
 
-The apply installs workers and persists mTLS in Secret Manager, waiting for
-installation to succeed before publishing `loop_runtime`. Pass that output to
-the app module, or pass `loop_runtime_helm_values_yaml` after your existing Helm
-values. The runtime loads its client bundle through Workload Identity; private
-keys never enter Terraform state or Helm values. See the
+The apply installs workers, persists mTLS in Secret Manager and waits for readiness.
+Pass `loop_runtime` to the app module or `loop_runtime_helm_values_yaml` after your
+existing Helm values. The runtime loads its client bundle through Workload Identity;
+private keys never enter Terraform state or Helm values. See the
 [Helm guide](https://github.com/braintrustdata/helm/tree/main/braintrust/examples/gke-loop-runtime).
 
 `loop_runtime_options` overrides `services_version`, `worker_replicas` and
@@ -152,17 +151,14 @@ See [Google Workload Identity identifiers](https://docs.cloud.google.com/kuberne
 ## Networking and guest isolation
 
 Nodes are private. With `enable_loop_runtime`, IP-based control-plane access is
-private and the installer uses the IAM-authenticated DNS endpoint. No CI egress IPs
-are required. The job reuses `loop_runtime_options.installer_service_account_email`
-(or the existing firewall `deploy_service_account_email`) when supplied;
-otherwise Terraform creates an installer with project-wide `roles/container.admin`
-to install the chart and its RBAC. GKE IAM cannot restrict Kubernetes object
-permissions to one cluster. The runtime can read only its client bundle.
-Installer secret access covers the bootstrap bundles and optional telemetry license.
-The Terraform caller needs
-`roles/run.developer` and permission to act as the installer; the managed
-bootstrap supplies these through its deployment roles. Run and Secret Manager are enabled
-automatically. Kubernetes ServiceAccount token and client-certificate
+private and the installer uses the IAM-authenticated DNS endpoint without CI egress IPs.
+It reuses `loop_runtime_options.installer_service_account_email` (or the firewall
+`deploy_service_account_email`) or gets project-wide `roles/container.admin` for
+chart installation and RBAC. GKE IAM cannot restrict Kubernetes permissions to one
+cluster. The runtime reads only its client bundle; the installer reads bootstrap
+bundles and the optional telemetry license. The caller needs `roles/run.developer`
+and permission to act as the installer, supplied by managed bootstrap deployment
+roles. Run and Secret Manager are enabled automatically. ServiceAccount token and client-certificate
 authentication to the DNS endpoint remain disabled. See [GKE endpoint access](https://docs.cloud.google.com/kubernetes-engine/docs/how-to/latest/network-isolation#dns-based_endpoint).
 
 The standalone worker interface retains its public IP endpoint with DNS access
@@ -219,21 +215,19 @@ Discovery also reserves an internal IP in the primary subnet, publishes
 Git proxy. The Loop Helm release binds its internal load balancer to
 `gke_isolated_workers.loop_egress.address` and restricts ingress to its `source_ranges`.
 
-External-dns uses the Kubernetes principal directly through Workload Identity,
-without a Google service account annotation. Existing managed-bootstrap or legacy
-custom roles keep their narrow project-list and zone-record permissions. Fresh
-projects use built-in DNS Reader on the project and DNS Admin scoped to the
-private discovery zone, without a separate bootstrap or custom-role creation.
-This fallback can read DNS records across the project but can write only within
-the discovery zone. The module enables Cloud DNS automatically.
+External-dns uses the Kubernetes principal directly through Workload Identity
+Federation, without a Google service account or annotation. Custom roles retain narrow project-list
+and zone-record permissions. Fresh projects use DNS Reader on the project and DNS
+Admin on the private discovery zone: records can be read across the project but
+written only within that zone. Cloud DNS is enabled automatically.
 
-Deleted, disabled or incomplete custom role pairs fail rather than silently
-broadening an existing deployment's access. Use `isolated_worker_dns_roles` to
-select an explicit pair. Legacy role definitions remain outside Terraform
-ownership; only their grants are managed here.
+Deleted, disabled or incomplete custom role pairs fail instead of broadening access;
+use `isolated_worker_dns_roles` to select an explicit pair. Terraform manages their
+grants, not the legacy role definitions.
 
-The defaults are namespace `braintrust-sandbox` and service account `external-dns`;
-override `external_dns_namespace` and `external_dns_service_account` as needed.
+The default namespace is `braintrust-sandbox`; override `external_dns_namespace`
+as needed. Automatic installation uses `external-dns`; standalone workers can
+override `external_dns_service_account`.
 Keep that name pair exclusive to this deployment because matching identities in
 other project clusters receive the same grants. The `discovery` output supplies
 the hostname, endpoint, zone, and `external_dns_extra_args` for the worker chart's
@@ -290,16 +284,12 @@ requires redeploying the worker Helm release.
 
 ## Removing Loop
 
-Set `loop_runtime_options.worker_replicas = 0`, apply, and wait for active
-sandboxes to drain. Disable the primary runtime before removing worker
-infrastructure. Uninstall the worker release after it has drained, then set
-`enable_loop_runtime = false` and apply infrastructure. Cluster deletion
-protection still applies. Retain checkpoint storage and its encryption key when
-sandboxes must remain recoverable.
+Set `loop_runtime_options.worker_replicas = 0`, apply and wait for sandboxes to drain.
+Disable the primary runtime and uninstall the drained worker release before setting
+`enable_loop_runtime = false` and applying infrastructure. Cluster deletion protection
+still applies; retain checkpoint storage and its key for recoverable sandboxes.
 
-Existing app-managed installations must transfer worker ownership before the
-first automatic bootstrap. The app module retains its old worker resources and
-TLS Secret when removing them from state. Retain the existing CA bundles in the
-bootstrap secrets if uninterrupted trust is required; a new installation creates
-new trust roots. Do not remove active worker resources or rotate trust without
-coordinating that transition.
+Existing app-managed installations must transfer ownership and TLS before the first
+bootstrap. The app's removed blocks retain live worker resources and the TLS Secret.
+Preserve existing CA bundles in the bootstrap secrets for uninterrupted trust;
+new installations create new trust roots. Coordinate any removal or trust rotation.
