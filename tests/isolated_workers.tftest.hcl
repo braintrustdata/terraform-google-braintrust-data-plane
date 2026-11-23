@@ -729,6 +729,20 @@ run "loop_worker_overrides_are_optional" {
   }
 }
 
+run "loop_rejects_an_unsupported_dns_identity" {
+  command = plan
+  variables {
+    enable_loop_runtime = true
+    gke_isolated_workers = {
+      discovery = {
+        dns_name                     = "sandbox.example.internal"
+        external_dns_service_account = "custom-dns"
+      }
+    }
+  }
+  expect_failures = [var.gke_isolated_workers]
+}
+
 
 run "loop_can_create_a_worker_subnet_in_an_existing_vpc" {
   command = plan

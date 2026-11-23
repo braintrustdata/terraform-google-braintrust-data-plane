@@ -813,6 +813,10 @@ variable "gke_isolated_workers" {
     ]))
     error_message = "External-dns namespace and service-account names must be lowercase Kubernetes names with at most 63 characters."
   }
+  validation {
+    condition     = !var.enable_loop_runtime || try(var.gke_isolated_workers.discovery.external_dns_service_account, "external-dns") == "external-dns"
+    error_message = "Automatic Loop installation uses the worker chart's external-dns service account. Omit gke_isolated_workers.discovery.external_dns_service_account or set it to external-dns."
+  }
 
   validation {
     condition = !var.enable_loop_runtime && !var.gke_isolated_workers.enabled ? true : (
