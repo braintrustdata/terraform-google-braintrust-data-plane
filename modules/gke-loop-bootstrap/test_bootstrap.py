@@ -8,7 +8,7 @@ import subprocess
 import tarfile
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 spec = importlib.util.spec_from_file_location("loop_bootstrap", Path(__file__).with_name("bootstrap.py"))
 bootstrap = importlib.util.module_from_spec(spec)
@@ -51,6 +51,22 @@ def config():
 
 
 class BootstrapTests(unittest.TestCase):
+    def test_metadata_credentials_include_gke_email_scope_and_are_cached(self):
+        opener = Mock()
+        opener.open.return_value = io.BytesIO(b'{"access_token":"test-token","expires_in":3600}')
+        with patch.object(bootstrap.urllib.request, "build_opener", return_value=opener):
+            api = bootstrap.Api()
+            self.assertEqual(api.access_token(), "test-token")
+            self.assertEqual(api.access_token(), "test-token")
+        opener.open.assert_called_once()
+        request = opener.open.call_args.args[0]
+        scopes = bootstrap.urllib.parse.parse_qs(bootstrap.urllib.parse.urlsplit(request.full_url).query)["scopes"][0]
+        self.assertEqual(set(scopes.split(",")), {
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/userinfo.email",
+        })
+        self.assertEqual(request.get_header("Metadata-flavor"), "Google")
+
     def test_first_install_generates_persists_and_reuses_tls(self):
         api, cfg = FakeApi(), config()
         with tempfile.TemporaryDirectory() as directory:

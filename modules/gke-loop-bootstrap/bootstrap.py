@@ -12,6 +12,7 @@ import tarfile
 import tempfile
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 
@@ -28,8 +29,10 @@ class Api:
 
     def access_token(self):
         if time.monotonic() >= self.expires:
+            # GKE needs the email scope to identify the service account.
+            query = urllib.parse.urlencode({"scopes": "https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/userinfo.email"})
             req = urllib.request.Request(
-                "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
+                "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token?" + query,
                 headers={"Metadata-Flavor": "Google"},
             )
             opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))

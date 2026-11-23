@@ -28,7 +28,8 @@ locals {
     helm_sha256      = local.versions.helm_sha256
     chart_url        = local.versions.chart_url
   }
-  revision = substr(sha256(jsonencode({ config = local.config, script = filesha256("${path.module}/bootstrap.py"), image = local.versions.image })), 0, 20)
+  command  = ["python3"]
+  revision = substr(sha256(jsonencode({ config = local.config, script = filesha256("${path.module}/bootstrap.py"), image = local.versions.image, command = local.command })), 0, 20)
 }
 
 resource "google_project_service" "run" {
@@ -104,7 +105,7 @@ resource "google_cloud_run_v2_job" "install" {
       max_retries     = 0
       containers {
         image   = local.versions.image
-        command = ["/google-cloud-sdk/platform/bundledpythonunix/bin/python3"]
+        command = local.command
         args    = ["-c", file("${path.module}/bootstrap.py")]
         env {
           name  = "LOOP_BOOTSTRAP_CONFIG"
