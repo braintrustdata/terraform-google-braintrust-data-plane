@@ -171,6 +171,21 @@ def worker_values(config, bundles, licensed):
     return values
 
 
+def wait_for_workers(api, config, deadline):
+    # Helm skips readiness for OnDelete StatefulSets; the worker controller owns replacement.
+    url = f"{config['endpoint']}/apis/apps/v1/namespaces/{config['namespace']}/statefulsets/sandbox-service"
+    while True:
+        workload = api.request(url)
+        status, replicas = workload.get("status", {}), config["replicas"]
+        if (status.get("observedGeneration", 0) >= workload["metadata"]["generation"]
+                and workload["spec"]["replicas"] == replicas
+                and all(status.get(field, 0) == replicas for field in ("replicas", "updatedReplicas", "readyReplicas"))):
+            return
+        if time.monotonic() >= deadline:
+            raise RuntimeError("Worker replicas did not become ready; inspect worker rollout events")
+        time.sleep(5)
+
+
 def install(api, config, directory):
     if not re.fullmatch(r"[a-zA-Z0-9.-]+", config["hostname"]):
         raise RuntimeError("Invalid worker hostname")
@@ -208,11 +223,13 @@ def install(api, config, directory):
     overrides = private_file(directory / "overrides.json", json.dumps(config["overrides"]))
     managed = private_file(directory / "managed.json", json.dumps(worker_values(config, bundles, license_key is not None)))
     print("Installing worker chart and waiting for readiness", flush=True)
+    deadline = time.monotonic() + 1200
     result = subprocess.run([str(helm), "upgrade", "--install", "sandbox-service", config["chart_url"], "--namespace", namespace,
                              "--values", overrides, "--values", managed, "--wait", "--atomic", "--timeout", "1200s", "--history-max", "5"],
                             env={**os.environ, "KUBECONFIG": kubeconfig}, capture_output=True)
     if result.returncode:
         raise RuntimeError(f"Worker chart installation failed (exit {result.returncode}); inspect worker rollout events")
+    wait_for_workers(api, config, deadline)
     print("Loop workers installed; TLS retained in Secret Manager")
 
 

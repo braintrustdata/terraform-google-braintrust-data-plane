@@ -35,6 +35,9 @@ class FakeApi:
 
     def request(self, url, method="GET", body=None, missing=False):
         self.requests.append((url, method, body))
+        if "/statefulsets/" in url:
+            return {"metadata": {"generation": 1}, "spec": {"replicas": 1},
+                    "status": {"observedGeneration": 1, "replicas": 1, "updatedReplicas": 1, "readyReplicas": 1}}
         return None if method == "GET" else {}
 
 
@@ -51,6 +54,39 @@ def config():
 
 
 class BootstrapTests(unittest.TestCase):
+    def test_on_delete_rollout_waits_for_new_workers_to_be_ready(self):
+        api = Mock()
+        workload = {"metadata": {"generation": 2}, "spec": {"replicas": 1}}
+        api.request.side_effect = [
+            {**workload, "status": {"observedGeneration": 1, "replicas": 1, "readyReplicas": 1}},
+            {**workload, "status": {"observedGeneration": 2, "replicas": 1, "updatedReplicas": 1}},
+            {**workload, "status": {"observedGeneration": 2, "replicas": 1, "updatedReplicas": 1, "readyReplicas": 1}},
+        ]
+        with patch.object(bootstrap.time, "sleep") as sleep, patch.object(bootstrap.time, "monotonic", return_value=0):
+            bootstrap.wait_for_workers(api, config(), 10)
+        self.assertEqual(api.request.call_count, 3)
+        self.assertEqual(sleep.call_count, 2)
+
+    def test_on_delete_rollout_times_out_instead_of_reporting_success(self):
+        api = Mock()
+        api.request.return_value = {"metadata": {"generation": 1}, "spec": {"replicas": 1},
+                                    "status": {"observedGeneration": 1, "replicas": 1, "updatedReplicas": 1}}
+        with patch.object(bootstrap.time, "monotonic", return_value=10):
+            with self.assertRaisesRegex(RuntimeError, "did not become ready"):
+                bootstrap.wait_for_workers(api, config(), 10)
+
+    def test_drain_waits_until_old_workers_are_gone(self):
+        api, cfg = Mock(), config()
+        cfg["replicas"] = 0
+        workload = {"metadata": {"generation": 2}, "spec": {"replicas": 0}}
+        api.request.side_effect = [
+            {**workload, "status": {"observedGeneration": 2, "replicas": 1, "readyReplicas": 1}},
+            {**workload, "status": {"observedGeneration": 2}},
+        ]
+        with patch.object(bootstrap.time, "sleep") as sleep, patch.object(bootstrap.time, "monotonic", return_value=0):
+            bootstrap.wait_for_workers(api, cfg, 10)
+        sleep.assert_called_once_with(5)
+
     def test_metadata_credentials_include_gke_email_scope_and_are_cached(self):
         opener = Mock()
         opener.open.return_value = io.BytesIO(b'{"access_token":"test-token","expires_in":3600}')
