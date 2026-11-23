@@ -1,7 +1,14 @@
 variable "deployment_name" { type = string }
 variable "region" { type = string }
-variable "cluster" {
-  type = object({ id = string, endpoint = string })
+variable "endpoint" { type = string }
+variable "deploy_service_account_email" {
+  type        = string
+  default     = null
+  description = "Existing deployment service account. Null creates an installer with project Kubernetes administration."
+  validation {
+    condition     = var.deploy_service_account_email == null || can(regex("^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\\.gserviceaccount\\.com$", var.deploy_service_account_email))
+    error_message = "The deployment identity must be a Google service account email, or null to create an installer automatically."
+  }
 }
 variable "runtime_service_account" { type = string }
 variable "workers" {

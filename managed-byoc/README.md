@@ -192,9 +192,8 @@ After bootstrap, provide Braintrust:
 
 ### Automatic Loop installation
 
-The deployment role list includes `roles/run.developer` so Terraform can create
-and execute the worker bootstrap job. The job uses a separate service account;
-Terraform limits its cluster administration grant to the isolated worker cluster
-and its secret access to the bootstrap bundles and optional telemetry license.
-The runtime receives access only to its client bundle. Reapply the managed
-bootstrap when upgrading an existing deployment to this installer.
+Automatic Loop installation adds `roles/run.developer` to the deployment roles.
+Reapply this bootstrap before enabling it on an existing deployment; see
+[Loop setup](../ISOLATED_WORKERS.md#enable-loop).
+Pass the deployment account as `deploy_service_account_email` to reuse it for
+installation without granting Kubernetes administration to a separate installer.

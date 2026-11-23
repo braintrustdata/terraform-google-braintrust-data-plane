@@ -7,12 +7,9 @@ override_resource {
   values = { id = "projects/test-project/secrets/runtime-client-tls" }
 }
 variables {
-  deployment_name = "example-prod"
-  region          = "us-central1"
-  cluster = {
-    id       = "projects/test-project/locations/us-central1/clusters/workers"
-    endpoint = "https://workers.example.gke.goog"
-  }
+  deployment_name         = "example-prod"
+  region                  = "us-central1"
+  endpoint                = "https://workers.example.gke.goog"
   runtime_service_account = "example-loop@test-project.iam.gserviceaccount.com"
   workers = {
     checkpoint_store = "gs://example-checkpoints/filesystems"
@@ -28,12 +25,14 @@ run "apply_executes_bootstrap_and_exports_only_a_runtime_secret_reference" {
   module { source = "./modules/gke-loop-bootstrap" }
   assert {
     condition = (
+      toset(keys(google_project_service.bootstrap)) == toset(["run.googleapis.com", "secretmanager.googleapis.com"]) &&
       length(google_secret_manager_secret.tls) == 3 &&
       output.client_tls_secret == "projects/test-project/secrets/runtime-client-tls/versions/latest" &&
       !issensitive(output.client_tls_secret) &&
       output.services_version == jsondecode(file("modules/gke-loop-bootstrap/VERSIONS.json")).services_version &&
       startswith(google_cloud_run_v2_job.install.run_execution_token, "r") &&
-      google_cloud_run_v2_job.install.template[0].template[0].service_account == google_service_account.installer.email
+      length(google_service_account.installer) == 1 &&
+      google_cloud_run_v2_job.install.template[0].template[0].service_account == google_service_account.installer[0].email
     )
     error_message = "An apply must run the bootstrap to completion and expose only a client secret reference and matching service version."
   }
@@ -44,13 +43,16 @@ run "apply_executes_bootstrap_and_exports_only_a_runtime_secret_reference" {
       google_secret_manager_secret_iam_member.runtime.secret_id != google_secret_manager_secret.tls["server"].id &&
       google_secret_manager_secret_iam_member.runtime.member == "serviceAccount:${var.runtime_service_account}" &&
       google_secret_manager_secret_iam_member.runtime.role == "roles/secretmanager.secretAccessor" &&
-      google_project_iam_member.installer_cluster.condition[0].expression == "resource.name == '${var.cluster.id}'"
+      google_project_iam_member.installer_cluster[0].role == "roles/container.admin" &&
+      google_project_iam_member.installer_cluster[0].project == "test-project" &&
+      google_project_iam_member.installer_cluster[0].member == "serviceAccount:${google_service_account.installer[0].email}" &&
+      length(google_project_iam_member.installer_cluster[0].condition) == 0
     )
-    error_message = "Runtime access must be client-only; installer cluster administration must be conditional on this worker cluster."
+    error_message = "Runtime access must be client-only; the automatic installer needs project-scoped Kubernetes administration, which cannot use a cluster-name IAM condition."
   }
   assert {
     condition = (
-      local.config.endpoint == var.cluster.endpoint &&
+      local.config.endpoint == var.endpoint &&
       local.config.namespace == var.workers.discovery.external_dns_namespace &&
       local.config.checkpoint_store == var.workers.checkpoint_store &&
       !strcontains(jsonencode(local.config), "PRIVATE KEY") &&
@@ -58,6 +60,23 @@ run "apply_executes_bootstrap_and_exports_only_a_runtime_secret_reference" {
       google_cloud_run_v2_job.install.template[0].template[0].containers[0].args[1] == file("modules/gke-loop-bootstrap/bootstrap.py")
     )
     error_message = "Bootstrap must install the actual packaged script against the worker cluster, with no generated credentials in its config."
+  }
+}
+run "reuse_existing_deployment_identity_without_another_admin_grant" {
+  command = plan
+  module { source = "./modules/gke-loop-bootstrap" }
+  variables { deploy_service_account_email = "deploy@test-project.iam.gserviceaccount.com" }
+  assert {
+    condition = (
+      length(google_service_account.installer) == 0 &&
+      length(google_project_iam_member.installer_cluster) == 0 &&
+      google_cloud_run_v2_job.install.template[0].template[0].service_account == var.deploy_service_account_email &&
+      alltrue([for grant in google_secret_manager_secret_iam_member.installer_read : grant.member == "serviceAccount:${var.deploy_service_account_email}"]) &&
+      alltrue([for grant in google_secret_manager_secret_iam_member.installer_write : grant.member == "serviceAccount:${var.deploy_service_account_email}"]) &&
+      google_project_iam_member.license[0].member == "serviceAccount:${var.deploy_service_account_email}" &&
+      output.revision != run.apply_executes_bootstrap_and_exports_only_a_runtime_secret_reference.revision
+    )
+    error_message = "A supplied deployment identity must run the job with secret access and trigger a rerun, without creating another privileged identity or granting Kubernetes administration."
   }
 }
 run "worker_changes_rerun_the_job_and_allow_draining_to_zero" {

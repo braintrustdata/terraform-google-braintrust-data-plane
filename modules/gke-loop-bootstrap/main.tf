@@ -4,8 +4,9 @@ data "google_project" "current" {
 }
 
 locals {
-  name     = "${substr(replace(var.deployment_name, "_", "-"), 0, 14)}-${substr(sha256(var.deployment_name), 0, 6)}-loop"
-  versions = jsondecode(file("${path.module}/VERSIONS.json"))
+  name                      = "${substr(replace(var.deployment_name, "_", "-"), 0, 14)}-${substr(sha256(var.deployment_name), 0, 6)}-loop"
+  versions                  = jsondecode(file("${path.module}/VERSIONS.json"))
+  installer_service_account = var.deploy_service_account_email != null ? var.deploy_service_account_email : google_service_account.installer[0].email
   secret_ids = {
     seed   = "${local.name}-tls-seed"
     server = "${local.name}-server-tls"
@@ -13,7 +14,7 @@ locals {
   }
   config = {
     project          = data.google_project.current.project_id
-    endpoint         = var.cluster.endpoint
+    endpoint         = var.endpoint
     namespace        = var.workers.discovery.external_dns_namespace
     hostname         = var.workers.discovery.hostname
     checkpoint_store = var.workers.checkpoint_store
@@ -29,28 +30,27 @@ locals {
     chart_url        = local.versions.chart_url
   }
   command  = ["python3"]
-  revision = substr(sha256(jsonencode({ config = local.config, script = filesha256("${path.module}/bootstrap.py"), image = local.versions.image, command = local.command })), 0, 20)
+  revision = substr(sha256(jsonencode({ config = local.config, script = filesha256("${path.module}/bootstrap.py"), image = local.versions.image, command = local.command, service_account = local.installer_service_account })), 0, 20)
 }
 
-resource "google_project_service" "run" {
+resource "google_project_service" "bootstrap" {
+  for_each           = toset(["run.googleapis.com", "secretmanager.googleapis.com"])
   project            = data.google_project.current.project_id
-  service            = "run.googleapis.com"
+  service            = each.value
   disable_on_destroy = false
 }
 
 resource "google_service_account" "installer" {
+  count        = var.deploy_service_account_email == null ? 1 : 0
   account_id   = local.name
   display_name = "Loop worker installer"
 }
 
 resource "google_project_iam_member" "installer_cluster" {
+  count   = var.deploy_service_account_email == null ? 1 : 0
   project = data.google_project.current.project_id
   role    = "roles/container.admin"
-  member  = "serviceAccount:${google_service_account.installer.email}"
-  condition {
-    title      = "loop-worker-cluster"
-    expression = "resource.name == '${var.cluster.id}'"
-  }
+  member  = "serviceAccount:${local.installer_service_account}"
 }
 
 resource "google_secret_manager_secret" "tls" {
@@ -59,20 +59,21 @@ resource "google_secret_manager_secret" "tls" {
   replication {
     auto {}
   }
+  depends_on = [google_project_service.bootstrap]
 }
 
 resource "google_secret_manager_secret_iam_member" "installer_read" {
   for_each  = local.secret_ids
   secret_id = google_secret_manager_secret.tls[each.key].id
   role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.installer.email}"
+  member    = "serviceAccount:${local.installer_service_account}"
 }
 
 resource "google_secret_manager_secret_iam_member" "installer_write" {
   for_each  = local.secret_ids
   secret_id = google_secret_manager_secret.tls[each.key].id
   role      = "roles/secretmanager.secretVersionAdder"
-  member    = "serviceAccount:${google_service_account.installer.email}"
+  member    = "serviceAccount:${local.installer_service_account}"
 }
 
 resource "google_secret_manager_secret_iam_member" "runtime" {
@@ -85,7 +86,7 @@ resource "google_project_iam_member" "license" {
   count   = var.options.brainstore_license_secret_name == "" ? 0 : 1
   project = data.google_project.current.project_id
   role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${google_service_account.installer.email}"
+  member  = "serviceAccount:${local.installer_service_account}"
   condition {
     title      = "loop-worker-telemetry-license"
     expression = "resource.name == 'projects/${data.google_project.current.number}/secrets/${var.options.brainstore_license_secret_name}' || resource.name.startsWith('projects/${data.google_project.current.number}/secrets/${var.options.brainstore_license_secret_name}/versions/')"
@@ -100,7 +101,7 @@ resource "google_cloud_run_v2_job" "install" {
   run_execution_token = "r${local.revision}"
   template {
     template {
-      service_account = google_service_account.installer.email
+      service_account = local.installer_service_account
       timeout         = "1800s"
       max_retries     = 0
       containers {
@@ -122,7 +123,7 @@ resource "google_cloud_run_v2_job" "install" {
     update = "40m"
   }
   depends_on = [
-    google_project_service.run,
+    google_project_service.bootstrap,
     google_project_iam_member.installer_cluster,
     google_project_iam_member.license,
     google_secret_manager_secret_iam_member.installer_read,

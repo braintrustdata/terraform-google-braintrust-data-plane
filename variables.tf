@@ -713,7 +713,7 @@ variable "enable_loop_runtime" {
 variable "deploy_service_account_email" {
   type        = string
   default     = null
-  description = "Existing deployment account for Terraform-owned worker firewall permissions. Omit when bootstrap already grants worker firewall access. Initial creation requires IAM custom-role administration."
+  description = "Existing deployment account for worker firewalls and Loop installation. It must have Kubernetes administration permissions and the Terraform caller must be allowed to act as it. Null creates a Loop installer account automatically. Initial firewall setup requires IAM custom-role administration."
 }
 
 variable "isolated_worker_dns_roles" {

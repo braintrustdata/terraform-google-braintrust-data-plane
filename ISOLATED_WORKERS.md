@@ -34,26 +34,17 @@ enable_loop_runtime = true
 gke_isolated_workers = { network_cidr = "10.96.0.0/16" }
 ```
 
-The infrastructure apply also installs workers and creates persistent mTLS
-credentials in Secret Manager. It waits for installation to succeed before
-exposing `loop_runtime`. Pass that output to the existing application module:
-
-```hcl
-loop_runtime = try(data.terraform_remote_state.infra.outputs.loop_runtime, null)
-```
-
-For direct Helm installations, export `loop_runtime_helm_values_yaml` and pass it
-after your existing values. This overlay contains connection settings, the
-runtime identity and a client-secret reference. The runtime retrieves its bundle
-through Workload Identity when its Pod starts. Generated private keys do not pass
-through Terraform state, outputs or Helm values. No worker providers, separate
-setup apply or manual TLS steps are required. See the
+The apply installs workers and persists mTLS in Secret Manager, waiting for
+installation to succeed before publishing `loop_runtime`. Pass that output to
+the app module, or pass `loop_runtime_helm_values_yaml` after your existing Helm
+values. The runtime loads its client bundle through Workload Identity; private
+keys never enter Terraform state or Helm values. See the
 [Helm guide](https://github.com/braintrustdata/helm/tree/main/braintrust/examples/gke-loop-runtime).
 
-`loop_runtime_options` can override `services_version`, `worker_replicas` and
-`worker_helm_values`. The packaged version and immutable installer/chart artifacts
-are recorded in `modules/gke-loop-bootstrap/VERSIONS.json`. The generated runtime
-tag follows `services_version`; keep it compatible with the primary services.
+`loop_runtime_options` overrides `services_version`, `worker_replicas` and
+`worker_helm_values`; defaults are pinned in `modules/gke-loop-bootstrap/VERSIONS.json`.
+The runtime tag follows the worker version; keep both compatible with the primary
+API, Brainstore, routed AI Gateway and a chart supporting `loopRuntime.sandbox.clientTlsSecret`.
 `brainstore_license_secret_name` defaults to `brainstore-license-key`; set it to an
 empty string to omit worker telemetry license lookup.
 
@@ -161,13 +152,15 @@ See [Google Workload Identity identifiers](https://docs.cloud.google.com/kuberne
 ## Networking and guest isolation
 
 Nodes are private. With `enable_loop_runtime`, IP-based control-plane access is
-private and the installer uses the DNS endpoint with IAM authentication. No CI egress IPs
-are required. A dedicated installer identity receives `roles/container.admin`
-conditioned on this worker cluster. Its Secret Manager access is limited to the
-three bootstrap secrets and the optional telemetry license. The runtime identity
-can read only its client TLS secret. The deployment identity needs
+private and the installer uses the IAM-authenticated DNS endpoint. No CI egress IPs
+are required. The job reuses `deploy_service_account_email` when supplied;
+otherwise Terraform creates an installer with project-wide `roles/container.admin`
+to install the chart and its RBAC. GKE IAM cannot restrict Kubernetes object
+permissions to one cluster. The runtime can read only its client bundle.
+Installer secret access covers the bootstrap bundles and optional telemetry license.
+The Terraform caller needs
 `roles/run.developer` and permission to act as the installer; the managed
-bootstrap supplies these through its deployment roles. The Run API is enabled
+bootstrap supplies these through its deployment roles. Run and Secret Manager are enabled
 automatically. Kubernetes ServiceAccount token and client-certificate
 authentication to the DNS endpoint remain disabled. See [GKE endpoint access](https://docs.cloud.google.com/kubernetes-engine/docs/how-to/latest/network-isolation#dns-based_endpoint).
 

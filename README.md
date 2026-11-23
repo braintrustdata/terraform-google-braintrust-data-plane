@@ -7,28 +7,22 @@ This module is used to create the VPC, Databases, Redis, Storage, IAM, and assoc
 Module input variables are defined in [`variables.tf`](variables.tf) and
 outputs are defined in [`outputs.tf`](outputs.tf).
 
-## Loop Runtime
+## Loop Runtime infrastructure
 
-Set `enable_loop_runtime = true` to create the isolated worker cluster and install
-Sandbox Service. The apply waits for a Cloud Run job to generate and retain TLS
-in Secret Manager and install the worker chart. Later applies reuse that TLS.
-`gke_isolated_workers` and `loop_runtime_options` are optional overrides.
+Set `enable_loop_runtime = true` to provision Loop's isolated workers and install
+Sandbox Service. A Cloud Run job generates persistent TLS in Secret Manager and
+waits for worker readiness. `gke_isolated_workers` and `loop_runtime_options`
+provide optional overrides.
 
-For a Terraform-managed primary release, pass the ready configuration to the
-[GKE app module](https://github.com/braintrustdata/terraform-google-braintrust-gke-app#managed-loop-runtime):
+An installer account is created automatically, including for human Terraform
+logins. Set `deploy_service_account_email` to reuse an existing deployment account.
 
-```hcl
-loop_runtime = try(data.terraform_remote_state.infra.outputs.loop_runtime, null)
-```
-
-For a Helm-managed primary release, pass this infrastructure's
-`loop_runtime_helm_values_yaml` output as an additional values file. Both paths
-use the same worker installation and client-secret reference; neither needs a
-separate setup module, worker provider aliases, or certificate files. Use a
-Braintrust chart supporting `loopRuntime.sandbox.clientTlsSecret` and compatible
-API, Brainstore, and routed AI Gateway versions.
-See [configuration and lifecycle](ISOLATED_WORKERS.md) and the
-[Helm guide](https://github.com/braintrustdata/helm/tree/main/braintrust/examples/gke-loop-runtime).
+Pass the `loop_runtime` output to the
+[GKE app module](https://github.com/braintrustdata/terraform-google-braintrust-gke-app#managed-loop-runtime),
+or use `loop_runtime_helm_values_yaml` with a
+[direct Helm installation](https://github.com/braintrustdata/helm/tree/main/braintrust/examples/gke-loop-runtime).
+Both paths use a client-secret reference, without worker provider aliases or
+certificate files. See [configuration and lifecycle](ISOLATED_WORKERS.md).
 
 ## GKE Cluster Modes
 
