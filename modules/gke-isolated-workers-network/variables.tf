@@ -16,14 +16,14 @@ variable "existing_dns_roles" {
     records   = string
   })
   default     = null
-  description = "Optional DNS custom role names. Null discovers bootstrap roles, falling back to existing deployment roles. Role definitions are not managed by this module."
+  description = "Optional DNS role names. Null discovers custom roles or uses DNS Reader on the project and DNS Admin on the discovery zone for fresh projects."
 
   validation {
     condition = var.existing_dns_roles == null ? true : alltrue([
       for role in values(var.existing_dns_roles) :
-      can(regex("^(projects|organizations)/[^/]+/roles/[A-Za-z0-9_.]+$", role))
+      contains(["roles/dns.reader", "roles/dns.admin"], role) || can(regex("^(projects|organizations)/[^/]+/roles/[A-Za-z0-9_.]+$", role))
     ])
-    error_message = "Supply both DNS custom roles as full projects/<project>/roles/<role> or organizations/<org>/roles/<role> names."
+    error_message = "Supply DNS Reader/DNS Admin role names or full projects/<project>/roles/<role> or organizations/<org>/roles/<role> custom role names."
   }
 }
 

@@ -15,7 +15,8 @@ waits for worker readiness. `gke_isolated_workers` and `loop_runtime_options`
 provide optional overrides.
 
 An installer account is created automatically, including for human Terraform
-logins. Set `deploy_service_account_email` to reuse an existing deployment account.
+logins. Use `loop_runtime_options.installer_service_account_email` to reuse an existing
+deployment account without changing worker firewall IAM.
 
 Pass the `loop_runtime` output to the
 [GKE app module](https://github.com/braintrustdata/terraform-google-braintrust-gke-app#managed-loop-runtime),

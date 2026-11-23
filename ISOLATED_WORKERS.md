@@ -153,7 +153,8 @@ See [Google Workload Identity identifiers](https://docs.cloud.google.com/kuberne
 
 Nodes are private. With `enable_loop_runtime`, IP-based control-plane access is
 private and the installer uses the IAM-authenticated DNS endpoint. No CI egress IPs
-are required. The job reuses `deploy_service_account_email` when supplied;
+are required. The job reuses `loop_runtime_options.installer_service_account_email`
+(or the existing firewall `deploy_service_account_email`) when supplied;
 otherwise Terraform creates an installer with project-wide `roles/container.admin`
 to install the chart and its RBAC. GKE IAM cannot restrict Kubernetes object
 permissions to one cluster. The runtime can read only its client bundle.
@@ -218,21 +219,18 @@ Discovery also reserves an internal IP in the primary subnet, publishes
 Git proxy. The Loop Helm release binds its internal load balancer to
 `gke_isolated_workers.loop_egress.address` and restricts ingress to its `source_ranges`.
 
-External-dns uses the Kubernetes principal directly through Workload Identity
-Federation, without a Google service account or service account annotation. Its
-project role permits only `dns.managedZones.list`; a separate role permits record
-reads/writes only on the discovery zone. It cannot create zones, change zone IAM,
-or modify Google API or unrelated zones. Deployment requires the Cloud DNS API
-and permission to set the zone policy.
+External-dns uses the Kubernetes principal directly through Workload Identity,
+without a Google service account annotation. Existing managed-bootstrap or legacy
+custom roles keep their narrow project-list and zone-record permissions. Fresh
+projects use built-in DNS Reader on the project and DNS Admin scoped to the
+private discovery zone, without a separate bootstrap or custom-role creation.
+This fallback can read DNS records across the project but can write only within
+the discovery zone. The module enables Cloud DNS automatically.
 
-Run the [managed bootstrap](managed-byoc/README.md#worker-permissions-for-existing-deployments)
-before enabling workers on a new deployment. Terraform discovers its DNS roles
-automatically, using the deployment identity's existing Viewer access to list
-project roles. Existing deployments fall back to their legacy roles, and upgrades
-relinquish ownership of those definitions without deleting them or requiring state
-commands. Terraform only manages the grants, so the deployment identity needs no
-role lifecycle permissions. Set `isolated_worker_dns_roles` only to override role
-names supplied by your own IAM setup.
+Deleted, disabled or incomplete custom role pairs fail rather than silently
+broadening an existing deployment's access. Use `isolated_worker_dns_roles` to
+select an explicit pair. Legacy role definitions remain outside Terraform
+ownership; only their grants are managed here.
 
 The defaults are namespace `braintrust-sandbox` and service account `external-dns`;
 override `external_dns_namespace` and `external_dns_service_account` as needed.

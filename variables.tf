@@ -694,11 +694,12 @@ variable "brainstore_impersonation_targets" {
 variable "loop_runtime_options" {
   description = "Optional worker image, capacity, Helm and telemetry overrides for the automatic Loop bootstrap."
   type = object({
-    services_version               = optional(string)
-    worker_replicas                = optional(number, 1)
-    worker_helm_values             = optional(string, "")
-    brainstore_license_secret_name = optional(string, "brainstore-license-key")
-    control_plane_telemetry        = optional(string, "status,metrics,usage")
+    installer_service_account_email = optional(string)
+    services_version                = optional(string)
+    worker_replicas                 = optional(number, 1)
+    worker_helm_values              = optional(string, "")
+    brainstore_license_secret_name  = optional(string, "brainstore-license-key")
+    control_plane_telemetry         = optional(string, "status,metrics,usage")
   })
   default  = {}
   nullable = false
@@ -713,7 +714,7 @@ variable "enable_loop_runtime" {
 variable "deploy_service_account_email" {
   type        = string
   default     = null
-  description = "Existing deployment account for worker firewalls and Loop installation. It must have Kubernetes administration permissions and the Terraform caller must be allowed to act as it. Null creates a Loop installer account automatically. Initial firewall setup requires IAM custom-role administration."
+  description = "Existing deployment account for Terraform-owned worker firewall permissions, also reused for Loop unless its installer account is overridden. Omit when bootstrap already grants firewall access. Initial creation requires IAM custom-role administration."
 }
 
 variable "isolated_worker_dns_roles" {
@@ -722,7 +723,7 @@ variable "isolated_worker_dns_roles" {
     records   = string
   })
   default     = null
-  description = "Optional DNS custom role names. Null discovers bootstrap roles, falling back to existing deployment roles. Role definitions are not managed by this module."
+  description = "Optional DNS role names. Null discovers existing custom roles or uses DNS Reader on the project and DNS Admin on the discovery zone for fresh projects. Role definitions are not managed by this module."
 }
 
 variable "gke_isolated_workers" {

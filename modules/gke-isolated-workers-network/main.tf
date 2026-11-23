@@ -236,6 +236,13 @@ data "google_compute_subnetwork" "existing" {
   }
 }
 
+resource "google_project_service" "dns" {
+  count              = var.config.discovery == null ? 0 : 1
+  project            = data.google_client_config.current.project
+  service            = "dns.googleapis.com"
+  disable_on_destroy = false
+}
+
 resource "google_dns_managed_zone" "discovery" {
   count      = var.config.discovery == null ? 0 : 1
   project    = data.google_client_config.current.project
@@ -246,6 +253,7 @@ resource "google_dns_managed_zone" "discovery" {
   private_visibility_config {
     networks { network_url = var.network }
   }
+  depends_on = [google_project_service.dns]
 }
 
 resource "google_compute_firewall" "runtime_to_workers" {
@@ -283,8 +291,8 @@ resource "google_project_iam_member" "isolated_dns_zone_list" {
 
   lifecycle {
     precondition {
-      condition     = var.existing_dns_roles != null || length(local.discovered_dns_roles) > 0
-      error_message = "Worker DNS roles are missing or disabled. Run managed-byoc/setup.sh --project ${data.google_client_config.current.project} --loop-permissions-only as the project IAM owner, then plan again."
+      condition     = var.existing_dns_roles != null || length(local.discovered_dns_roles) > 0 || !local.known_dns_roles_present
+      error_message = "Worker DNS custom roles are incomplete, disabled or deleted. Restore the existing pair or supply isolated_worker_dns_roles explicitly; refusing to broaden an existing deployment's permissions."
     }
   }
 }
