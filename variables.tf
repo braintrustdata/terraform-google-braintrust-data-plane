@@ -691,16 +691,30 @@ variable "brainstore_impersonation_targets" {
   default     = []
 }
 
+variable "loop_runtime_options" {
+  description = "Optional worker image, capacity, Helm and telemetry overrides for the automatic Loop bootstrap."
+  type = object({
+    installer_service_account_email = optional(string)
+    services_version                = optional(string)
+    worker_replicas                 = optional(number, 1)
+    worker_helm_values              = optional(string, "")
+    brainstore_license_secret_name  = optional(string, "brainstore-license-key")
+    control_plane_telemetry         = optional(string, "status,metrics,usage")
+  })
+  default  = {}
+  nullable = false
+}
+
 variable "enable_loop_runtime" {
   type        = bool
-  description = "Create Loop's worker infrastructure, private discovery and workload identity with IAM-authenticated DNS access to the worker control plane."
+  description = "Provision isolated Loop workers, bootstrap their Helm release and TLS, and expose ready runtime configuration."
   default     = false
 }
 
 variable "deploy_service_account_email" {
   type        = string
   default     = null
-  description = "Existing deployment account for Terraform-owned worker firewall permissions. Omit when bootstrap already grants worker firewall access. Initial creation requires IAM custom-role administration."
+  description = "Existing deployment account for Terraform-owned worker firewall permissions, also reused for Loop unless its installer account is overridden. Omit when bootstrap already grants firewall access. Initial creation requires IAM custom-role administration."
 }
 
 variable "isolated_worker_dns_roles" {
@@ -709,7 +723,7 @@ variable "isolated_worker_dns_roles" {
     records   = string
   })
   default     = null
-  description = "Optional DNS custom role names. Null discovers bootstrap roles, falling back to existing deployment roles. Role definitions are not managed by this module."
+  description = "Optional DNS role names. Null discovers existing custom roles or uses DNS Reader on the project and DNS Admin on the discovery zone for fresh projects. Role definitions are not managed by this module."
 }
 
 variable "gke_isolated_workers" {
@@ -798,6 +812,10 @@ variable "gke_isolated_workers" {
       length(name) <= 63 && can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", name))
     ]))
     error_message = "External-dns namespace and service-account names must be lowercase Kubernetes names with at most 63 characters."
+  }
+  validation {
+    condition     = !var.enable_loop_runtime || try(var.gke_isolated_workers.discovery.external_dns_service_account, "external-dns") == "external-dns"
+    error_message = "Automatic Loop installation uses the worker chart's external-dns service account. Omit gke_isolated_workers.discovery.external_dns_service_account or set it to external-dns."
   }
 
   validation {

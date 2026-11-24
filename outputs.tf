@@ -169,15 +169,18 @@ output "gke_isolated_workers" {
   value       = local.isolated_workers_output
 }
 
+locals {
+  loop_runtime_helm_values_yaml = var.enable_loop_runtime ? module.gke_loop_bootstrap[0].helm_values_yaml : yamlencode({ loopRuntime = { enabled = false } })
+}
+
 output "loop_runtime" {
-  description = "Loop application inputs and IAM-authenticated worker connection. Null unless enable_loop_runtime is true."
-  value = var.enable_loop_runtime ? {
-    service_account = module.gke-iam.loop_runtime_service_account
-    workers         = local.isolated_workers_output
-    connection = {
-      host = "https://${module.gke_isolated_workers_cluster[0].gke_cluster_dns_endpoint}"
-    }
-  } : null
+  description = "Ready-to-use Loop Helm configuration after worker bootstrap succeeds. Contains references, not credentials."
+  value       = var.enable_loop_runtime ? module.gke_loop_bootstrap[0].loop_runtime : null
+}
+
+output "loop_runtime_helm_values_yaml" {
+  description = "Non-secret Loop values for a Helm-managed primary release."
+  value       = local.loop_runtime_helm_values_yaml
 }
 
 #----------------------------------------------------------------------------------------------

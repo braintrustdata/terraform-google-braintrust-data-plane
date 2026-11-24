@@ -103,14 +103,22 @@ run "disabled_role_cannot_complete_a_pair" {
   expect_failures = [google_project_iam_member.isolated_dns_zone_list]
 }
 
-run "missing_roles_fail_before_apply" {
+run "fresh_project_needs_no_custom_role_bootstrap" {
   command = plan
   module { source = "./modules/gke-isolated-workers-network" }
   override_data {
     target = data.google_project_iam_custom_roles.isolated_dns[0]
     values = { roles = [] }
   }
-  expect_failures = [google_project_iam_member.isolated_dns_zone_list]
+  assert {
+    condition = (
+      google_project_iam_member.isolated_dns_zone_list[0].role == "roles/dns.reader" &&
+      google_dns_managed_zone_iam_member.isolated_external_dns[0].role == "roles/dns.admin" &&
+      google_dns_managed_zone_iam_member.isolated_external_dns[0].managed_zone == google_dns_managed_zone.discovery[0].name &&
+      google_project_service.dns[0].service == "dns.googleapis.com"
+    )
+    error_message = "Fresh projects must enable DNS and use built-in read access plus administration scoped to the discovery zone, without a separate bootstrap."
+  }
 }
 
 run "partial_pairs_cannot_be_mixed" {
@@ -128,6 +136,20 @@ run "partial_pairs_cannot_be_mixed" {
   expect_failures = [google_project_iam_member.isolated_dns_zone_list]
 }
 
+run "explicit_builtin_roles_need_no_custom_role_lookup" {
+  command = plan
+  module { source = "./modules/gke-isolated-workers-network" }
+  variables { existing_dns_roles = { zone_list = "roles/dns.reader", records = "roles/dns.admin" } }
+  assert {
+    condition = (
+      length(data.google_project_iam_custom_roles.isolated_dns) == 0 &&
+      google_project_iam_member.isolated_dns_zone_list[0].role == "roles/dns.reader" &&
+      google_dns_managed_zone_iam_member.isolated_external_dns[0].role == "roles/dns.admin"
+    )
+    error_message = "Explicit built-in DNS roles must work without discovering or managing custom role definitions."
+  }
+}
+
 run "discovery_off_does_not_read_roles_or_create_grants" {
   command = plan
   module { source = "./modules/gke-isolated-workers-network" }
@@ -142,6 +164,7 @@ run "discovery_off_does_not_read_roles_or_create_grants" {
   assert {
     condition = (
       length(data.google_project_iam_custom_roles.isolated_dns) == 0 &&
+      length(google_project_service.dns) == 0 &&
       length(google_project_iam_member.isolated_dns_zone_list) == 0 &&
       length(google_dns_managed_zone_iam_member.isolated_external_dns) == 0
     )

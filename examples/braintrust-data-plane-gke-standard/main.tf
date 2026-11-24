@@ -14,6 +14,9 @@ module "braintrust-data-plane" {
   # Do not change this after deployment.
   deployment_name = "braintrust"
 
+  # Installs isolated Loop workers and generates TLS automatically.
+  # enable_loop_runtime = true
+
   # Optional isolated workers use a separate Standard cluster in the same VPC.
   # Read ISOLATED_WORKERS.md before deployment.
   # gke_isolated_workers = {

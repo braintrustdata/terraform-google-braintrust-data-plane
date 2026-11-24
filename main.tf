@@ -245,6 +245,19 @@ module "gke_isolated_workers_cluster" {
   gke_maintenance_window               = { day = 1, start_time = local.isolated_workers.maintenance_start_time }
 }
 
+module "gke_loop_bootstrap" {
+  source = "./modules/gke-loop-bootstrap"
+  count  = var.enable_loop_runtime ? 1 : 0
+
+  deployment_name              = var.deployment_name
+  region                       = data.google_client_config.current.region
+  runtime_service_account      = module.gke-iam.loop_runtime_service_account
+  deploy_service_account_email = var.loop_runtime_options.installer_service_account_email != null ? var.loop_runtime_options.installer_service_account_email : var.deploy_service_account_email
+  workers                      = local.isolated_workers_output
+  options                      = var.loop_runtime_options
+  endpoint                     = "https://${module.gke_isolated_workers_cluster[0].gke_cluster_dns_endpoint}"
+}
+
 # Initial node counts are per zone, so a one-node minimum needs one zone.
 module "gke_isolated_services_pool" {
   source = "./modules/gke-node-pool"

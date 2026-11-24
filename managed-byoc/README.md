@@ -189,3 +189,11 @@ After bootstrap, provide Braintrust:
 - support service account email
 - relevant organization policies or IAM Deny policies that may affect GKE, Cloud
   SQL, Redis, GCS, IAM, DNS, load balancing, or support access
+
+### Automatic Loop installation
+
+Automatic Loop installation adds `roles/run.developer` to the deployment roles.
+Reapply this bootstrap before enabling it on an existing deployment; see
+[Loop setup](../ISOLATED_WORKERS.md#enable-loop).
+Set `loop_runtime_options.installer_service_account_email` to the deployment account to reuse it for
+installation without granting Kubernetes administration to a separate installer.

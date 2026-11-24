@@ -9,14 +9,23 @@ outputs are defined in [`outputs.tf`](outputs.tf).
 
 ## Loop Runtime infrastructure
 
-Set `enable_loop_runtime = true` to provision Loop's worker cluster, private
-discovery and workload identity. Worker defaults and isolation are owned by this
-module; `gke_isolated_workers` is only needed for optional overrides.
+Set `enable_loop_runtime = true` to install isolated workers and persistent TLS
+through a Cloud Run job that waits for worker readiness. Pass `loop_runtime` to the
+[GKE app module](https://github.com/braintrustdata/terraform-google-braintrust-gke-app#managed-loop-runtime),
+or use `loop_runtime_helm_values_yaml` with a
+[direct Helm installation](https://github.com/braintrustdata/helm/tree/main/braintrust/examples/gke-loop-runtime).
 
-The new worker control plane uses an IAM-authenticated DNS endpoint and private
-IP access. CI needs `container.clusters.connect` and Kubernetes permissions,
-without a fixed public IP allowlist. The `loop_runtime` output supplies the
-application inputs and provider connection. See [Loop and worker configuration](ISOLATED_WORKERS.md).
+Installer accounts are created automatically, including for human logins.
+Use `loop_runtime_options.installer_service_account_email` to reuse a deployment
+account without changing firewall IAM. See [configuration and lifecycle](ISOLATED_WORKERS.md)
+for worker overrides, client-secret references and removal steps.
+
+This interface ships in v4.0.0 and requires GKE app v3 for app-module consumers;
+follow the [upgrade order](ISOLATED_WORKERS.md#upgrading-to-v400).
+
+For clusters managed by your own Terraform, call the
+[worker bootstrap module](modules/gke-loop-bootstrap) directly to get the same
+Helm values without adopting this module's cluster or network resources.
 
 ## GKE Cluster Modes
 
