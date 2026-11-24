@@ -216,9 +216,10 @@ def install(api, config, directory):
     overrides = private_file(directory / "overrides.json", json.dumps(config["overrides"]))
     managed = private_file(directory / "managed.json", json.dumps(worker_values(config, bundles, license_key is not None)))
     print("Installing worker chart and waiting for readiness", flush=True)
-    deadline = time.monotonic() + 1200
+    # Filesystem-preserving replacement can spend 30 minutes draining a worker.
+    deadline = time.monotonic() + 2400
     result = subprocess.run([str(helm), "upgrade", "--install", "sandbox-service", config["chart_url"], "--namespace", namespace,
-                             "--values", overrides, "--values", managed, "--wait", "--atomic", "--timeout", "1200s", "--history-max", "5"],
+                             "--values", overrides, "--values", managed, "--wait", "--atomic", "--timeout", "2400s", "--history-max", "5"],
                             env={**os.environ, "KUBECONFIG": kubeconfig}, capture_output=True)
     if result.returncode:
         raise RuntimeError(f"Worker chart installation failed (exit {result.returncode}); inspect worker rollout events")

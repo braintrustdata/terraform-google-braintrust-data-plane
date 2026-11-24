@@ -20,6 +20,9 @@ Use `loop_runtime_options.installer_service_account_email` to reuse a deployment
 account without changing firewall IAM. See [configuration and lifecycle](ISOLATED_WORKERS.md)
 for worker overrides, client-secret references and removal steps.
 
+This interface ships in v3.0.0 and requires GKE app v3 for app-module consumers;
+follow the [upgrade order](ISOLATED_WORKERS.md#upgrading-to-v300).
+
 For clusters managed by your own Terraform, call the
 [worker bootstrap module](modules/gke-loop-bootstrap) directly to get the same
 Helm values without adopting this module's cluster or network resources.

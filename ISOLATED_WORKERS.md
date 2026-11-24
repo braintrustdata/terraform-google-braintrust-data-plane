@@ -293,7 +293,17 @@ Disable the primary runtime and uninstall the drained worker release before sett
 `enable_loop_runtime = false` and applying infrastructure. Cluster deletion protection
 still applies; retain checkpoint storage and its key for recoverable sandboxes.
 
-Existing app-managed installations must transfer ownership and TLS before the first
-bootstrap. The app's removed blocks retain live worker resources and the TLS Secret.
-Preserve existing CA bundles in the bootstrap secrets for uninterrupted trust;
-new installations create new trust roots. Coordinate any removal or trust rotation.
+## Upgrading to v3.0.0
+
+The changed `loop_runtime` output is a breaking interface and requires GKE app v3.
+Drain active sandboxes with app v2's `loop_runtime_options.worker_replicas = 0`,
+then apply data-plane v3 before app v3. The first bootstrap creates new trust roots
+and replaces worker TLS Secrets, so Loop is unavailable until the app apply.
+The existing `sandbox-service` release is upgraded in place; nothing needs uninstalling.
+Keep old worker provider blocks through the app's first v3 apply so its removed
+blocks can release state without deleting live resources, then remove them.
+
+Replacing the stored CA and bundles outside Terraform does not change its outputs.
+Restart the runtime to reload them with
+`kubectl rollout restart deployment/braintrust-loop-runtime -n <namespace>`
+(adjust the Deployment name if `loopRuntime.name` is customized).

@@ -66,6 +66,7 @@ run "apply_executes_bootstrap_and_exports_only_a_runtime_secret_reference" {
       yamldecode(output.helm_values_yaml).loopRuntime.serviceAccount.googleServiceAccount == var.runtime_service_account &&
       yamldecode(output.helm_values_yaml).loopRuntime.sandbox.clientTlsSecret == output.client_tls_secret &&
       output.loop_runtime.helm_values_yaml == output.helm_values_yaml &&
+      !output.loop_runtime.services_version_pinned &&
       !strcontains(jsonencode(local.config), "PRIVATE KEY") &&
       google_cloud_run_v2_job.install.template[0].template[0].containers[0].args[0] == "-c" &&
       google_cloud_run_v2_job.install.template[0].template[0].containers[0].args[1] == file("modules/gke-loop-bootstrap/bootstrap.py")
@@ -102,7 +103,7 @@ run "worker_changes_rerun_the_job_and_allow_draining_to_zero" {
     }
   }
   assert {
-    condition     = local.config.replicas == 0 && local.config.services_version == "custom-build" && local.config.overrides.env[0].value == "keep" && length(google_project_iam_member.license) == 0 && output.revision != run.apply_executes_bootstrap_and_exports_only_a_runtime_secret_reference.revision
+    condition     = local.config.replicas == 0 && local.config.services_version == "custom-build" && local.config.overrides.env[0].value == "keep" && length(google_project_iam_member.license) == 0 && output.revision != run.apply_executes_bootstrap_and_exports_only_a_runtime_secret_reference.revision && output.loop_runtime.services_version_pinned
     error_message = "Worker changes must trigger a new execution while preserving drain-to-zero and custom settings."
   }
 }
@@ -123,4 +124,37 @@ run "reject_invalid_worker_capacity" {
   module { source = "./modules/gke-loop-bootstrap" }
   variables { options = { worker_replicas = -1 } }
   expect_failures = [var.options]
+}
+
+run "drain_executes_with_a_new_token" {
+  command = apply
+  module { source = "./modules/gke-loop-bootstrap" }
+  variables { options = { worker_replicas = 0 } }
+  assert {
+    condition     = output.execution_token != run.apply_executes_bootstrap_and_exports_only_a_runtime_secret_reference.execution_token
+    error_message = "Changing capacity must create a new installer execution."
+  }
+}
+
+run "restoring_the_original_configuration_executes_again" {
+  command = apply
+  module { source = "./modules/gke-loop-bootstrap" }
+  assert {
+    condition = (
+      output.revision == run.apply_executes_bootstrap_and_exports_only_a_runtime_secret_reference.revision &&
+      output.execution_token != run.apply_executes_bootstrap_and_exports_only_a_runtime_secret_reference.execution_token &&
+      output.execution_token != run.drain_executes_with_a_new_token.execution_token
+    )
+    error_message = "Restoring the original settings must not reuse a previous Cloud Run execution name."
+  }
+}
+
+run "unchanged_configuration_keeps_the_execution_token" {
+  command = plan
+  module { source = "./modules/gke-loop-bootstrap" }
+  variables { options = { services_version = "" } }
+  assert {
+    condition     = output.execution_token == run.restoring_the_original_configuration_executes_again.execution_token && !output.loop_runtime.services_version_pinned
+    error_message = "A no-op plan must not launch an installer; an empty image override still uses the default version."
+  }
 }

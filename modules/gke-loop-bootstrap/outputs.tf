@@ -26,7 +26,8 @@ output "helm_values_yaml" {
 output "loop_runtime" {
   description = "Applied Loop configuration for the GKE app module."
   value = {
-    helm_values_yaml = local.helm_values_yaml
+    helm_values_yaml        = local.helm_values_yaml
+    services_version_pinned = var.options.services_version != null && var.options.services_version != ""
   }
   depends_on = [google_cloud_run_v2_job.install]
 }
@@ -43,4 +44,9 @@ output "services_version" {
 output "revision" {
   value      = local.revision
   depends_on = [google_cloud_run_v2_job.install]
+}
+
+output "execution_token" {
+  description = "Installer execution suffix, stable until the worker configuration changes."
+  value       = google_cloud_run_v2_job.install.run_execution_token
 }

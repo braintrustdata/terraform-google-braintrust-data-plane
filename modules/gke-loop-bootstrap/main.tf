@@ -93,16 +93,20 @@ resource "google_project_iam_member" "license" {
   }
 }
 
+resource "terraform_data" "execution" {
+  triggers_replace = local.revision
+}
+
 resource "google_cloud_run_v2_job" "install" {
   project             = data.google_project.current.project_id
   name                = "${local.name}-setup"
   location            = var.region
   deletion_protection = false
-  run_execution_token = "r${local.revision}"
+  run_execution_token = "r${substr(sha256(terraform_data.execution.id), 0, 20)}"
   template {
     template {
       service_account = local.installer_service_account
-      timeout         = "1800s"
+      timeout         = "3000s"
       max_retries     = 0
       containers {
         image   = local.versions.image
@@ -119,8 +123,8 @@ resource "google_cloud_run_v2_job" "install" {
     }
   }
   timeouts {
-    create = "40m"
-    update = "40m"
+    create = "60m"
+    update = "60m"
   }
   depends_on = [
     google_project_service.bootstrap,

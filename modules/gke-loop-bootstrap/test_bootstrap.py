@@ -19,6 +19,7 @@ class FakeApi:
     def __init__(self):
         self.secrets = {}
         self.requests = []
+        self.pending_worker_checks = 0
 
     def read_secret(self, name, version="latest"):
         values = self.secrets.get(name, [])
@@ -36,8 +37,10 @@ class FakeApi:
     def request(self, url, method="GET", body=None, missing=False):
         self.requests.append((url, method, body))
         if "/statefulsets/" in url:
+            ready = self.pending_worker_checks == 0
+            self.pending_worker_checks = max(0, self.pending_worker_checks - 1)
             return {"metadata": {"generation": 1}, "spec": {"replicas": 1},
-                    "status": {"observedGeneration": 1, "replicas": 1, "updatedReplicas": 1, "readyReplicas": 1}}
+                    "status": {"observedGeneration": 1, "replicas": 1, "updatedReplicas": 1, "readyReplicas": int(ready)}}
         return None if method == "GET" else {}
 
 
@@ -146,8 +149,9 @@ class BootstrapTests(unittest.TestCase):
                 bootstrap.tls_bundles(api, cfg, Path(directory))
             self.assertEqual(api.secrets[name], [b'{"cert":"incomplete"}'])
 
-    def test_install_scopes_secrets_to_workers_and_keeps_keys_out_of_helm(self):
+    def test_install_waits_for_draining_workers_and_keeps_keys_out_of_helm(self):
         api, cfg = FakeApi(), config()
+        api.pending_worker_checks = 1
         api.secrets["projects/test-project/secrets/license"] = [b"test-license"]
         bundles = {kind: {"cert": kind + "-cert", "key": kind + "-private-key", "ca_cert": kind + "-peer-ca"} for kind in ("server", "client")}
         buffer = io.BytesIO()
@@ -158,7 +162,12 @@ class BootstrapTests(unittest.TestCase):
             tar.addfile(info, io.BytesIO(content))
         archive = buffer.getvalue()
         cfg["helm_sha256"] = hashlib.sha256(archive).hexdigest()
-        with tempfile.TemporaryDirectory() as directory, patch.object(bootstrap, "tls_bundles", return_value=bundles), patch.object(bootstrap.urllib.request, "urlopen", return_value=io.BytesIO(archive)), patch.object(bootstrap.subprocess, "run", return_value=subprocess.CompletedProcess([], 0)) as run:
+        with (tempfile.TemporaryDirectory() as directory,
+              patch.object(bootstrap, "tls_bundles", return_value=bundles),
+              patch.object(bootstrap.urllib.request, "urlopen", return_value=io.BytesIO(archive)),
+              patch.object(bootstrap.subprocess, "run", return_value=subprocess.CompletedProcess([], 0)) as run,
+              patch.object(bootstrap.time, "monotonic", side_effect=[0, 1801]),
+              patch.object(bootstrap.time, "sleep") as sleep):
             root = Path(directory)
             bootstrap.install(api, cfg, root)
             values = json.loads((root / "managed.json").read_text())
@@ -171,6 +180,7 @@ class BootstrapTests(unittest.TestCase):
             self.assertIn("--atomic", args)
             self.assertIn("--wait", args)
             self.assertNotIn("test-token", args)
+            sleep.assert_called_once_with(5)
         writes = [(url, body) for url, method, body in api.requests if method in ("POST", "PUT") and body.get("kind") == "Secret"]
         self.assertEqual(len(writes), 3)
         self.assertTrue(all("/namespaces/braintrust-sandbox/" in url for url, _ in writes))
