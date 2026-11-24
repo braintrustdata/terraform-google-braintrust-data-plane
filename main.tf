@@ -248,6 +248,10 @@ module "gke_isolated_workers_cluster" {
 module "gke_loop_bootstrap" {
   source = "./modules/gke-loop-bootstrap"
   count  = var.enable_loop_runtime ? 1 : 0
+  providers = {
+    google = google
+    http   = http
+  }
 
   deployment_name              = var.deployment_name
   region                       = data.google_client_config.current.region

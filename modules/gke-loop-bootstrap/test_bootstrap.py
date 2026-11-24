@@ -52,8 +52,18 @@ def config():
         "replicas": 1, "services_version": "v2.24.0", "dns_args": ["--google-project=test-project"],
         "overrides": {"env": [{"name": "CUSTOM_SETTING", "value": "custom"}]},
         "license_secret": "license", "telemetry": "status,logs", "helm_url": "https://get.helm.sh/test.tgz",
-        "helm_sha256": "", "chart_url": "https://charts.example/worker.tgz",
+        "helm_sha256": "", "chart_url": "https://charts.example/worker.tgz", "chart_sha256": "",
     }
+
+
+def helm_archive():
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w:gz") as tar:
+        content = b"test-helm"
+        info = tarfile.TarInfo("linux-amd64/helm")
+        info.size = len(content)
+        tar.addfile(info, io.BytesIO(content))
+    return buffer.getvalue()
 
 
 class BootstrapTests(unittest.TestCase):
@@ -83,12 +93,32 @@ class BootstrapTests(unittest.TestCase):
         cfg["replicas"] = 0
         workload = {"metadata": {"generation": 2}, "spec": {"replicas": 0}}
         api.request.side_effect = [
+            {**workload, "spec": {"replicas": 1}, "status": {"observedGeneration": 2, "replicas": 1, "updatedReplicas": 1, "readyReplicas": 1}},
             {**workload, "status": {"observedGeneration": 2, "replicas": 1, "readyReplicas": 1}},
             {**workload, "status": {"observedGeneration": 2}},
         ]
         with patch.object(bootstrap.time, "sleep") as sleep, patch.object(bootstrap.time, "monotonic", return_value=0):
             bootstrap.wait_for_workers(api, cfg, 10)
+        self.assertEqual(sleep.call_count, 2)
+
+    def test_readiness_waits_for_the_live_scaled_out_capacity(self):
+        api = Mock()
+        workload = {"metadata": {"generation": 2}, "spec": {"replicas": 3}}
+        api.request.side_effect = [
+            {**workload, "status": {"observedGeneration": 2, "replicas": 2, "updatedReplicas": 2, "readyReplicas": 2}},
+            {**workload, "status": {"observedGeneration": 2, "replicas": 3, "updatedReplicas": 3, "readyReplicas": 3}},
+        ]
+        with patch.object(bootstrap.time, "sleep") as sleep, patch.object(bootstrap.time, "monotonic", return_value=0):
+            bootstrap.wait_for_workers(api, config(), 10)
         sleep.assert_called_once_with(5)
+
+    def test_readiness_cannot_succeed_below_the_configured_minimum(self):
+        api = Mock()
+        api.request.return_value = {"metadata": {"generation": 1}, "spec": {"replicas": 0},
+                                    "status": {"observedGeneration": 1}}
+        with patch.object(bootstrap.time, "monotonic", return_value=10):
+            with self.assertRaisesRegex(RuntimeError, "did not become ready"):
+                bootstrap.wait_for_workers(api, config(), 10)
 
     def test_metadata_credentials_include_gke_email_scope_and_are_cached(self):
         opener = Mock()
@@ -154,17 +184,12 @@ class BootstrapTests(unittest.TestCase):
         api.pending_worker_checks = 1
         api.secrets["projects/test-project/secrets/license"] = [b"test-license"]
         bundles = {kind: {"cert": kind + "-cert", "key": kind + "-private-key", "ca_cert": kind + "-peer-ca"} for kind in ("server", "client")}
-        buffer = io.BytesIO()
-        with tarfile.open(fileobj=buffer, mode="w:gz") as tar:
-            content = b"test-helm"
-            info = tarfile.TarInfo("linux-amd64/helm")
-            info.size = len(content)
-            tar.addfile(info, io.BytesIO(content))
-        archive = buffer.getvalue()
+        archive, chart = helm_archive(), b"test-worker-chart"
         cfg["helm_sha256"] = hashlib.sha256(archive).hexdigest()
+        cfg["chart_sha256"] = hashlib.sha256(chart).hexdigest()
         with (tempfile.TemporaryDirectory() as directory,
               patch.object(bootstrap, "tls_bundles", return_value=bundles),
-              patch.object(bootstrap.urllib.request, "urlopen", return_value=io.BytesIO(archive)),
+              patch.object(bootstrap.urllib.request, "urlopen", side_effect=[io.BytesIO(archive), io.BytesIO(chart)]),
               patch.object(bootstrap.subprocess, "run", return_value=subprocess.CompletedProcess([], 0)) as run,
               patch.object(bootstrap.time, "monotonic", side_effect=[0, 1801]),
               patch.object(bootstrap.time, "sleep") as sleep):
@@ -180,12 +205,27 @@ class BootstrapTests(unittest.TestCase):
             self.assertIn("--atomic", args)
             self.assertIn("--wait", args)
             self.assertNotIn("test-token", args)
+            self.assertIn(str(root / "worker-chart.tgz"), args)
+            self.assertEqual((root / "worker-chart.tgz").read_bytes(), chart)
             sleep.assert_called_once_with(5)
         writes = [(url, body) for url, method, body in api.requests if method in ("POST", "PUT") and body.get("kind") == "Secret"]
         self.assertEqual(len(writes), 3)
         self.assertTrue(all("/namespaces/braintrust-sandbox/" in url for url, _ in writes))
         client = next(body for _, body in writes if body["metadata"]["name"] == "sandbox-client-tls")
         self.assertEqual(base64.b64decode(client["data"]["client.key"]), b"client-private-key")
+
+    def test_chart_checksum_mismatch_prevents_helm_execution(self):
+        cfg, archive = config(), helm_archive()
+        cfg["helm_sha256"] = hashlib.sha256(archive).hexdigest()
+        cfg["chart_sha256"] = hashlib.sha256(b"expected-chart").hexdigest()
+        bundles = {kind: {"cert": "cert", "key": "key", "ca_cert": "ca"} for kind in ("server", "client")}
+        with (tempfile.TemporaryDirectory() as directory,
+              patch.object(bootstrap, "tls_bundles", return_value=bundles),
+              patch.object(bootstrap.urllib.request, "urlopen", side_effect=[io.BytesIO(archive), io.BytesIO(b"changed-chart")]),
+              patch.object(bootstrap.subprocess, "run") as run):
+            with self.assertRaisesRegex(RuntimeError, "Worker chart checksum mismatch"):
+                bootstrap.install(FakeApi(), cfg, Path(directory))
+        run.assert_not_called()
 
     def test_caller_overrides_cannot_change_managed_capacity_or_image(self):
         cfg = config()

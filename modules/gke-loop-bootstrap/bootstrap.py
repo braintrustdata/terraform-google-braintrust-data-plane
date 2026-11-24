@@ -169,9 +169,10 @@ def wait_for_workers(api, config, deadline):
     url = f"{config['endpoint']}/apis/apps/v1/namespaces/{config['namespace']}/statefulsets/sandbox-service"
     while True:
         workload = api.request(url)
-        status, replicas = workload.get("status", {}), config["replicas"]
+        status, replicas = workload.get("status", {}), workload["spec"]["replicas"]
+        capacity_ready = replicas == 0 if config["replicas"] == 0 else replicas >= config["replicas"]
         if (status.get("observedGeneration", 0) >= workload["metadata"]["generation"]
-                and workload["spec"]["replicas"] == replicas
+                and capacity_ready
                 and all(status.get(field, 0) == replicas for field in ("replicas", "updatedReplicas", "readyReplicas"))):
             return
         if time.monotonic() >= deadline:
@@ -207,6 +208,12 @@ def install(api, config, directory):
         helm = directory / "helm"
         helm.write_bytes(tar.extractfile("linux-amd64/helm").read())
         helm.chmod(0o700)
+    with urllib.request.urlopen(config["chart_url"], timeout=60) as response:
+        archive = response.read()
+    if hashlib.sha256(archive).hexdigest() != config["chart_sha256"]:
+        raise RuntimeError("Worker chart checksum mismatch")
+    chart = directory / "worker-chart.tgz"
+    chart.write_bytes(archive)
     kubeconfig = private_file(directory / "kubeconfig.json", json.dumps({
         "apiVersion": "v1", "kind": "Config", "current-context": "workers",
         "clusters": [{"name": "workers", "cluster": {"server": endpoint}}],
@@ -218,7 +225,7 @@ def install(api, config, directory):
     print("Installing worker chart and waiting for readiness", flush=True)
     # Filesystem-preserving replacement can spend 30 minutes draining a worker.
     deadline = time.monotonic() + 2400
-    result = subprocess.run([str(helm), "upgrade", "--install", "sandbox-service", config["chart_url"], "--namespace", namespace,
+    result = subprocess.run([str(helm), "upgrade", "--install", "sandbox-service", str(chart), "--namespace", namespace,
                              "--values", overrides, "--values", managed, "--wait", "--atomic", "--timeout", "2400s", "--history-max", "5"],
                             env={**os.environ, "KUBECONFIG": kubeconfig}, capture_output=True)
     if result.returncode:

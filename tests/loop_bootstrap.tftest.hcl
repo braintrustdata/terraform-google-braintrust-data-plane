@@ -2,6 +2,14 @@ mock_provider "google" {
   mock_data "google_client_config" { defaults = { project = "test-project", region = "us-central1" } }
   mock_data "google_project" { defaults = { project_id = "test-project", number = "123456789012" } }
 }
+mock_provider "http" {
+  mock_data "http" {
+    defaults = {
+      status_code   = 200
+      response_body = "{\"conditions\":[{\"type\":\"Completed\",\"state\":\"CONDITION_SUCCEEDED\"}]}"
+    }
+  }
+}
 override_resource {
   target = google_secret_manager_secret.tls["client"]
   values = { id = "projects/test-project/secrets/runtime-client-tls" }
@@ -156,5 +164,57 @@ run "unchanged_configuration_keeps_the_execution_token" {
   assert {
     condition     = output.execution_token == run.restoring_the_original_configuration_executes_again.execution_token && !output.loop_runtime.services_version_pinned
     error_message = "A no-op plan must not launch an installer; an empty image override still uses the default version."
+  }
+}
+
+run "failed_installation_blocks_ready_outputs" {
+  command = plan
+  module { source = "./modules/gke-loop-bootstrap" }
+  override_data {
+    target = data.http.ready
+    values = {
+      status_code   = 200
+      response_body = "{\"conditions\":[{\"type\":\"Completed\",\"state\":\"CONDITION_FAILED\"}]}"
+    }
+  }
+  expect_failures = [data.http.ready]
+}
+
+run "missing_execution_does_not_mark_the_installation_ready" {
+  command = plan
+  module { source = "./modules/gke-loop-bootstrap" }
+  override_data {
+    target = data.http.ready
+    values = {
+      status_code   = 404
+      response_body = "{}"
+    }
+  }
+  expect_failures = [data.http.ready]
+}
+
+run "started_execution_does_not_mark_the_installation_ready" {
+  command = plan
+  module { source = "./modules/gke-loop-bootstrap" }
+  override_data {
+    target = data.http.ready
+    values = {
+      status_code   = 200
+      response_body = "{\"conditions\":[{\"type\":\"Started\",\"state\":\"CONDITION_SUCCEEDED\"},{\"type\":\"Completed\",\"state\":\"CONDITION_RECONCILING\"}]}"
+    }
+  }
+  expect_failures = [data.http.ready]
+}
+
+run "explicit_retry_executes_the_same_configuration_again" {
+  command = apply
+  module { source = "./modules/gke-loop-bootstrap" }
+  plan_options { replace = [terraform_data.execution] }
+  assert {
+    condition = (
+      output.revision == run.restoring_the_original_configuration_executes_again.revision &&
+      output.execution_token != run.restoring_the_original_configuration_executes_again.execution_token
+    )
+    error_message = "Replacing only the execution trigger must retry the same worker configuration with a new token."
   }
 }

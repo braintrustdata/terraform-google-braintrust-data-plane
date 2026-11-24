@@ -48,8 +48,27 @@ cluster and obtain the same Helm output.
 `worker_helm_values`; defaults are pinned in `modules/gke-loop-bootstrap/VERSIONS.json`.
 The runtime tag follows the worker version; keep both compatible with the primary
 API, Brainstore, routed AI Gateway and a chart supporting `loopRuntime.sandbox.clientTlsSecret`.
+For services upgrades, set `loop_runtime_options.services_version` to the selected
+primary chart's `loopRuntime.image.tag`, apply infrastructure, then the app.
+This sets the worker and runtime version without requiring a new data-plane
+module release. The worker chart has a separate pinned URL and checksum; an image
+override does not change that chart. Defaults in `VERSIONS.json` are updated with
+data-plane releases, not automatically with every primary chart release.
 `brainstore_license_secret_name` defaults to `brainstore-license-key`; set it to an
 empty string to omit worker telemetry license lookup.
+
+### Retrying a failed install
+
+A failed installer execution blocks ready outputs, even if Cloud Run accepted
+the job configuration. Fix the reported cause, then rerun the same configuration:
+
+```sh
+terraform apply -replace=module.braintrust-data-plane.module.gke_loop_bootstrap.terraform_data.execution
+```
+
+Use your infrastructure module's address in place of `module.braintrust-data-plane`.
+For a standalone `module "loop"` bootstrap, replace `module.loop.terraform_data.execution`.
+Only the execution trigger is replaced; the job, cluster and TLS are retained.
 
 The default subnet is created even when the primary deployment uses an existing
 VPC. That VPC still needs the routing, NAT and API access described below. Supply
@@ -293,12 +312,13 @@ Disable the primary runtime and uninstall the drained worker release before sett
 `enable_loop_runtime = false` and applying infrastructure. Cluster deletion protection
 still applies; retain checkpoint storage and its key for recoverable sandboxes.
 
-## Upgrading to v3.0.0
+## Upgrading to v4.0.0
 
 The changed `loop_runtime` output is a breaking interface and requires GKE app v3.
 Drain active sandboxes with app v2's `loop_runtime_options.worker_replicas = 0`,
-then apply data-plane v3 before app v3. The first bootstrap creates new trust roots
-and replaces worker TLS Secrets, so Loop is unavailable until the app apply.
+then apply data-plane v4 before app v3. Data-plane v3 retains the previous output
+contract and does not include this bootstrap. The first bootstrap creates new
+trust roots and replaces worker TLS Secrets, so Loop is unavailable until the app apply.
 The existing `sandbox-service` release is upgraded in place; nothing needs uninstalling.
 Keep old worker provider blocks through the app's first v3 apply so its removed
 blocks can release state without deleting live resources, then remove them.

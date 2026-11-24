@@ -42,3 +42,7 @@ or pass `module.loop.loop_runtime` to the GKE app module. Existing placement,
 Cloud SQL Proxy and organization settings remain in your primary Helm values.
 Use `options` for worker image, capacity and Helm overrides, as described in the
 [Loop configuration guide](../../ISOLATED_WORKERS.md#enable-loop).
+
+Failed executions block ready outputs. After fixing the cause, retry with
+`terraform apply -replace=module.loop.terraform_data.execution`; the worker
+cluster and TLS remain in place. See [retrying a failed install](../../ISOLATED_WORKERS.md#retrying-a-failed-install).

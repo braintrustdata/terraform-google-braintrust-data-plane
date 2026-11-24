@@ -28,6 +28,7 @@ locals {
     helm_url         = local.versions.helm_url
     helm_sha256      = local.versions.helm_sha256
     chart_url        = local.versions.chart_url
+    chart_sha256     = local.versions.chart_sha256
   }
   command  = ["python3"]
   revision = substr(sha256(jsonencode({ config = local.config, script = filesha256("${path.module}/bootstrap.py"), image = local.versions.image, command = local.command, service_account = local.installer_service_account })), 0, 20)
@@ -134,4 +135,26 @@ resource "google_cloud_run_v2_job" "install" {
     google_secret_manager_secret_iam_member.installer_write,
     google_secret_manager_secret_iam_member.runtime,
   ]
+}
+
+# Refresh credentials after long installs, and defer the check during retries.
+data "google_client_config" "installer_check" {
+  depends_on = [google_cloud_run_v2_job.install]
+}
+
+data "http" "ready" {
+  url                = "https://run.googleapis.com/v2/${google_cloud_run_v2_job.install.id}/executions/${google_cloud_run_v2_job.install.name}-${google_cloud_run_v2_job.install.run_execution_token}?fields=conditions(type,state)"
+  request_timeout_ms = 30000
+  request_headers = {
+    Authorization = "Bearer ${data.google_client_config.installer_check.access_token}"
+  }
+  lifecycle {
+    postcondition {
+      condition = self.status_code == 200 && try(
+        anytrue([for condition in jsondecode(self.response_body).conditions : condition.type == "Completed" && condition.state == "CONDITION_SUCCEEDED"]),
+        false
+      )
+      error_message = "Loop worker installation did not succeed. Fix the execution failure, then retry by replacing this bootstrap module's terraform_data.execution resource; see ISOLATED_WORKERS.md."
+    }
+  }
 }

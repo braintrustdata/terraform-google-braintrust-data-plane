@@ -3,5 +3,6 @@
   "helm_url": "https://get.helm.sh/helm-v3.22.1-linux-amd64.tar.gz",
   "helm_sha256": "896cf63684a42a723d61c980369d6e588330927deb13676ca0d85006dd6da0ea",
   "chart_url": "https://braintrust-cf-us-east-1.s3.amazonaws.com/sandbox-service/062fbf5e1090e1f624eda6d6f9dfe7af05921e3d90a6405d330feb7866775ad2/sandbox-service-0.1.0.tgz",
+  "chart_sha256": "062fbf5e1090e1f624eda6d6f9dfe7af05921e3d90a6405d330feb7866775ad2",
   "services_version": "v2.24.0"
 }

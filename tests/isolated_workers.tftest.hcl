@@ -35,6 +35,14 @@ mock_provider "google" {
 }
 mock_provider "google-beta" {}
 mock_provider "random" {}
+mock_provider "http" {
+  mock_data "http" {
+    defaults = {
+      status_code   = 200
+      response_body = "{\"conditions\":[{\"type\":\"Completed\",\"state\":\"CONDITION_SUCCEEDED\"}]}"
+    }
+  }
+}
 
 variables { deployment_name = "braintrust" }
 
