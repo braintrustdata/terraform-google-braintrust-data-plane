@@ -40,6 +40,10 @@ existing Helm values. The runtime loads its client bundle through Workload Ident
 private keys never enter Terraform state or Helm values. See the
 [Helm guide](https://github.com/braintrustdata/helm/tree/main/braintrust/examples/gke-loop-runtime).
 
+If your platform owns the worker infrastructure, use the
+[standalone bootstrap](modules/gke-loop-bootstrap) to install into that existing
+cluster and obtain the same Helm output.
+
 `loop_runtime_options` overrides `services_version`, `worker_replicas` and
 `worker_helm_values`; defaults are pinned in `modules/gke-loop-bootstrap/VERSIONS.json`.
 The runtime tag follows the worker version; keep both compatible with the primary

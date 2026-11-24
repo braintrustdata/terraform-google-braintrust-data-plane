@@ -20,6 +20,10 @@ Use `loop_runtime_options.installer_service_account_email` to reuse a deployment
 account without changing firewall IAM. See [configuration and lifecycle](ISOLATED_WORKERS.md)
 for worker overrides, client-secret references and removal steps.
 
+For clusters managed by your own Terraform, call the
+[worker bootstrap module](modules/gke-loop-bootstrap) directly to get the same
+Helm values without adopting this module's cluster or network resources.
+
 ## GKE Cluster Modes
 
 GKE Autopilot is the preferred solution for new Braintrust deployments. GKE Standard is supported when customer requirements prevent Autopilot use.

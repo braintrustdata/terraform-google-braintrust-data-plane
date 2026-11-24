@@ -170,30 +170,12 @@ output "gke_isolated_workers" {
 }
 
 locals {
-  loop_runtime_helm_values_yaml = var.enable_loop_runtime ? yamlencode({
-    loopRuntime = {
-      enabled        = true
-      image          = { tag = module.gke_loop_bootstrap[0].services_version }
-      serviceAccount = { googleServiceAccount = module.gke-iam.loop_runtime_service_account }
-      annotations    = { pod = { "braintrust.io/worker-revision" = module.gke_loop_bootstrap[0].revision } }
-      sandbox = {
-        dnsUrl = local.isolated_workers_output.discovery.endpoint
-        egressGateway = {
-          address      = local.isolated_workers_output.loop_egress.address
-          url          = local.isolated_workers_output.loop_egress.url
-          sourceRanges = local.isolated_workers_output.loop_egress.source_ranges
-        }
-        clientTlsSecret = module.gke_loop_bootstrap[0].client_tls_secret
-      }
-    }
-  }) : yamlencode({ loopRuntime = { enabled = false } })
+  loop_runtime_helm_values_yaml = var.enable_loop_runtime ? module.gke_loop_bootstrap[0].helm_values_yaml : yamlencode({ loopRuntime = { enabled = false } })
 }
 
 output "loop_runtime" {
   description = "Ready-to-use Loop Helm configuration after worker bootstrap succeeds. Contains references, not credentials."
-  value = var.enable_loop_runtime ? {
-    helm_values_yaml = local.loop_runtime_helm_values_yaml
-  } : null
+  value       = var.enable_loop_runtime ? module.gke_loop_bootstrap[0].loop_runtime : null
 }
 
 output "loop_runtime_helm_values_yaml" {

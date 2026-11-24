@@ -15,11 +15,22 @@ variable "workers" {
   type = object({
     checkpoint_store = string
     discovery = object({
-      hostname                = string
-      external_dns_namespace  = string
-      external_dns_extra_args = list(string)
+      hostname                     = string
+      endpoint                     = string
+      external_dns_namespace       = optional(string, "braintrust-sandbox")
+      external_dns_service_account = optional(string, "external-dns")
+      external_dns_extra_args      = list(string)
+    })
+    loop_egress = object({
+      address       = string
+      url           = string
+      source_ranges = list(string)
     })
   })
+  validation {
+    condition     = var.workers.discovery.external_dns_service_account == "external-dns"
+    error_message = "The worker chart requires the external-dns Kubernetes service account. Grant discovery-zone access to that identity."
+  }
 }
 variable "options" {
   type = object({

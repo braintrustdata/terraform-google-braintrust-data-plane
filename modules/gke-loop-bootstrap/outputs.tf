@@ -1,3 +1,36 @@
+locals {
+  helm_values_yaml = yamlencode({
+    loopRuntime = {
+      enabled        = true
+      image          = { tag = local.config.services_version }
+      serviceAccount = { googleServiceAccount = var.runtime_service_account }
+      sandbox = {
+        dnsUrl = var.workers.discovery.endpoint
+        egressGateway = {
+          address      = var.workers.loop_egress.address
+          url          = var.workers.loop_egress.url
+          sourceRanges = var.workers.loop_egress.source_ranges
+        }
+        clientTlsSecret = "${google_secret_manager_secret.tls["client"].id}/versions/latest"
+      }
+    }
+  })
+}
+
+output "helm_values_yaml" {
+  description = "Ready Loop values for an existing primary Helm release; contains references, not credentials."
+  value       = local.helm_values_yaml
+  depends_on  = [google_cloud_run_v2_job.install]
+}
+
+output "loop_runtime" {
+  description = "Applied Loop configuration for the GKE app module."
+  value = {
+    helm_values_yaml = local.helm_values_yaml
+  }
+  depends_on = [google_cloud_run_v2_job.install]
+}
+
 output "client_tls_secret" {
   description = "Runtime-readable client bundle reference, after worker bootstrap succeeds."
   value       = "${google_secret_manager_secret.tls["client"].id}/versions/latest"

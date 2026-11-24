@@ -15,8 +15,14 @@ variables {
     checkpoint_store = "gs://example-checkpoints/filesystems"
     discovery = {
       hostname                = "workers.sandbox.example.internal"
+      endpoint                = "https://workers.sandbox.example.internal:9400"
       external_dns_namespace  = "braintrust-sandbox"
       external_dns_extra_args = ["--google-project=test-project"]
+    }
+    loop_egress = {
+      address       = "10.82.64.2"
+      url           = "http://loop-egress.sandbox.example.internal:4002"
+      source_ranges = ["10.82.64.0/24", "10.82.0.0/18"]
     }
   }
 }
@@ -55,6 +61,11 @@ run "apply_executes_bootstrap_and_exports_only_a_runtime_secret_reference" {
       local.config.endpoint == var.endpoint &&
       local.config.namespace == var.workers.discovery.external_dns_namespace &&
       local.config.checkpoint_store == var.workers.checkpoint_store &&
+      yamldecode(output.helm_values_yaml).loopRuntime.sandbox.dnsUrl == var.workers.discovery.endpoint &&
+      tolist(yamldecode(output.helm_values_yaml).loopRuntime.sandbox.egressGateway.sourceRanges) == var.workers.loop_egress.source_ranges &&
+      yamldecode(output.helm_values_yaml).loopRuntime.serviceAccount.googleServiceAccount == var.runtime_service_account &&
+      yamldecode(output.helm_values_yaml).loopRuntime.sandbox.clientTlsSecret == output.client_tls_secret &&
+      output.loop_runtime.helm_values_yaml == output.helm_values_yaml &&
       !strcontains(jsonencode(local.config), "PRIVATE KEY") &&
       google_cloud_run_v2_job.install.template[0].template[0].containers[0].args[0] == "-c" &&
       google_cloud_run_v2_job.install.template[0].template[0].containers[0].args[1] == file("modules/gke-loop-bootstrap/bootstrap.py")
@@ -93,6 +104,18 @@ run "worker_changes_rerun_the_job_and_allow_draining_to_zero" {
   assert {
     condition     = local.config.replicas == 0 && local.config.services_version == "custom-build" && local.config.overrides.env[0].value == "keep" && length(google_project_iam_member.license) == 0 && output.revision != run.apply_executes_bootstrap_and_exports_only_a_runtime_secret_reference.revision
     error_message = "Worker changes must trigger a new execution while preserving drain-to-zero and custom settings."
+  }
+}
+run "worker_capacity_changes_do_not_restart_the_primary_runtime" {
+  command = plan
+  module { source = "./modules/gke-loop-bootstrap" }
+  variables { options = { worker_replicas = 0, control_plane_telemetry = "" } }
+  assert {
+    condition = (
+      output.revision != run.apply_executes_bootstrap_and_exports_only_a_runtime_secret_reference.revision &&
+      output.helm_values_yaml == run.apply_executes_bootstrap_and_exports_only_a_runtime_secret_reference.helm_values_yaml
+    )
+    error_message = "Worker configuration must rerun the installer without changing the primary runtime's Pod template."
   }
 }
 run "reject_invalid_worker_capacity" {
