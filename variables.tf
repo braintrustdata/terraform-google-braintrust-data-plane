@@ -714,7 +714,7 @@ variable "enable_loop_runtime" {
 variable "deploy_service_account_email" {
   type        = string
   default     = null
-  description = "Existing Terraform deployment account for worker firewall permissions and, when Loop is enabled, Cloud Run job management. Also reused as the Loop installer unless overridden. Omit when the caller already has the required permissions. Initial creation requires IAM custom-role administration and project IAM update permission."
+  description = "Existing deployment account for Terraform-owned worker firewall permissions, also reused for Loop unless its installer account is overridden. Omit when bootstrap already grants firewall access. Initial creation requires IAM custom-role administration."
 }
 
 variable "isolated_worker_dns_roles" {

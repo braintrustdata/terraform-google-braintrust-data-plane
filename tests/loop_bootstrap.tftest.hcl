@@ -218,32 +218,3 @@ run "explicit_retry_executes_the_same_configuration_again" {
     error_message = "Replacing only the execution trigger must retry the same worker configuration with a new token."
   }
 }
-
-run "grant_cloud_run_to_the_deployer_not_the_installer" {
-  command = plan
-  module { source = "./modules/gke-loop-bootstrap" }
-  variables {
-    deployer_service_account_email = "deploy@test-project.iam.gserviceaccount.com"
-    deploy_service_account_email   = "installer@test-project.iam.gserviceaccount.com"
-  }
-  assert {
-    condition = (
-      length(google_project_iam_member.deployer_run) == 1 &&
-      google_project_iam_member.deployer_run[0].project == "test-project" &&
-      google_project_iam_member.deployer_run[0].role == "roles/run.developer" &&
-      google_project_iam_member.deployer_run[0].member == "serviceAccount:deploy@test-project.iam.gserviceaccount.com" &&
-      google_cloud_run_v2_job.install.template[0].template[0].service_account == "installer@test-project.iam.gserviceaccount.com"
-    )
-    error_message = "Only the configured Terraform deployer should receive Cloud Run job management; execution must keep its separate identity."
-  }
-}
-
-run "omit_cloud_run_grant_without_a_configured_deployer" {
-  command = plan
-  module { source = "./modules/gke-loop-bootstrap" }
-  variables { deploy_service_account_email = "installer@test-project.iam.gserviceaccount.com" }
-  assert {
-    condition     = length(google_project_iam_member.deployer_run) == 0
-    error_message = "A supplied installer is not evidence of the Terraform caller identity and must not receive job management implicitly."
-  }
-}

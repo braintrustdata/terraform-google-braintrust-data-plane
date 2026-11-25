@@ -179,11 +179,12 @@ It reuses `loop_runtime_options.installer_service_account_email` (or the firewal
 `deploy_service_account_email`) or gets project-wide `roles/container.admin` for
 chart installation and RBAC. GKE IAM cannot restrict Kubernetes permissions to one
 cluster. The runtime reads only its client bundle; the installer reads bootstrap
-bundles and the optional telemetry license. When `deploy_service_account_email` is set,
-Terraform grants that deployment account `roles/run.developer` before creating the
-installer job; the caller needs permission to update project IAM. Otherwise, the
-caller must already have Cloud Run job management permissions. In both cases the
-caller needs permission to act as the installer. Run and Secret Manager are enabled automatically. ServiceAccount token and client-certificate
+bundles and the optional telemetry license. The Terraform caller needs
+`roles/run.developer` and permission to act as the installer before creating
+the Cloud Run job. Managed bootstrap deployment roles include `roles/run.developer`;
+other callers must receive it before enabling Loop so the grant can propagate.
+Run and Secret Manager are enabled
+automatically. ServiceAccount token and client-certificate
 authentication to the DNS endpoint remain disabled. See [GKE endpoint access](https://docs.cloud.google.com/kubernetes-engine/docs/how-to/latest/network-isolation#dns-based_endpoint).
 
 The standalone worker interface retains its public IP endpoint with DNS access

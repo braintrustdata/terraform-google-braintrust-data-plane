@@ -41,13 +41,6 @@ resource "google_project_service" "bootstrap" {
   disable_on_destroy = false
 }
 
-resource "google_project_iam_member" "deployer_run" {
-  count   = var.deployer_service_account_email == null ? 0 : 1
-  project = data.google_project.current.project_id
-  role    = "roles/run.developer"
-  member  = "serviceAccount:${var.deployer_service_account_email}"
-}
-
 resource "google_service_account" "installer" {
   count        = var.deploy_service_account_email == null ? 1 : 0
   account_id   = local.name
@@ -136,7 +129,6 @@ resource "google_cloud_run_v2_job" "install" {
   }
   depends_on = [
     google_project_service.bootstrap,
-    google_project_iam_member.deployer_run,
     google_project_iam_member.installer_cluster,
     google_project_iam_member.license,
     google_secret_manager_secret_iam_member.installer_read,
