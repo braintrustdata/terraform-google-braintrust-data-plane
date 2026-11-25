@@ -1,3 +1,9 @@
+variable "deployer_service_account_email" {
+  description = "Terraform deployment identity to grant Cloud Run job management. When omitted, the caller must already have this permission."
+  type        = string
+  default     = null
+}
+
 variable "deployment_name" { type = string }
 variable "region" { type = string }
 variable "endpoint" { type = string }

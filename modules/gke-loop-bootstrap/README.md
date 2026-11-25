@@ -36,6 +36,9 @@ The supplied runtime identity needs Workload Identity and API/Brainstore bucket
 access; the module adds client-bundle access only. The installer account needs
 Kubernetes administration and the Terraform caller must be able to act as it;
 omitting that account creates a project Kubernetes administrator automatically.
+Set `deployer_service_account_email` to the Terraform deployment account to grant
+its Cloud Run job management role before installation; this requires project IAM
+update permission. When omitted, the caller must already have Cloud Run access.
 
 After apply, pass `loop_runtime_helm_values_yaml` after your existing Helm values,
 or pass `module.loop.loop_runtime` to the GKE app module. Existing placement,
