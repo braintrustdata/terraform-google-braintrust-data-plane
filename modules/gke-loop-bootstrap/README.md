@@ -36,6 +36,8 @@ The supplied runtime identity needs Workload Identity and API/Brainstore bucket
 access; the module adds client-bundle access only. The installer account needs
 Kubernetes administration and the Terraform caller must be able to act as it;
 omitting that account creates a project Kubernetes administrator automatically.
+The Terraform caller needs `roles/run.developer` to create the installer job.
+Managed bootstrap deployment roles include it; grant it separately for other callers.
 
 After apply, pass `loop_runtime_helm_values_yaml` after your existing Helm values,
 or pass `module.loop.loop_runtime` to the GKE app module. Existing placement,
